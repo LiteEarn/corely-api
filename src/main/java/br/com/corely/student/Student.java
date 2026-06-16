@@ -1,5 +1,6 @@
 package br.com.corely.student;
 
+import br.com.corely.objective.Objective;
 import br.com.corely.shared.audit.BaseEntity;
 import br.com.corely.studio.Studio;
 import jakarta.persistence.*;
@@ -9,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "students")
@@ -36,4 +39,7 @@ public class Student extends BaseEntity {
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Objective> objectives = new ArrayList<>();
 }
