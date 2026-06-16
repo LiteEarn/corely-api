@@ -33,10 +33,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
-        log.debug("JwtAuthenticationFilter - Request: {} {}", request.getMethod(), request.getRequestURI());
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+
+        log.info("=== JWT FILTER START ===");
+        log.info("Request: {} {}", method, requestURI);
+        log.info("Authorization header present: {}", authHeader != null);
+        log.info("Current authentication: {}", SecurityContextHolder.getContext().getAuthentication());
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.debug("JwtAuthenticationFilter - No valid Authorization header found");
+            log.warn("No valid Authorization header found - Request may be blocked if endpoint requires authentication");
+            log.info("=== JWT FILTER END (NO AUTH) ===");
             filterChain.doFilter(request, response);
             return;
         }
@@ -44,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwt = authHeader.substring(7);
         userEmail = jwtService.extractUsername(jwt);
 
-        log.debug("JwtAuthenticationFilter - JWT extracted, userEmail: {}", userEmail);
+        log.info("JWT extracted, userEmail: {}", userEmail);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
@@ -57,12 +64,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                log.debug("JwtAuthenticationFilter - Authentication set for user: {}, authorities: {}", userEmail, userDetails.getAuthorities());
+                log.info("Authentication SUCCESS for user: {}", userEmail);
+                log.info("User authorities: {}", userDetails.getAuthorities());
+                log.info("User enabled: {}", userDetails.isEnabled());
             } else {
-                log.debug("JwtAuthenticationFilter - JWT token is invalid");
+                log.warn("JWT token is INVALID for user: {}", userEmail);
             }
         }
 
+        log.info("=== JWT FILTER END ===");
         filterChain.doFilter(request, response);
     }
 }

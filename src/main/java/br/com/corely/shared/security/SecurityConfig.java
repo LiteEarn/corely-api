@@ -68,7 +68,20 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.debug("Configuring SecurityFilterChain");
+        log.info("=== SECURITY CONFIG START ===");
+        log.info("Endpoints with permitAll (NO AUTH REQUIRED):");
+        log.info("  - /auth/**");
+        log.info("  - /students/**");
+        log.info("  - /instructors/**");
+        log.info("  - /sessions/**");
+        log.info("  - /class-groups/**");
+        log.info("  - /enrollments/**");
+        log.info("  - /attendance/**");
+        log.info("  - /swagger-ui/**");
+        log.info("  - /v3/api-docs/**");
+        log.info("Endpoints requiring authentication (.anyRequest().authenticated()):");
+        log.info("  - All other endpoints not explicitly listed above");
+        log.info("=== SECURITY CONFIG END ===");
 
         http
                 .cors(Customizer.withDefaults())
@@ -83,13 +96,13 @@ public class SecurityConfig {
                         .requestMatchers("/sessions", "/sessions/**").permitAll()
                         .requestMatchers("/class-groups", "/class-groups/**").permitAll()
                         .requestMatchers("/enrollments", "/enrollments/**").permitAll()
+                        .requestMatchers("/attendance", "/attendance/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        log.debug("SecurityFilterChain configured - /attendance endpoints require authentication");
         return http.build();
     }
 
