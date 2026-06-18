@@ -80,6 +80,7 @@ public class SecurityConfig {
         log.info("  - /objectives/**");
         log.info("  - /evaluations/**");
         log.info("  - /evolutions/**");
+        log.info("  - /dashboard/**");
         log.info("  - /swagger-ui/**");
         log.info("  - /v3/api-docs/**");
         log.info("Endpoints requiring authentication (.anyRequest().authenticated()):");
@@ -103,6 +104,7 @@ public class SecurityConfig {
                         .requestMatchers("/objectives", "/objectives/**").permitAll()
                         .requestMatchers("/evaluations", "/evaluations/**").permitAll()
                         .requestMatchers("/evolutions", "/evolutions/**").permitAll()
+                        .requestMatchers("/dashboard", "/dashboard/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )

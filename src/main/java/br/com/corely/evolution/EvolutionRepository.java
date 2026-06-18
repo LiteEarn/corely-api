@@ -19,4 +19,8 @@ public interface EvolutionRepository extends JpaRepository<Evolution, UUID> {
     List<Evolution> findByStudentIdAndEvolutionDateBetween(UUID studentId, LocalDate startDate, LocalDate endDate);
 
     List<Evolution> findByObjectiveIdAndEvolutionDateBetween(UUID objectiveId, LocalDate startDate, LocalDate endDate);
+
+    long countByStudioIdAndEvolutionDateBetween(UUID studioId, LocalDate startDate, LocalDate endDate);
+
+    List<Evolution> findByStudioIdOrderByCreatedAtDesc(UUID studioId);
 }

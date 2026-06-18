@@ -1,6 +1,8 @@
 package br.com.corely.attendance;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -18,5 +20,9 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
 
     List<Attendance> findByClassGroupIdAndAttendanceDate(
             UUID classGroupId, LocalDate attendanceDate
+    );
+
+    long countByStudioIdAndAttendanceDateBetweenAndPresentTrue(
+            UUID studioId, LocalDate startDate, LocalDate endDate
     );
 }

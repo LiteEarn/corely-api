@@ -9,4 +9,6 @@ import java.util.UUID;
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     Optional<Enrollment> findByStudentIdAndClassGroupId(UUID studentId, UUID classGroupId);
+
+    long countByStudioIdAndActiveTrue(UUID studioId);
 }

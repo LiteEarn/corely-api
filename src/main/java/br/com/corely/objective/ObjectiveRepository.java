@@ -24,4 +24,6 @@ public interface ObjectiveRepository extends JpaRepository<Objective, UUID> {
             @Param("status") ObjectiveStatus status,
             @Param("search") String search
     );
+
+    long countByStudioIdAndStatus(UUID studioId, ObjectiveStatus status);
 }

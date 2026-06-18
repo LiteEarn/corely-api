@@ -7,4 +7,5 @@ import java.util.UUID;
 
 @Repository
 public interface InstructorRepository extends JpaRepository<Instructor, UUID> {
+    long countByStudioIdAndActiveTrue(UUID studioId);
 }

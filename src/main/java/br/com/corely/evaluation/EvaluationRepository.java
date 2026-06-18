@@ -15,4 +15,8 @@ public interface EvaluationRepository extends JpaRepository<Evaluation, UUID> {
     List<Evaluation> findByEvaluationDateBetween(LocalDate startDate, LocalDate endDate);
 
     List<Evaluation> findByStudentIdAndEvaluationDateBetween(UUID studentId, LocalDate startDate, LocalDate endDate);
+
+    long countByStudioIdAndEvaluationDateBetween(UUID studioId, LocalDate startDate, LocalDate endDate);
+
+    List<Evaluation> findByStudioIdOrderByCreatedAtDesc(UUID studioId);
 }
