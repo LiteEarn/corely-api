@@ -4,6 +4,7 @@ import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.enrollment.dto.EnrollmentRequest;
 import br.com.corely.enrollment.dto.EnrollmentResponse;
+import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
@@ -35,10 +36,11 @@ public class EnrollmentService {
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
+        validateStudentActiveForEnrollment(student);
+
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
-        // Check for duplicate enrollment
         enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
                 .ifPresent(enrollment -> {
                     throw new IllegalArgumentException("Student is already enrolled in this class group");
@@ -80,10 +82,13 @@ public class EnrollmentService {
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
+        if (!student.getId().equals(enrollment.getStudent().getId())) {
+            validateStudentActiveForEnrollment(student);
+        }
+
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
-        // Check for duplicate enrollment (excluding current enrollment)
         enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
                 .ifPresent(existingEnrollment -> {
                     if (!existingEnrollment.getId().equals(id)) {
@@ -114,10 +119,15 @@ public class EnrollmentService {
 
     @Transactional(readOnly = true)
     public List<EnrollmentResponse> findStudentsByClassGroupId(UUID classGroupId) {
-        return enrollmentRepository.findAll().stream()
-                .filter(enrollment -> enrollment.getClassGroup().getId().equals(classGroupId))
+        return enrollmentRepository.findByClassGroupIdAndActiveTrueAndStudentActiveTrue(classGroupId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void validateStudentActiveForEnrollment(Student student) {
+        if (!Boolean.TRUE.equals(student.getActive())) {
+            throw new BusinessException("Não é possível matricular um aluno inativo.");
+        }
     }
 
     private EnrollmentResponse toResponse(Enrollment enrollment) {

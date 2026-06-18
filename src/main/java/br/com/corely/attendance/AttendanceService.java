@@ -6,6 +6,7 @@ import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
@@ -35,6 +36,8 @@ public class AttendanceService {
 
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+
+        validateStudentActiveForAttendance(student);
 
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
@@ -82,6 +85,10 @@ public class AttendanceService {
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
+        if (!student.getId().equals(attendance.getStudent().getId())) {
+            validateStudentActiveForAttendance(student);
+        }
+
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
@@ -113,7 +120,7 @@ public class AttendanceService {
 
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findByClassGroupId(UUID classGroupId) {
-        return attendanceRepository.findByClassGroupId(classGroupId).stream()
+        return attendanceRepository.findByClassGroupIdAndStudentActiveTrue(classGroupId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -121,7 +128,7 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findByClassGroupIdAndAttendanceDate(UUID classGroupId, String attendanceDate) {
         java.time.LocalDate date = java.time.LocalDate.parse(attendanceDate);
-        return attendanceRepository.findByClassGroupIdAndAttendanceDate(classGroupId, date).stream()
+        return attendanceRepository.findByClassGroupIdAndAttendanceDateAndStudentActiveTrue(classGroupId, date).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -138,6 +145,8 @@ public class AttendanceService {
                 .map(itemRequest -> {
                     Student student = studentRepository.findById(itemRequest.getStudentId())
                             .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+
+                    validateStudentActiveForAttendance(student);
 
                     attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
                                     itemRequest.getStudentId(), request.getClassGroupId(), request.getAttendanceDate())
@@ -157,6 +166,12 @@ public class AttendanceService {
                     return toResponse(attendanceRepository.save(attendance));
                 })
                 .collect(Collectors.toList());
+    }
+
+    private void validateStudentActiveForAttendance(Student student) {
+        if (!Boolean.TRUE.equals(student.getActive())) {
+            throw new BusinessException("Não é possível registrar presença para um aluno inativo.");
+        }
     }
 
     private AttendanceResponse toResponse(Attendance attendance) {

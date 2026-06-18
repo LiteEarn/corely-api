@@ -18,7 +18,13 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
 
     List<Attendance> findByClassGroupId(UUID classGroupId);
 
+    List<Attendance> findByClassGroupIdAndStudentActiveTrue(UUID classGroupId);
+
     List<Attendance> findByClassGroupIdAndAttendanceDate(
+            UUID classGroupId, LocalDate attendanceDate
+    );
+
+    List<Attendance> findByClassGroupIdAndAttendanceDateAndStudentActiveTrue(
             UUID classGroupId, LocalDate attendanceDate
     );
 
