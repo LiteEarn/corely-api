@@ -14,4 +14,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     long countByStudioIdAndActiveTrue(UUID studioId);
 
     List<Enrollment> findByClassGroupIdAndActiveTrueAndStudentActiveTrue(UUID classGroupId);
+
+    List<Enrollment> findByStudentIdAndActiveTrue(UUID studentId);
 }

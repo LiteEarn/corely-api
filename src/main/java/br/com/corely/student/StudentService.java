@@ -1,5 +1,7 @@
 package br.com.corely.student;
 
+import br.com.corely.enrollment.Enrollment;
+import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.dto.StudentRequest;
 import br.com.corely.student.dto.StudentResponse;
@@ -19,6 +21,7 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Transactional
     public StudentResponse create(StudentRequest request) {
@@ -65,6 +68,9 @@ public class StudentService {
         student.setEmail(request.getEmail());
         student.setBirthDate(request.getBirthDate());
         if (request.getActive() != null) {
+            if (Boolean.TRUE.equals(student.getActive()) && Boolean.FALSE.equals(request.getActive())) {
+                deactivateActiveEnrollments(id);
+            }
             student.setActive(request.getActive());
         }
 
@@ -77,6 +83,14 @@ public class StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
         studentRepository.delete(student);
+    }
+
+    private void deactivateActiveEnrollments(UUID studentId) {
+        List<Enrollment> activeEnrollments = enrollmentRepository.findByStudentIdAndActiveTrue(studentId);
+        for (Enrollment enrollment : activeEnrollments) {
+            enrollment.setActive(false);
+        }
+        enrollmentRepository.saveAll(activeEnrollments);
     }
 
     private StudentResponse toResponse(Student student) {
