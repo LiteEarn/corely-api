@@ -37,9 +37,12 @@ public class EnrollmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
         validateStudentActiveForEnrollment(student);
+        validateStudantClassGroupUnique(request, student);
 
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+
+        validateClassGroupCapacity(classGroup.getCapacity(), studio.getId());
 
         enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
                 .ifPresent(enrollment -> {
@@ -55,6 +58,28 @@ public class EnrollmentService {
 
         enrollment = enrollmentRepository.save(enrollment);
         return toResponse(enrollment);
+    }
+
+    private void validateStudantClassGroupUnique(EnrollmentRequest request, Student student) {
+        enrollmentRepository.findByStudentIdAndActiveTrue(student.getId()).stream().findFirst()
+                .ifPresent(existingEnrollment -> {
+                    if (existingEnrollment.getClassGroup().getId().equals(request.getClassGroupId())) {
+                        throw new BusinessException("Estudante já está matriculado neste grupo de aula");
+                    }
+                });
+    }
+
+    private void validateClassGroupCapacity(Integer capacity, UUID studioId) {
+
+        if (capacity != null) {
+            long enrolledCount = enrollmentRepository.countByStudioIdAndActiveTrue(studioId);
+
+            if (enrolledCount >= capacity) {
+                throw new BusinessException("Classe cheia");
+            }
+        }
+
+
     }
 
     @Transactional(readOnly = true)
@@ -119,7 +144,7 @@ public class EnrollmentService {
 
     @Transactional(readOnly = true)
     public List<EnrollmentResponse> findStudentsByClassGroupId(UUID classGroupId) {
-        return enrollmentRepository.findByClassGroupIdAndActiveTrueAndStudentActiveTrue(classGroupId).stream()
+        return enrollmentRepository.findByClassGroupIdAndActiveTrueAndStudentActiveTrueAndClassGroupActiveTrue(classGroupId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
