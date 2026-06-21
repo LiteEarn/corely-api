@@ -6,6 +6,8 @@ import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.enrollment.Enrollment;
+import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
@@ -28,6 +30,7 @@ public class AttendanceService {
     private final StudioRepository studioRepository;
     private final StudentRepository studentRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Transactional
     public AttendanceResponse create(AttendanceRequest request) {
@@ -37,10 +40,15 @@ public class AttendanceService {
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
-        validateStudentActiveForAttendance(student);
-
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+
+        validateStudentActiveForAttendance(student);
+        validateEnrollmentActiveForAttendance(enrollment);
+        validateClassGroupActiveForAttendance(classGroup);
 
         attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
                         request.getStudentId(), request.getClassGroupId(), request.getAttendanceDate())
@@ -85,12 +93,18 @@ public class AttendanceService {
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
+        ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+
         if (!student.getId().equals(attendance.getStudent().getId())) {
             validateStudentActiveForAttendance(student);
         }
 
-        ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
-                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+        validateEnrollmentActiveForAttendance(enrollment);
+        validateClassGroupActiveForAttendance(classGroup);
 
         attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
                         request.getStudentId(), request.getClassGroupId(), request.getAttendanceDate())
@@ -141,12 +155,18 @@ public class AttendanceService {
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
+        validateClassGroupActiveForAttendance(classGroup);
+
         return request.getAttendances().stream()
                 .map(itemRequest -> {
                     Student student = studentRepository.findById(itemRequest.getStudentId())
                             .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
+                    Enrollment enrollment = enrollmentRepository.findByStudentIdAndClassGroupId(itemRequest.getStudentId(), request.getClassGroupId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+
                     validateStudentActiveForAttendance(student);
+                    validateEnrollmentActiveForAttendance(enrollment);
 
                     attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
                                     itemRequest.getStudentId(), request.getClassGroupId(), request.getAttendanceDate())
@@ -170,7 +190,19 @@ public class AttendanceService {
 
     private void validateStudentActiveForAttendance(Student student) {
         if (!Boolean.TRUE.equals(student.getActive())) {
-            throw new BusinessException("Não é possível registrar presença para um aluno inativo.");
+            throw new BusinessException("Aluno inativo.");
+        }
+    }
+
+    private void validateEnrollmentActiveForAttendance(Enrollment enrollment) {
+        if (!Boolean.TRUE.equals(enrollment.getActive())) {
+            throw new BusinessException("Matrícula inativa.");
+        }
+    }
+
+    private void validateClassGroupActiveForAttendance(ClassGroup classGroup) {
+        if (!Boolean.TRUE.equals(classGroup.getActive())) {
+            throw new BusinessException("Turma inativa.");
         }
     }
 
