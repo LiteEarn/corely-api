@@ -142,8 +142,25 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findByClassGroupIdAndAttendanceDate(UUID classGroupId, String attendanceDate) {
         java.time.LocalDate date = java.time.LocalDate.parse(attendanceDate);
-        return attendanceRepository.findByClassGroupIdAndAttendanceDateAndStudentActiveTrue(classGroupId, date).stream()
-                .map(this::toResponse)
+
+        // Primary source: active enrollments for the class group (with active students and active class group)
+        List<Enrollment> enrollments = enrollmentRepository.findByClassGroupIdAndActiveTrueAndStudentActiveTrueAndClassGroupActiveTrue(classGroupId);
+
+        return enrollments.stream()
+                .map(enrollment -> {
+                    // Check if attendance record exists for this student on the selected date
+                    Attendance attendance = attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
+                            enrollment.getStudent().getId(), classGroupId, date
+                    ).orElse(null);
+
+                    if (attendance != null) {
+                        // Return existing attendance record
+                        return toResponse(attendance);
+                    } else {
+                        // Return student with default attendance values (no attendance recorded yet)
+                        return toResponseFromEnrollment(enrollment, classGroupId, date);
+                    }
+                })
                 .collect(Collectors.toList());
     }
 
@@ -168,18 +185,20 @@ public class AttendanceService {
                     validateStudentActiveForAttendance(student);
                     validateEnrollmentActiveForAttendance(enrollment);
 
-                    attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
+                    // Check if attendance already exists - if so, update it instead of creating
+                    Attendance attendance = attendanceRepository.findByStudentIdAndClassGroupIdAndAttendanceDate(
                                     itemRequest.getStudentId(), request.getClassGroupId(), request.getAttendanceDate())
-                            .ifPresent(attendance -> {
-                                throw new IllegalArgumentException("Attendance already exists for student " + 
-                                        student.getFullName() + " on this date");
-                            });
+                            .orElseGet(Attendance::new);
 
-                    Attendance attendance = new Attendance();
-                    attendance.setStudio(studio);
-                    attendance.setStudent(student);
-                    attendance.setClassGroup(classGroup);
-                    attendance.setAttendanceDate(request.getAttendanceDate());
+                    if (attendance.getId() == null) {
+                        // New attendance - set all fields
+                        attendance.setStudio(studio);
+                        attendance.setStudent(student);
+                        attendance.setClassGroup(classGroup);
+                        attendance.setAttendanceDate(request.getAttendanceDate());
+                    }
+                    
+                    // Update attendance fields (whether new or existing)
                     attendance.setPresent(itemRequest.getPresent());
                     attendance.setNotes(itemRequest.getNotes());
 
@@ -218,6 +237,21 @@ public class AttendanceService {
                 attendance.getNotes(),
                 attendance.getCreatedAt(),
                 attendance.getUpdatedAt()
+        );
+    }
+
+    private AttendanceResponse toResponseFromEnrollment(Enrollment enrollment, UUID classGroupId, java.time.LocalDate date) {
+        return new AttendanceResponse(
+                null, // No attendance ID yet
+                enrollment.getStudent().getId(),
+                enrollment.getStudent().getFullName(),
+                classGroupId,
+                enrollment.getClassGroup().getName(),
+                date,
+                false, // Default: not present (attendance not recorded yet)
+                null, // No notes
+                null, // No createdAt
+                null  // No updatedAt
         );
     }
 }

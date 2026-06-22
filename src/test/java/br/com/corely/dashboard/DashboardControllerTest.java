@@ -344,4 +344,225 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.attendanceThisWeek").value(1))
                 .andExpect(jsonPath("$.attendanceThisMonth").value(1));
     }
+
+    @Test
+    void testGetDashboardExcludesInactiveStudents() throws Exception {
+        Student inactiveStudent = new Student();
+        inactiveStudent.setStudio(studio);
+        inactiveStudent.setFullName("Inactive Student");
+        inactiveStudent.setPhone("11977777777");
+        inactiveStudent.setEmail("inactive@test.com");
+        inactiveStudent.setActive(false);
+        inactiveStudent = studentRepository.save(inactiveStudent);
+
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeStudents").value(1));
+    }
+
+    @Test
+    void testGetDashboardExcludesInactiveInstructors() throws Exception {
+        Instructor inactiveInstructor = new Instructor();
+        inactiveInstructor.setStudio(studio);
+        inactiveInstructor.setFullName("Inactive Instructor");
+        inactiveInstructor.setEmail("inactive.instructor@test.com");
+        inactiveInstructor.setPhone("11966666666");
+        inactiveInstructor.setSpecialty("Pilates");
+        inactiveInstructor.setActive(false);
+        inactiveInstructor = instructorRepository.save(inactiveInstructor);
+
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeInstructors").value(1));
+    }
+
+    @Test
+    void testGetDashboardExcludesInactiveClassGroups() throws Exception {
+        ClassGroup inactiveClassGroup = new ClassGroup();
+        inactiveClassGroup.setStudio(studio);
+        inactiveClassGroup.setInstructor(instructor);
+        inactiveClassGroup.setName("Inactive Class");
+        inactiveClassGroup.setDescription("Inactive Description");
+        inactiveClassGroup.setStartTime(LocalTime.of(14, 0));
+        inactiveClassGroup.setEndTime(LocalTime.of(15, 0));
+        inactiveClassGroup.setCapacity(15);
+        inactiveClassGroup.setMonday(true);
+        inactiveClassGroup.setActive(false);
+        inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
+
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeClassGroups").value(1));
+    }
+
+    @Test
+    void testGetDashboardExcludesInactiveEnrollments() throws Exception {
+        Enrollment inactiveEnrollment = new Enrollment();
+        inactiveEnrollment.setStudio(studio);
+        inactiveEnrollment.setStudent(student);
+        inactiveEnrollment.setClassGroup(classGroup);
+        inactiveEnrollment.setEnrollmentDate(LocalDate.now());
+        inactiveEnrollment.setActive(false);
+        inactiveEnrollment = enrollmentRepository.save(inactiveEnrollment);
+
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEnrollments").value(1));
+    }
+
+    @Test
+    void testGetDashboardOccupancyRateUsesOnlyActiveEntities() throws Exception {
+        // Create inactive class group with capacity - should not be counted in totalCapacity
+        ClassGroup inactiveClassGroup = new ClassGroup();
+        inactiveClassGroup.setStudio(studio);
+        inactiveClassGroup.setInstructor(instructor);
+        inactiveClassGroup.setName("Inactive Class for Occupancy");
+        inactiveClassGroup.setDescription("Inactive");
+        inactiveClassGroup.setStartTime(LocalTime.of(16, 0));
+        inactiveClassGroup.setEndTime(LocalTime.of(17, 0));
+        inactiveClassGroup.setCapacity(50);
+        inactiveClassGroup.setMonday(true);
+        inactiveClassGroup.setActive(false);
+        inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
+
+        // Create inactive enrollment - should not be counted in totalEnrollments
+        Enrollment inactiveEnrollment = new Enrollment();
+        inactiveEnrollment.setStudio(studio);
+        inactiveEnrollment.setStudent(student);
+        inactiveEnrollment.setClassGroup(classGroup);
+        inactiveEnrollment.setEnrollmentDate(LocalDate.now());
+        inactiveEnrollment.setActive(false);
+        inactiveEnrollment = enrollmentRepository.save(inactiveEnrollment);
+
+        // Only 1 active enrollment and active class group capacity is 20
+        // Occupancy rate should be (1 * 100) / 20 = 5.00
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEnrollments").value(1))
+                .andExpect(jsonPath("$.activeClassGroups").value(1))
+                .andExpect(jsonPath("$.occupancyRate").value(5.00));
+    }
+
+    @Test
+    void testGetDashboardWithAllInactiveEntities() throws Exception {
+        // Set all entities to inactive
+        student.setActive(false);
+        studentRepository.save(student);
+
+        instructor.setActive(false);
+        instructorRepository.save(instructor);
+
+        classGroup.setActive(false);
+        classGroupRepository.save(classGroup);
+
+        enrollment.setActive(false);
+        enrollmentRepository.save(enrollment);
+
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeStudents").value(0))
+                .andExpect(jsonPath("$.activeInstructors").value(0))
+                .andExpect(jsonPath("$.activeClassGroups").value(0))
+                .andExpect(jsonPath("$.totalEnrollments").value(0))
+                .andExpect(jsonPath("$.occupancyRate").value(0.00));
+    }
+
+    @Test
+    void testGetDashboardWithMultipleActiveAndInactiveEntities() throws Exception {
+        // Create multiple active and inactive students
+        Student activeStudent2 = new Student();
+        activeStudent2.setStudio(studio);
+        activeStudent2.setFullName("Active Student 2");
+        activeStudent2.setPhone("11955555555");
+        activeStudent2.setEmail("active2@test.com");
+        activeStudent2.setActive(true);
+        activeStudent2 = studentRepository.save(activeStudent2);
+
+        Student inactiveStudent2 = new Student();
+        inactiveStudent2.setStudio(studio);
+        inactiveStudent2.setFullName("Inactive Student 2");
+        inactiveStudent2.setPhone("11944444444");
+        inactiveStudent2.setEmail("inactive2@test.com");
+        inactiveStudent2.setActive(false);
+        inactiveStudent2 = studentRepository.save(inactiveStudent2);
+
+        Student inactiveStudent3 = new Student();
+        inactiveStudent3.setStudio(studio);
+        inactiveStudent3.setFullName("Inactive Student 3");
+        inactiveStudent3.setPhone("11933333333");
+        inactiveStudent3.setEmail("inactive3@test.com");
+        inactiveStudent3.setActive(false);
+        inactiveStudent3 = studentRepository.save(inactiveStudent3);
+
+        // Create multiple active and inactive instructors
+        Instructor activeInstructor2 = new Instructor();
+        activeInstructor2.setStudio(studio);
+        activeInstructor2.setFullName("Active Instructor 2");
+        activeInstructor2.setEmail("active.instructor@test.com");
+        activeInstructor2.setPhone("11922222222");
+        activeInstructor2.setSpecialty("CrossFit");
+        activeInstructor2.setActive(true);
+        activeInstructor2 = instructorRepository.save(activeInstructor2);
+
+        Instructor inactiveInstructor2 = new Instructor();
+        inactiveInstructor2.setStudio(studio);
+        inactiveInstructor2.setFullName("Inactive Instructor 2");
+        inactiveInstructor2.setEmail("inactive.instructor2@test.com");
+        inactiveInstructor2.setPhone("11911111111");
+        inactiveInstructor2.setSpecialty("Spinning");
+        inactiveInstructor2.setActive(false);
+        inactiveInstructor2 = instructorRepository.save(inactiveInstructor2);
+
+        // Create multiple active and inactive class groups
+        ClassGroup activeClassGroup2 = new ClassGroup();
+        activeClassGroup2.setStudio(studio);
+        activeClassGroup2.setInstructor(activeInstructor2);
+        activeClassGroup2.setName("Active Class 2");
+        activeClassGroup2.setDescription("Active");
+        activeClassGroup2.setStartTime(LocalTime.of(18, 0));
+        activeClassGroup2.setEndTime(LocalTime.of(19, 0));
+        activeClassGroup2.setCapacity(25);
+        activeClassGroup2.setMonday(true);
+        activeClassGroup2.setActive(true);
+        activeClassGroup2 = classGroupRepository.save(activeClassGroup2);
+
+        ClassGroup inactiveClassGroup2 = new ClassGroup();
+        inactiveClassGroup2.setStudio(studio);
+        inactiveClassGroup2.setInstructor(inactiveInstructor2);
+        inactiveClassGroup2.setName("Inactive Class 2");
+        inactiveClassGroup2.setDescription("Inactive");
+        inactiveClassGroup2.setStartTime(LocalTime.of(20, 0));
+        inactiveClassGroup2.setEndTime(LocalTime.of(21, 0));
+        inactiveClassGroup2.setCapacity(30);
+        inactiveClassGroup2.setMonday(true);
+        inactiveClassGroup2.setActive(false);
+        inactiveClassGroup2 = classGroupRepository.save(inactiveClassGroup2);
+
+        // Create multiple active and inactive enrollments
+        Enrollment activeEnrollment2 = new Enrollment();
+        activeEnrollment2.setStudio(studio);
+        activeEnrollment2.setStudent(activeStudent2);
+        activeEnrollment2.setClassGroup(activeClassGroup2);
+        activeEnrollment2.setEnrollmentDate(LocalDate.now());
+        activeEnrollment2.setActive(true);
+        activeEnrollment2 = enrollmentRepository.save(activeEnrollment2);
+
+        Enrollment inactiveEnrollment2 = new Enrollment();
+        inactiveEnrollment2.setStudio(studio);
+        inactiveEnrollment2.setStudent(inactiveStudent2);
+        inactiveEnrollment2.setClassGroup(inactiveClassGroup2);
+        inactiveEnrollment2.setEnrollmentDate(LocalDate.now());
+        inactiveEnrollment2.setActive(false);
+        inactiveEnrollment2 = enrollmentRepository.save(inactiveEnrollment2);
+
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeStudents").value(2))
+                .andExpect(jsonPath("$.activeInstructors").value(2))
+                .andExpect(jsonPath("$.activeClassGroups").value(2))
+                .andExpect(jsonPath("$.totalEnrollments").value(2))
+                // Total active capacity = 20 + 25 = 45, active enrollments = 2
+                // Occupancy rate = (2 * 100) / 45 = 4.44
+                .andExpect(jsonPath("$.occupancyRate").value(4.44));
+    }
 }

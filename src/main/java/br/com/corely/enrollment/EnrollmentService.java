@@ -42,7 +42,7 @@ public class EnrollmentService {
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
-        validateClassGroupCapacity(classGroup.getCapacity(), studio.getId());
+        validateClassGroupCapacity(classGroup.getCapacity(), studio.getId(), request.getClassGroupId());
 
         enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
                 .ifPresent(enrollment -> {
@@ -69,10 +69,10 @@ public class EnrollmentService {
                 });
     }
 
-    private void validateClassGroupCapacity(Integer capacity, UUID studioId) {
+    private void validateClassGroupCapacity(Integer capacity, UUID studioId, UUID classGroupId) {
 
         if (capacity != null) {
-            long enrolledCount = enrollmentRepository.countByStudioIdAndActiveTrue(studioId);
+            long enrolledCount = enrollmentRepository.countByStudioIdAndClassGroup_IdAndActiveTrue(studioId,classGroupId);
 
             if (enrolledCount >= capacity) {
                 throw new BusinessException("Classe cheia");
