@@ -1,7 +1,10 @@
 package br.com.corely.instructor;
 
+import br.com.corely.classgroup.ClassGroup;
+import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
+import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
@@ -19,6 +22,7 @@ public class InstructorService {
 
     private final InstructorRepository instructorRepository;
     private final StudioRepository studioRepository;
+    private final ClassGroupRepository classGroupRepository;
 
     @Transactional
     public InstructorResponse create(InstructorRequest request) {
@@ -64,6 +68,12 @@ public class InstructorService {
         instructor.setEmail(request.getEmail());
         instructor.setPhone(request.getPhone());
         instructor.setSpecialty(request.getSpecialty());
+        
+        // Check if instructor is being inactivated
+        if (request.getActive() != null && Boolean.FALSE.equals(request.getActive()) && Boolean.TRUE.equals(instructor.getActive())) {
+            validateInstructorHasNoActiveClassGroups(instructor);
+        }
+
         if (request.getActive() != null) {
             instructor.setActive(request.getActive());
         }
@@ -89,5 +99,25 @@ public class InstructorService {
                 instructor.getSpecialty(),
                 instructor.getActive()
         );
+    }
+
+    private void validateInstructorHasNoActiveClassGroups(Instructor instructor) {
+        List<ClassGroup> activeClassGroups = classGroupRepository.findByInstructorIdAndActiveTrue(instructor.getId());
+        if (!activeClassGroups.isEmpty()) {
+            String classGroupNames = activeClassGroups.stream()
+                    .map(ClassGroup::getName)
+                    .collect(Collectors.joining("\n- "));
+            
+            throw new BusinessException(
+                    String.format(
+                            "Não é possível inativar o instrutor %s.\n\n" +
+                            "Turmas ativas encontradas:\n" +
+                            "- %s\n\n" +
+                            "Por favor, transfira estas turmas para outro instrutor antes da inativação.",
+                            instructor.getFullName(),
+                            classGroupNames
+                    )
+            );
+        }
     }
 }
