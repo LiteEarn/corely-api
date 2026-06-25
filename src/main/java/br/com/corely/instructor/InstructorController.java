@@ -1,7 +1,10 @@
 package br.com.corely.instructor;
 
+import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
+import br.com.corely.instructor.dto.ReassignRequest;
+import br.com.corely.instructor.dto.ReassignResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -46,5 +49,17 @@ public class InstructorController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         instructorService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{sourceInstructorId}/reassign")
+    public ResponseEntity<ReassignResponse> reassign(@PathVariable UUID sourceInstructorId, @Valid @RequestBody ReassignRequest request) {
+        ReassignResponse response = instructorService.reassign(sourceInstructorId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{instructorId}/class-groups")
+    public ResponseEntity<List<ClassGroupResponse>> getClassGroupsByInstructorId(@PathVariable UUID instructorId) {
+        List<ClassGroupResponse> response = instructorService.getClassGroupsByInstructorId(instructorId);
+        return ResponseEntity.ok(response);
     }
 }

@@ -2,8 +2,11 @@ package br.com.corely.instructor;
 
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
+import br.com.corely.instructor.dto.ReassignRequest;
+import br.com.corely.instructor.dto.ReassignResponse;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
@@ -87,6 +90,90 @@ public class InstructorService {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
         instructorRepository.delete(instructor);
+    }
+
+    @Transactional
+    public ReassignResponse reassign(UUID sourceInstructorId, ReassignRequest request) {
+        Instructor sourceInstructor = instructorRepository.findById(sourceInstructorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Source instructor not found"));
+
+        Instructor targetInstructor = instructorRepository.findById(request.getTargetInstructorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Target instructor not found"));
+
+        if (!targetInstructor.getActive()) {
+            throw new BusinessException("Target instructor must be active");
+        }
+
+        if (sourceInstructorId.equals(request.getTargetInstructorId())) {
+            throw new BusinessException("Source and target instructors cannot be the same");
+        }
+
+        List<ClassGroup> classGroupsToTransfer;
+
+        if (request.getClassGroupIds() == null || request.getClassGroupIds().isEmpty()) {
+            // Transfer all active class groups (backward compatibility)
+            classGroupsToTransfer = classGroupRepository.findByInstructorIdAndActiveTrue(sourceInstructorId);
+        } else {
+            // Transfer only selected class groups with validation
+            classGroupsToTransfer = new java.util.ArrayList<>();
+            for (UUID classGroupId : request.getClassGroupIds()) {
+                ClassGroup classGroup = classGroupRepository.findById(classGroupId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Class group not found: " + classGroupId));
+
+                if (!classGroup.getInstructor().getId().equals(sourceInstructorId)) {
+                    throw new BusinessException("Class group does not belong to source instructor: " + classGroupId);
+                }
+
+                if (!classGroup.getActive()) {
+                    throw new BusinessException("Class group is not active: " + classGroupId);
+                }
+
+                classGroupsToTransfer.add(classGroup);
+            }
+        }
+
+        for (ClassGroup classGroup : classGroupsToTransfer) {
+            classGroup.setInstructor(targetInstructor);
+            classGroupRepository.save(classGroup);
+        }
+
+        return new ReassignResponse(classGroupsToTransfer.size());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClassGroupResponse> getClassGroupsByInstructorId(UUID instructorId) {
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
+
+        List<ClassGroup> activeClassGroups = classGroupRepository.findByInstructorIdAndActiveTrue(instructorId);
+
+        return activeClassGroups.stream()
+                .map(this::toClassGroupResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ClassGroupResponse toClassGroupResponse(ClassGroup classGroup) {
+        return new ClassGroupResponse(
+                classGroup.getId(),
+                classGroup.getStudio().getId(),
+                classGroup.getInstructor().getId(),
+                classGroup.getInstructor().getFullName(),
+                classGroup.getName(),
+                classGroup.getDescription(),
+                classGroup.getStartTime(),
+                classGroup.getEndTime(),
+                classGroup.getCapacity(),
+                classGroup.getMonday(),
+                classGroup.getTuesday(),
+                classGroup.getWednesday(),
+                classGroup.getThursday(),
+                classGroup.getFriday(),
+                classGroup.getSaturday(),
+                classGroup.getSunday(),
+                classGroup.getActive(),
+                classGroup.getCreatedAt(),
+                classGroup.getUpdatedAt()
+        );
     }
 
     private InstructorResponse toResponse(Instructor instructor) {
