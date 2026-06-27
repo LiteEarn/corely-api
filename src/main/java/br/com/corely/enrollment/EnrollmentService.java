@@ -42,6 +42,7 @@ public class EnrollmentService {
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
+        validateClassGroupActiveForEnrollment(classGroup);
         validateClassGroupCapacity(classGroup.getCapacity(), studio.getId(), request.getClassGroupId());
 
         enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
@@ -114,6 +115,8 @@ public class EnrollmentService {
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
+        validateClassGroupActiveForEnrollment(classGroup);
+
         enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
                 .ifPresent(existingEnrollment -> {
                     if (!existingEnrollment.getId().equals(id)) {
@@ -152,6 +155,12 @@ public class EnrollmentService {
     private void validateStudentActiveForEnrollment(Student student) {
         if (!Boolean.TRUE.equals(student.getActive())) {
             throw new BusinessException("Não é possível matricular um aluno inativo.");
+        }
+    }
+
+    private void validateClassGroupActiveForEnrollment(ClassGroup classGroup) {
+        if (!Boolean.TRUE.equals(classGroup.getActive())) {
+            throw new BusinessException("Cannot enroll a student in an inactive class group.");
         }
     }
 

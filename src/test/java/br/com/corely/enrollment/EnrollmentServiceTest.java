@@ -2,9 +2,11 @@ package br.com.corely.enrollment;
 
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.enrollment.dto.EnrollmentRequest;
 import br.com.corely.enrollment.dto.EnrollmentResponse;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
+import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
@@ -19,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -153,5 +157,71 @@ class EnrollmentServiceTest {
         List<EnrollmentResponse> responses = enrollmentService.findStudentsByClassGroupId(classGroup.getId());
 
         assertThat(responses).isEmpty();
+    }
+
+    @Test
+    void create_whenClassGroupInactive_throwsBusinessException() {
+        // Given - deactivate class group
+        classGroup.setActive(false);
+        classGroupRepository.save(classGroup);
+
+        EnrollmentRequest request = new EnrollmentRequest();
+        request.setStudioId(studio.getId());
+        request.setStudentId(student.getId());
+        request.setClassGroupId(classGroup.getId());
+        request.setEnrollmentDate(LocalDate.now());
+        request.setActive(true);
+
+        // When & Then
+        assertThatThrownBy(() -> enrollmentService.create(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Cannot enroll a student in an inactive class group.");
+    }
+
+    @Test
+    void update_whenClassGroupInactive_throwsBusinessException() {
+        // Given - create an enrollment
+        Enrollment newEnrollment = new Enrollment();
+        newEnrollment.setStudio(studio);
+        newEnrollment.setStudent(student);
+        newEnrollment.setClassGroup(classGroup);
+        newEnrollment.setEnrollmentDate(LocalDate.now());
+        newEnrollment.setActive(true);
+        Enrollment enrollment = enrollmentRepository.save(newEnrollment);
+
+        // Given - deactivate class group
+        classGroup.setActive(false);
+        classGroupRepository.save(classGroup);
+
+        EnrollmentRequest request = new EnrollmentRequest();
+        request.setStudioId(studio.getId());
+        request.setStudentId(student.getId());
+        request.setClassGroupId(classGroup.getId());
+        request.setEnrollmentDate(LocalDate.now());
+        request.setActive(true);
+
+        // When & Then
+        assertThatThrownBy(() -> enrollmentService.update(enrollment.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Cannot enroll a student in an inactive class group.");
+    }
+
+    @Test
+    void create_whenClassGroupActive_succeeds() {
+        // Given
+        EnrollmentRequest request = new EnrollmentRequest();
+        request.setStudioId(studio.getId());
+        request.setStudentId(student.getId());
+        request.setClassGroupId(classGroup.getId());
+        request.setEnrollmentDate(LocalDate.now());
+        request.setActive(true);
+
+        // When
+        EnrollmentResponse response = enrollmentService.create(request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getStudentId()).isEqualTo(student.getId());
+        assertThat(response.getClassGroupId()).isEqualTo(classGroup.getId());
     }
 }

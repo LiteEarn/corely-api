@@ -30,6 +30,12 @@ public class ClassGroupController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<List<ClassGroupResponse>> findActive() {
+        List<ClassGroupResponse> response = classGroupService.findActive();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ClassGroupResponse> findById(@PathVariable UUID id) {
         ClassGroupResponse response = classGroupService.findById(id);

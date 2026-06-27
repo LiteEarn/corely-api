@@ -35,6 +35,8 @@ public class ClassGroupService {
         Instructor instructor = instructorRepository.findById(request.getInstructorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
+        validateInstructorActive(instructor);
+
         ClassGroup classGroup = new ClassGroup();
         classGroup.setStudio(studio);
         classGroup.setInstructor(instructor);
@@ -64,6 +66,13 @@ public class ClassGroupService {
     }
 
     @Transactional(readOnly = true)
+    public List<ClassGroupResponse> findActive() {
+        return classGroupRepository.findByActiveTrue().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public ClassGroupResponse findById(UUID id) {
         ClassGroup classGroup = classGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
@@ -83,6 +92,8 @@ public class ClassGroupService {
 
         Instructor instructor = instructorRepository.findById(request.getInstructorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
+
+        validateInstructorActive(instructor);
 
         classGroup.setStudio(studio);
         classGroup.setInstructor(instructor);
@@ -168,6 +179,12 @@ public class ClassGroupService {
     private void validateTimeRange(java.time.LocalTime startTime, java.time.LocalTime endTime) {
         if (startTime != null && endTime != null && !endTime.isAfter(startTime)) {
             throw new BusinessException("A hora de término deve ser maior que a hora de início.");
+        }
+    }
+
+    private void validateInstructorActive(Instructor instructor) {
+        if (!Boolean.TRUE.equals(instructor.getActive())) {
+            throw new BusinessException("Selected instructor is inactive.");
         }
     }
 }

@@ -134,7 +134,7 @@ public class AttendanceService {
 
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findByClassGroupId(UUID classGroupId) {
-        return attendanceRepository.findByClassGroupIdAndStudentActiveTrue(classGroupId).stream()
+        return attendanceRepository.findByClassGroupIdAndStudentActiveTrueAndClassGroupActiveTrue(classGroupId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
