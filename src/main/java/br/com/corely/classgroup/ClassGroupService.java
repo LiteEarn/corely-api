@@ -155,10 +155,6 @@ public class ClassGroupService {
 
     @Transactional
     public void inactivate(UUID id, ConfirmInactivationRequest request) {
-        if (!request.isCascadeEnrollments()) {
-            throw new BusinessException("cascadeEnrollments must be true to inactivate a class group with active enrollments.");
-        }
-
         ClassGroup classGroup = classGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
@@ -166,16 +162,26 @@ public class ClassGroupService {
             throw new BusinessException("Class group is already inactive.");
         }
 
+        long activeEnrollments = enrollmentRepository.countByClassGroupIdAndActiveTrue(id);
+
+        // If there are active enrollments and cascade is not explicitly confirmed, require confirmation
+        if (activeEnrollments > 0 && !request.isCascadeEnrollments()) {
+            throw new ConfirmationRequiredException(activeEnrollments,
+                    "This class group has active enrollments.");
+        }
+
         // Inactivate the class group
         classGroup.setActive(false);
         classGroupRepository.save(classGroup);
 
         // Inactivate all active enrollments
-        List<Enrollment> activeEnrollments = enrollmentRepository.findByClassGroupIdAndActiveTrue(id);
-        for (Enrollment enrollment : activeEnrollments) {
-            enrollment.setActive(false);
+        if (activeEnrollments > 0) {
+            List<Enrollment> enrollments = enrollmentRepository.findByClassGroupIdAndActiveTrue(id);
+            for (Enrollment enrollment : enrollments) {
+                enrollment.setActive(false);
+            }
+            enrollmentRepository.saveAll(enrollments);
         }
-        enrollmentRepository.saveAll(activeEnrollments);
     }
 
     private ClassGroupResponse toResponse(ClassGroup classGroup) {

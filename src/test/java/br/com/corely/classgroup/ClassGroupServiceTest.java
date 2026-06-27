@@ -472,10 +472,47 @@ class ClassGroupServiceTest {
                 .hasMessage("Class group not found");
     }
 
-    // ========== SCENARIO 3d: Validation - cascadeEnrollments must be true ==========
+    // ========== SCENARIO 3d: Inactivation without cascadeEnrollments and with enrollments = 409 ==========
     @Test
-    void inactivate_whenCascadeEnrollmentsFalse_throwsBusinessException() {
+    void inactivate_whenCascadeEnrollmentsFalseWithEnrollments_throwsConfirmationRequired() {
         // Given - create an active class group
+        ClassGroupRequest createRequest = new ClassGroupRequest();
+        createRequest.setStudioId(studio.getId());
+        createRequest.setInstructorId(activeInstructor.getId());
+        createRequest.setName("Test Class Group");
+        createRequest.setDescription("Test Description");
+        createRequest.setStartTime(LocalTime.of(9, 0));
+        createRequest.setEndTime(LocalTime.of(10, 0));
+        createRequest.setCapacity(20);
+        createRequest.setMonday(true);
+        createRequest.setActive(true);
+        ClassGroupResponse created = classGroupService.create(createRequest);
+
+        // Given - create an active enrollment
+        ClassGroup classGroup = classGroupRepository.findById(created.getId()).orElseThrow();
+        Enrollment enrollment = new Enrollment();
+        enrollment.setStudio(studio);
+        enrollment.setStudent(student);
+        enrollment.setClassGroup(classGroup);
+        enrollment.setEnrollmentDate(LocalDate.now());
+        enrollment.setActive(true);
+        enrollmentRepository.save(enrollment);
+
+        // When & Then
+        ConfirmInactivationRequest confirmRequest = new ConfirmInactivationRequest(false);
+        assertThatThrownBy(() -> classGroupService.inactivate(created.getId(), confirmRequest))
+                .isInstanceOf(ConfirmationRequiredException.class)
+                .hasMessage("This class group has active enrollments.")
+                .satisfies(e -> {
+                    ConfirmationRequiredException ex = (ConfirmationRequiredException) e;
+                    assertThat(ex.getActiveEnrollments()).isEqualTo(1);
+                });
+    }
+
+    // ========== SCENARIO 3e: Inactivation without cascadeEnrollments but NO enrollments = OK ==========
+    @Test
+    void inactivate_whenCascadeEnrollmentsFalseWithoutEnrollments_succeeds() {
+        // Given - create an active class group with no enrollments
         ClassGroupRequest createRequest = new ClassGroupRequest();
         createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
@@ -490,9 +527,11 @@ class ClassGroupServiceTest {
 
         // When & Then
         ConfirmInactivationRequest confirmRequest = new ConfirmInactivationRequest(false);
-        assertThatThrownBy(() -> classGroupService.inactivate(created.getId(), confirmRequest))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("cascadeEnrollments must be true to inactivate a class group with active enrollments.");
+        classGroupService.inactivate(created.getId(), confirmRequest);
+
+        // Then
+        ClassGroup reloaded = classGroupRepository.findById(created.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isFalse();
     }
 
     // ========== SCENARIO 4: Failure during enrollment update = Rollback ==========
