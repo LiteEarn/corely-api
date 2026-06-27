@@ -3,7 +3,7 @@ package br.com.corely.instructor;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
-import br.com.corely.instructor.dto.ReassignRequest;
+import br.com.corely.instructor.dto.TransferClassGroupsRequest;
 import br.com.corely.instructor.dto.ReassignResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class InstructorController {
     }
 
     @PutMapping("/{sourceInstructorId}/reassign")
-    public ResponseEntity<ReassignResponse> reassign(@PathVariable UUID sourceInstructorId, @Valid @RequestBody ReassignRequest request) {
+    public ResponseEntity<ReassignResponse> reassign(@PathVariable UUID sourceInstructorId, @Valid @RequestBody TransferClassGroupsRequest request) {
         ReassignResponse response = instructorService.reassign(sourceInstructorId, request);
         return ResponseEntity.ok(response);
     }

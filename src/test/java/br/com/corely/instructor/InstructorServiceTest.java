@@ -5,7 +5,7 @@ import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
-import br.com.corely.instructor.dto.ReassignRequest;
+import br.com.corely.instructor.dto.TransferClassGroupsRequest;
 import br.com.corely.instructor.dto.ReassignResponse;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.studio.Studio;
@@ -180,7 +180,7 @@ class InstructorServiceTest {
     }
 
     @Test
-    void reassign_whenInstructorsExistAndTargetActive_transfersActiveClassGroups() {
+    void reassign_whenClassGroupIdsEmpty_throwsValidationException() {
         // Given - create target instructor
         Instructor targetInstructor = new Instructor();
         targetInstructor.setStudio(studio);
@@ -189,33 +189,13 @@ class InstructorServiceTest {
         targetInstructor.setActive(true);
         targetInstructor = instructorRepository.save(targetInstructor);
 
-        // Given - create a second active class group
-        ClassGroup classGroup2 = new ClassGroup();
-        classGroup2.setStudio(studio);
-        classGroup2.setInstructor(instructor);
-        classGroup2.setName("Test Class Group 2");
-        classGroup2.setStartTime(LocalTime.of(11, 0));
-        classGroup2.setEndTime(LocalTime.of(12, 0));
-        classGroup2.setCapacity(15);
-        classGroup2.setTuesday(true);
-        classGroup2.setActive(true);
-        classGroup2 = classGroupRepository.save(classGroup2);
-
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
-        request.setClassGroupIds(null); // Transfer all (backward compatibility)
+        request.setClassGroupIds(List.of()); // Empty list
 
-        // When
-        ReassignResponse response = instructorService.reassign(instructor.getId(), request);
-
-        // Then
-        assertThat(response.getUpdatedCount()).isEqualTo(2);
-
-        List<ClassGroup> sourceInstructorClassGroups = classGroupRepository.findByInstructorIdAndActiveTrue(instructor.getId());
-        assertThat(sourceInstructorClassGroups).isEmpty();
-
-        List<ClassGroup> targetInstructorClassGroups = classGroupRepository.findByInstructorIdAndActiveTrue(targetInstructor.getId());
-        assertThat(targetInstructorClassGroups).hasSize(2);
+        // When & Then
+        assertThatThrownBy(() -> instructorService.reassign(instructor.getId(), request))
+                .hasMessageContaining("Class group IDs cannot be empty");
     }
 
     @Test
@@ -240,7 +220,7 @@ class InstructorServiceTest {
         classGroup2.setActive(true);
         classGroup2 = classGroupRepository.save(classGroup2);
 
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
         request.setClassGroupIds(List.of(classGroup.getId())); // Transfer only first class group
 
@@ -269,7 +249,7 @@ class InstructorServiceTest {
         targetInstructor.setActive(true);
         targetInstructor = instructorRepository.save(targetInstructor);
 
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
         request.setClassGroupIds(List.of(UUID.randomUUID()));
 
@@ -307,7 +287,7 @@ class InstructorServiceTest {
         otherClassGroup.setActive(true);
         otherClassGroup = classGroupRepository.save(otherClassGroup);
 
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
         request.setClassGroupIds(List.of(otherClassGroup.getId()));
 
@@ -339,7 +319,7 @@ class InstructorServiceTest {
         inactiveClassGroup.setActive(false);
         inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
 
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
         request.setClassGroupIds(List.of(inactiveClassGroup.getId()));
 
@@ -359,9 +339,9 @@ class InstructorServiceTest {
         targetInstructor.setActive(true);
         targetInstructor = instructorRepository.save(targetInstructor);
 
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
-        request.setClassGroupIds(null);
+        request.setClassGroupIds(List.of(classGroup.getId()));
 
         // When & Then
         assertThatThrownBy(() -> instructorService.reassign(UUID.randomUUID(), request))
@@ -371,9 +351,9 @@ class InstructorServiceTest {
     @Test
     void reassign_whenTargetInstructorNotFound_throwsResourceNotFoundException() {
         // Given
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(UUID.randomUUID());
-        request.setClassGroupIds(null);
+        request.setClassGroupIds(List.of(classGroup.getId()));
 
         // When & Then
         assertThatThrownBy(() -> instructorService.reassign(instructor.getId(), request))
@@ -390,9 +370,9 @@ class InstructorServiceTest {
         targetInstructor.setActive(false);
         targetInstructor = instructorRepository.save(targetInstructor);
 
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
-        request.setClassGroupIds(null);
+        request.setClassGroupIds(List.of(classGroup.getId()));
 
         // When & Then
         assertThatThrownBy(() -> instructorService.reassign(instructor.getId(), request))
@@ -403,9 +383,9 @@ class InstructorServiceTest {
     @Test
     void reassign_whenSourceAndTargetAreSame_throwsBusinessException() {
         // Given
-        ReassignRequest request = new ReassignRequest();
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(instructor.getId());
-        request.setClassGroupIds(null);
+        request.setClassGroupIds(List.of(classGroup.getId()));
 
         // When & Then
         assertThatThrownBy(() -> instructorService.reassign(instructor.getId(), request))
@@ -414,11 +394,7 @@ class InstructorServiceTest {
     }
 
     @Test
-    void reassign_whenNoActiveClassGroups_returnsZero() {
-        // Given - deactivate the class group
-        classGroup.setActive(false);
-        classGroupRepository.save(classGroup);
-
+    void reassign_whenClassGroupsBelongToDifferentStudios_throwsBusinessException() {
         // Given - create target instructor
         Instructor targetInstructor = new Instructor();
         targetInstructor.setStudio(studio);
@@ -427,15 +403,32 @@ class InstructorServiceTest {
         targetInstructor.setActive(true);
         targetInstructor = instructorRepository.save(targetInstructor);
 
-        ReassignRequest request = new ReassignRequest();
+        // Given - create a second studio
+        Studio studio2 = new Studio();
+        studio2.setName("Test Studio 2");
+        studio2.setActive(true);
+        studio2 = studioRepository.save(studio2);
+
+        // Given - create class group in second studio
+        ClassGroup classGroup2 = new ClassGroup();
+        classGroup2.setStudio(studio2);
+        classGroup2.setInstructor(instructor);
+        classGroup2.setName("Test Class Group 2");
+        classGroup2.setStartTime(LocalTime.of(11, 0));
+        classGroup2.setEndTime(LocalTime.of(12, 0));
+        classGroup2.setCapacity(15);
+        classGroup2.setTuesday(true);
+        classGroup2.setActive(true);
+        classGroup2 = classGroupRepository.save(classGroup2);
+
+        TransferClassGroupsRequest request = new TransferClassGroupsRequest();
         request.setTargetInstructorId(targetInstructor.getId());
-        request.setClassGroupIds(null);
+        request.setClassGroupIds(List.of(classGroup.getId(), classGroup2.getId()));
 
-        // When
-        ReassignResponse response = instructorService.reassign(instructor.getId(), request);
-
-        // Then
-        assertThat(response.getUpdatedCount()).isEqualTo(0);
+        // When & Then
+        assertThatThrownBy(() -> instructorService.reassign(instructor.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Class group does not belong to the same Studio");
     }
 
     @Test

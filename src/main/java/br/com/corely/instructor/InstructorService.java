@@ -5,13 +5,14 @@ import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
-import br.com.corely.instructor.dto.ReassignRequest;
+import br.com.corely.instructor.dto.TransferClassGroupsRequest;
 import br.com.corely.instructor.dto.ReassignResponse;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class InstructorService {
 
     private final InstructorRepository instructorRepository;
@@ -93,7 +95,7 @@ public class InstructorService {
     }
 
     @Transactional
-    public ReassignResponse reassign(UUID sourceInstructorId, ReassignRequest request) {
+    public ReassignResponse reassign(UUID sourceInstructorId, TransferClassGroupsRequest request) {
         Instructor sourceInstructor = instructorRepository.findById(sourceInstructorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Source instructor not found"));
 
@@ -108,34 +110,45 @@ public class InstructorService {
             throw new BusinessException("Source and target instructors cannot be the same");
         }
 
-        List<ClassGroup> classGroupsToTransfer;
-
         if (request.getClassGroupIds() == null || request.getClassGroupIds().isEmpty()) {
-            // Transfer all active class groups (backward compatibility)
-            classGroupsToTransfer = classGroupRepository.findByInstructorIdAndActiveTrue(sourceInstructorId);
-        } else {
-            // Transfer only selected class groups with validation
-            classGroupsToTransfer = new java.util.ArrayList<>();
-            for (UUID classGroupId : request.getClassGroupIds()) {
-                ClassGroup classGroup = classGroupRepository.findById(classGroupId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Class group not found: " + classGroupId));
-
-                if (!classGroup.getInstructor().getId().equals(sourceInstructorId)) {
-                    throw new BusinessException("Class group does not belong to source instructor: " + classGroupId);
-                }
-
-                if (!classGroup.getActive()) {
-                    throw new BusinessException("Class group is not active: " + classGroupId);
-                }
-
-                classGroupsToTransfer.add(classGroup);
-            }
+            throw new BusinessException("Class group IDs cannot be empty");
         }
 
+        // Load and validate class groups
+        List<ClassGroup> classGroupsToTransfer = new java.util.ArrayList<>();
+        UUID sourceStudioId = null;
+
+        for (UUID classGroupId : request.getClassGroupIds()) {
+            ClassGroup classGroup = classGroupRepository.findById(classGroupId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Class group not found: " + classGroupId));
+
+            if (!classGroup.getInstructor().getId().equals(sourceInstructorId)) {
+                throw new BusinessException("Class group does not belong to source instructor: " + classGroupId);
+            }
+
+            if (!classGroup.getActive()) {
+                throw new BusinessException("Class group is not active: " + classGroupId);
+            }
+
+            // Validate all class groups belong to the same Studio
+            if (sourceStudioId == null) {
+                sourceStudioId = classGroup.getStudio().getId();
+            } else if (!classGroup.getStudio().getId().equals(sourceStudioId)) {
+                throw new BusinessException("Class group does not belong to the same Studio: " + classGroupId);
+            }
+
+            classGroupsToTransfer.add(classGroup);
+        }
+
+        // Update instructor for selected class groups
         for (ClassGroup classGroup : classGroupsToTransfer) {
             classGroup.setInstructor(targetInstructor);
             classGroupRepository.save(classGroup);
         }
+
+        // Log transfer operation
+        log.info("Class group transfer completed - sourceInstructorId: {}, targetInstructorId: {}, quantity: {}, classGroupIds: {}",
+                sourceInstructorId, request.getTargetInstructorId(), classGroupsToTransfer.size(), request.getClassGroupIds());
 
         return new ReassignResponse(classGroupsToTransfer.size());
     }
