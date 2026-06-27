@@ -2,9 +2,14 @@ package br.com.corely.classgroup;
 
 import br.com.corely.classgroup.dto.ClassGroupRequest;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
+import br.com.corely.classgroup.dto.ConfirmInactivationRequest;
+import br.com.corely.classgroup.dto.InactivationResponse;
+import br.com.corely.enrollment.Enrollment;
+import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.shared.exception.BusinessException;
+import br.com.corely.shared.exception.ConfirmationRequiredException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
@@ -23,6 +28,7 @@ public class ClassGroupService {
     private final ClassGroupRepository classGroupRepository;
     private final StudioRepository studioRepository;
     private final InstructorRepository instructorRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Transactional
     public ClassGroupResponse create(ClassGroupRequest request) {
@@ -87,6 +93,15 @@ public class ClassGroupService {
         ClassGroup classGroup = classGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
 
+        // Business rule: if trying to inactivate, check for active enrollments
+        if (request.getActive() != null && !request.getActive() && Boolean.TRUE.equals(classGroup.getActive())) {
+            long activeEnrollments = enrollmentRepository.countByClassGroupIdAndActiveTrue(id);
+            if (activeEnrollments > 0) {
+                throw new ConfirmationRequiredException(activeEnrollments,
+                        "This class group has active enrollments.");
+            }
+        }
+
         Studio studio = studioRepository.findById(request.getStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
@@ -136,6 +151,31 @@ public class ClassGroupService {
         ClassGroup classGroup = classGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
         classGroupRepository.delete(classGroup);
+    }
+
+    @Transactional
+    public void inactivate(UUID id, ConfirmInactivationRequest request) {
+        if (!request.isCascadeEnrollments()) {
+            throw new BusinessException("cascadeEnrollments must be true to inactivate a class group with active enrollments.");
+        }
+
+        ClassGroup classGroup = classGroupRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+
+        if (!Boolean.TRUE.equals(classGroup.getActive())) {
+            throw new BusinessException("Class group is already inactive.");
+        }
+
+        // Inactivate the class group
+        classGroup.setActive(false);
+        classGroupRepository.save(classGroup);
+
+        // Inactivate all active enrollments
+        List<Enrollment> activeEnrollments = enrollmentRepository.findByClassGroupIdAndActiveTrue(id);
+        for (Enrollment enrollment : activeEnrollments) {
+            enrollment.setActive(false);
+        }
+        enrollmentRepository.saveAll(activeEnrollments);
     }
 
     private ClassGroupResponse toResponse(ClassGroup classGroup) {

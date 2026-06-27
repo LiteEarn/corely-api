@@ -2,6 +2,7 @@ package br.com.corely.classgroup;
 
 import br.com.corely.classgroup.dto.ClassGroupRequest;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
+import br.com.corely.classgroup.dto.ConfirmInactivationRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -51,6 +52,12 @@ public class ClassGroupController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         classGroupService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/inactivate")
+    public ResponseEntity<Void> inactivate(@PathVariable UUID id, @Valid @RequestBody ConfirmInactivationRequest request) {
+        classGroupService.inactivate(id, request);
         return ResponseEntity.noContent().build();
     }
 }
