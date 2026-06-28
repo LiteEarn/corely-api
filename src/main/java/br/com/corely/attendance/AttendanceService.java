@@ -221,7 +221,7 @@ public class AttendanceService {
 
     private void validateClassGroupActiveForAttendance(ClassGroup classGroup) {
         if (!Boolean.TRUE.equals(classGroup.getActive())) {
-            throw new BusinessException("Turma inativa.");
+            throw new BusinessException("The selected class group is inactive.");
         }
     }
 

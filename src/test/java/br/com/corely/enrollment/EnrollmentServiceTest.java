@@ -175,7 +175,7 @@ class EnrollmentServiceTest {
         // When & Then
         assertThatThrownBy(() -> enrollmentService.create(request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cannot enroll a student in an inactive class group.");
+                .hasMessage("The selected class group is inactive.");
     }
 
     @Test
@@ -203,7 +203,7 @@ class EnrollmentServiceTest {
         // When & Then
         assertThatThrownBy(() -> enrollmentService.update(enrollment.getId(), request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cannot enroll a student in an inactive class group.");
+                .hasMessage("The selected class group is inactive.");
     }
 
     @Test
@@ -223,5 +223,42 @@ class EnrollmentServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getStudentId()).isEqualTo(student.getId());
         assertThat(response.getClassGroupId()).isEqualTo(classGroup.getId());
+    }
+
+    @Test
+    void update_whenMovingToInactiveClassGroup_throwsBusinessException() {
+        // Given - create an inactive class group
+        ClassGroup inactiveClassGroup = new ClassGroup();
+        inactiveClassGroup.setStudio(studio);
+        inactiveClassGroup.setInstructor(instructor);
+        inactiveClassGroup.setName("Inactive Class Group");
+        inactiveClassGroup.setStartTime(LocalTime.of(14, 0));
+        inactiveClassGroup.setEndTime(LocalTime.of(15, 0));
+        inactiveClassGroup.setCapacity(10);
+        inactiveClassGroup.setTuesday(true);
+        inactiveClassGroup.setActive(false);
+        inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
+
+        // Given - create an enrollment in the active class group
+        Enrollment newEnrollment = new Enrollment();
+        newEnrollment.setStudio(studio);
+        newEnrollment.setStudent(student);
+        newEnrollment.setClassGroup(classGroup);
+        newEnrollment.setEnrollmentDate(LocalDate.now());
+        newEnrollment.setActive(true);
+        Enrollment enrollment = enrollmentRepository.save(newEnrollment);
+
+        // Given - try to move enrollment to inactive class group
+        EnrollmentRequest request = new EnrollmentRequest();
+        request.setStudioId(studio.getId());
+        request.setStudentId(student.getId());
+        request.setClassGroupId(inactiveClassGroup.getId()); // Move to inactive class group
+        request.setEnrollmentDate(LocalDate.now());
+        request.setActive(true);
+
+        // When & Then
+        assertThatThrownBy(() -> enrollmentService.update(enrollment.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("The selected class group is inactive.");
     }
 }

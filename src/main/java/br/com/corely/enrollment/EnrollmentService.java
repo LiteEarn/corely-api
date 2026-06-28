@@ -160,7 +160,7 @@ public class EnrollmentService {
 
     private void validateClassGroupActiveForEnrollment(ClassGroup classGroup) {
         if (!Boolean.TRUE.equals(classGroup.getActive())) {
-            throw new BusinessException("Cannot enroll a student in an inactive class group.");
+            throw new BusinessException("The selected class group is inactive.");
         }
     }
 

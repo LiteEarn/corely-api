@@ -180,7 +180,7 @@ class AttendanceServiceTest {
 
         assertThatThrownBy(() -> attendanceService.create(request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Turma inativa.");
+                .hasMessage("The selected class group is inactive.");
     }
 
     @Test
