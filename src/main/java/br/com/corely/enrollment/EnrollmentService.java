@@ -146,7 +146,15 @@ public class EnrollmentService {
     public void delete(UUID id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Matrícula inexistente"));
-        enrollmentRepository.delete(enrollment);
+
+        if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
+            throw new ConflictException("Matrícula já está cancelada.");
+        }
+
+        enrollment.setStatus(EnrollmentStatus.CANCELLED);
+        enrollment.setActive(false);
+        enrollment.setCancelDate(LocalDate.now());
+        enrollmentRepository.save(enrollment);
     }
 
     @Transactional(readOnly = true)
@@ -190,6 +198,8 @@ public class EnrollmentService {
                 classGroup != null ? classGroup.getName() : null,
                 enrollment.getEnrollmentDate(),
                 enrollment.getActive(),
+                enrollment.getStatus() != null ? enrollment.getStatus().name() : null,
+                enrollment.getCancelDate(),
                 enrollment.getCreatedAt(),
                 enrollment.getUpdatedAt()
         );

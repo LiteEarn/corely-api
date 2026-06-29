@@ -37,4 +37,11 @@ public class Enrollment extends BaseEntity {
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
+
+    @Column(name = "cancel_date")
+    private LocalDate cancelDate;
 }

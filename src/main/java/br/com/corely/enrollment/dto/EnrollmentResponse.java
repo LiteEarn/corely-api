@@ -21,6 +21,8 @@ public class EnrollmentResponse {
     private String classGroupName;
     private LocalDate enrollmentDate;
     private Boolean active;
+    private String status;
+    private LocalDate cancelDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
