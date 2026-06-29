@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,8 +26,12 @@ public class ClassSessionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ClassSessionResponse>> findAll() {
-        List<ClassSessionResponse> response = classSessionService.findAll();
+    public ResponseEntity<List<ClassSessionResponse>> findAll(
+            @RequestParam(required = false) UUID classGroupId,
+            @RequestParam(required = false) UUID instructorId,
+            @RequestParam(required = false) ClassSessionStatus status,
+            @RequestParam(required = false) LocalDate sessionDate) {
+        List<ClassSessionResponse> response = classSessionService.findAll(classGroupId, instructorId, status, sessionDate);
         return ResponseEntity.ok(response);
     }
 
@@ -34,6 +39,12 @@ public class ClassSessionController {
     public ResponseEntity<ClassSessionResponse> findById(@PathVariable UUID id) {
         ClassSessionResponse response = classSessionService.findById(id);
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<Void> complete(@PathVariable UUID id) {
+        classSessionService.complete(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/cancel")

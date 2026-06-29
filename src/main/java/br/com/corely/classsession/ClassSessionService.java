@@ -68,10 +68,33 @@ public class ClassSessionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClassSessionResponse> findAll() {
-        return classSessionRepository.findAll().stream()
+    public List<ClassSessionResponse> findAll(UUID classGroupId, UUID instructorId,
+                                               ClassSessionStatus status, LocalDate sessionDate) {
+        if (classGroupId == null && instructorId == null && status == null && sessionDate == null) {
+            return classSessionRepository.findAll().stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+        return classSessionRepository.findWithFilters(classGroupId, instructorId, status, sessionDate)
+                .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public void complete(UUID id) {
+        ClassSession classSession = classSessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
+
+        if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
+            throw new ConflictException("A sessão está cancelada.");
+        }
+
+        if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
+            throw new ConflictException("A sessão já foi concluída.");
+        }
+
+        classSession.setStatus(ClassSessionStatus.COMPLETED);
     }
 
     @Transactional
@@ -80,7 +103,11 @@ public class ClassSessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
         if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
-            throw new ConflictException("Sessão já está cancelada");
+            throw new ConflictException("A sessão já está cancelada.");
+        }
+
+        if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
+            throw new ConflictException("A sessão já foi concluída.");
         }
 
         classSession.setStatus(ClassSessionStatus.CANCELLED);
