@@ -3,6 +3,8 @@ package br.com.corely.classgroup;
 import br.com.corely.classgroup.dto.ClassGroupRequest;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.classgroup.dto.ConfirmInactivationRequest;
+import br.com.corely.classsession.ClassSessionService;
+import br.com.corely.classsession.dto.SessionGenerationResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class ClassGroupController {
 
     private final ClassGroupService classGroupService;
+    private final ClassSessionService classSessionService;
 
     @PostMapping
     public ResponseEntity<ClassGroupResponse> create(@Valid @RequestBody ClassGroupRequest request) {
@@ -59,5 +62,11 @@ public class ClassGroupController {
     public ResponseEntity<Void> inactivate(@PathVariable UUID id, @Valid @RequestBody ConfirmInactivationRequest request) {
         classGroupService.inactivate(id, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/generate-sessions")
+    public ResponseEntity<SessionGenerationResponse> generateSessions(@PathVariable UUID id) {
+        SessionGenerationResponse response = classSessionService.generateSessions(id);
+        return ResponseEntity.ok(response);
     }
 }

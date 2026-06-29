@@ -4,6 +4,7 @@ import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
+import br.com.corely.classsession.dto.SessionGenerationResponse;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.shared.exception.BusinessException;
@@ -205,5 +206,82 @@ class ClassSessionServiceTest {
         assertThatThrownBy(() -> classSessionService.cancel(created.getId()))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Sessão já está cancelada");
+    }
+
+    @Test
+    void generateSessions_whenValid_createsSessionsForActiveDays() {
+        SessionGenerationResponse result = classSessionService.generateSessions(classGroup.getId());
+
+        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+                .filter(d -> d.getDayOfWeek() == java.time.DayOfWeek.MONDAY)
+                .count();
+
+        assertThat(result.getCreated()).isEqualTo((int) expectedMondays);
+        assertThat(result.getIgnored()).isZero();
+    }
+
+    @Test
+    void generateSessions_whenClassGroupNotFound_throwsResourceNotFoundException() {
+        assertThatThrownBy(() -> classSessionService.generateSessions(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Turma inexistente");
+    }
+
+    @Test
+    void generateSessions_whenClassGroupInactive_throwsConflictException() {
+        classGroup.setActive(false);
+        classGroupRepository.save(classGroup);
+
+        assertThatThrownBy(() -> classSessionService.generateSessions(classGroup.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Não é possível gerar sessões para uma turma inativa.");
+    }
+
+    @Test
+    void generateSessions_whenInstructorInactive_throwsConflictException() {
+        instructor.setActive(false);
+        instructorRepository.save(instructor);
+
+        assertThatThrownBy(() -> classSessionService.generateSessions(classGroup.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Instrutor inativo");
+    }
+
+    @Test
+    void generateSessions_ignoresExistingSessions() {
+        LocalDate firstMonday = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+                .filter(d -> d.getDayOfWeek() == java.time.DayOfWeek.MONDAY)
+                .findFirst().orElseThrow();
+
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(firstMonday);
+        classSessionService.create(request);
+
+        SessionGenerationResponse result = classSessionService.generateSessions(classGroup.getId());
+
+        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+                .filter(d -> d.getDayOfWeek() == java.time.DayOfWeek.MONDAY)
+                .count();
+
+        assertThat(result.getCreated()).isEqualTo((int) expectedMondays - 1);
+        assertThat(result.getIgnored()).isEqualTo(1);
+    }
+
+    @Test
+    void generateSessions_respects60DayWindow() {
+        classGroup.setMonday(true);
+        classGroup.setTuesday(true);
+        classGroup.setWednesday(true);
+        classGroup.setThursday(true);
+        classGroup.setFriday(true);
+        classGroup.setSaturday(true);
+        classGroup.setSunday(true);
+        classGroupRepository.save(classGroup);
+
+        SessionGenerationResponse result = classSessionService.generateSessions(classGroup.getId());
+
+        assertThat(result.getCreated()).isEqualTo(61);
+        assertThat(result.getIgnored()).isZero();
     }
 }
