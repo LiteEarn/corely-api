@@ -5,11 +5,10 @@ import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.enrollment.dto.EnrollmentRequest;
 import br.com.corely.enrollment.dto.EnrollmentResponse;
 import br.com.corely.shared.exception.BusinessException;
+import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
-import br.com.corely.studio.Studio;
-import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,34 +23,27 @@ import java.util.stream.Collectors;
 public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
-    private final StudioRepository studioRepository;
     private final StudentRepository studentRepository;
     private final ClassGroupRepository classGroupRepository;
 
     @Transactional
     public EnrollmentResponse create(EnrollmentRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
-
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
-
-        validateStudentActiveForEnrollment(student);
-        validateStudantClassGroupUnique(request, student);
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno inexistente"));
 
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
-                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Turma inexistente"));
 
+        validateStudioIdMatch(student, classGroup, request.getStudioId());
+        validateStudentActiveForEnrollment(student);
         validateClassGroupActiveForEnrollment(classGroup);
-        validateClassGroupCapacity(classGroup.getCapacity(), studio.getId(), request.getClassGroupId());
-
-        enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
-                .ifPresent(enrollment -> {
-                    throw new IllegalArgumentException("Student is already enrolled in this class group");
-                });
+        validateInstructorActiveForEnrollment(classGroup);
+        validateEnrollmentDate(request.getEnrollmentDate());
+        validateClassGroupCapacity(classGroup.getCapacity(), request.getStudioId(), request.getClassGroupId());
+        validateUniqueEnrollment(request.getStudentId(), request.getClassGroupId());
 
         Enrollment enrollment = new Enrollment();
-        enrollment.setStudio(studio);
+        enrollment.setStudio(student.getStudio());
         enrollment.setStudent(student);
         enrollment.setClassGroup(classGroup);
         enrollment.setEnrollmentDate(request.getEnrollmentDate() != null ? request.getEnrollmentDate() : LocalDate.now());
@@ -61,26 +53,43 @@ public class EnrollmentService {
         return toResponse(enrollment);
     }
 
-    private void validateStudantClassGroupUnique(EnrollmentRequest request, Student student) {
-        enrollmentRepository.findByStudentIdAndActiveTrue(student.getId()).stream().findFirst()
-                .ifPresent(existingEnrollment -> {
-                    if (existingEnrollment.getClassGroup().getId().equals(request.getClassGroupId())) {
-                        throw new BusinessException("Estudante já está matriculado neste grupo de aula");
-                    }
+    private void validateStudioIdMatch(Student student, ClassGroup classGroup, UUID studioId) {
+        if (!student.getStudio().getId().equals(studioId)) {
+            throw new BusinessException("Aluno não pertence ao studio informado");
+        }
+        if (!classGroup.getStudio().getId().equals(studioId)) {
+            throw new BusinessException("Turma não pertence ao studio informado");
+        }
+    }
+
+    private void validateInstructorActiveForEnrollment(ClassGroup classGroup) {
+        if (!Boolean.TRUE.equals(classGroup.getInstructor().getActive())) {
+            throw new ConflictException("Instrutor inativo");
+        }
+    }
+
+    private void validateEnrollmentDate(LocalDate enrollmentDate) {
+        LocalDate dateToValidate = enrollmentDate != null ? enrollmentDate : LocalDate.now();
+        if (dateToValidate.isAfter(LocalDate.now())) {
+            throw new BusinessException("Data de matrícula não pode ser futura");
+        }
+    }
+
+    private void validateUniqueEnrollment(UUID studentId, UUID classGroupId) {
+        enrollmentRepository.findByStudentIdAndClassGroupId(studentId, classGroupId)
+                .ifPresent(enrollment -> {
+                    throw new ConflictException("Aluno já matriculado");
                 });
     }
 
     private void validateClassGroupCapacity(Integer capacity, UUID studioId, UUID classGroupId) {
-
         if (capacity != null) {
-            long enrolledCount = enrollmentRepository.countByStudioIdAndClassGroup_IdAndActiveTrue(studioId,classGroupId);
+            long enrolledCount = enrollmentRepository.countByStudioIdAndClassGroup_IdAndActiveTrue(studioId, classGroupId);
 
             if (enrolledCount >= capacity) {
-                throw new BusinessException("Classe cheia");
+                throw new ConflictException("Turma cheia");
             }
         }
-
-
     }
 
     @Transactional(readOnly = true)
@@ -93,38 +102,33 @@ public class EnrollmentService {
     @Transactional(readOnly = true)
     public EnrollmentResponse findById(UUID id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Matrícula inexistente"));
         return toResponse(enrollment);
     }
 
     @Transactional
     public EnrollmentResponse update(UUID id, EnrollmentRequest request) {
         Enrollment enrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
-
-        Studio studio = studioRepository.findById(request.getStudioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Matrícula inexistente"));
 
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
-
-        if (!student.getId().equals(enrollment.getStudent().getId())) {
-            validateStudentActiveForEnrollment(student);
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno inexistente"));
 
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
-                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Turma inexistente"));
 
+        validateStudioIdMatch(student, classGroup, request.getStudioId());
+        validateStudentActiveForEnrollment(student);
         validateClassGroupActiveForEnrollment(classGroup);
+        validateInstructorActiveForEnrollment(classGroup);
+        validateEnrollmentDate(request.getEnrollmentDate());
+        validateUniqueEnrollmentForUpdate(id, request.getStudentId(), request.getClassGroupId());
 
-        enrollmentRepository.findByStudentIdAndClassGroupId(request.getStudentId(), request.getClassGroupId())
-                .ifPresent(existingEnrollment -> {
-                    if (!existingEnrollment.getId().equals(id)) {
-                        throw new IllegalArgumentException("Student is already enrolled in this class group");
-                    }
-                });
+        if (!classGroup.getId().equals(enrollment.getClassGroup().getId())) {
+            validateClassGroupCapacity(classGroup.getCapacity(), request.getStudioId(), request.getClassGroupId());
+        }
 
-        enrollment.setStudio(studio);
+        enrollment.setStudio(student.getStudio());
         enrollment.setStudent(student);
         enrollment.setClassGroup(classGroup);
         if (request.getEnrollmentDate() != null) {
@@ -141,7 +145,7 @@ public class EnrollmentService {
     @Transactional
     public void delete(UUID id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Matrícula inexistente"));
         enrollmentRepository.delete(enrollment);
     }
 
@@ -152,26 +156,38 @@ public class EnrollmentService {
                 .collect(Collectors.toList());
     }
 
+    private void validateUniqueEnrollmentForUpdate(UUID enrollmentId, UUID studentId, UUID classGroupId) {
+        enrollmentRepository.findByStudentIdAndClassGroupId(studentId, classGroupId)
+                .ifPresent(existingEnrollment -> {
+                    if (!existingEnrollment.getId().equals(enrollmentId)) {
+                        throw new ConflictException("Aluno já matriculado");
+                    }
+                });
+    }
+
     private void validateStudentActiveForEnrollment(Student student) {
         if (!Boolean.TRUE.equals(student.getActive())) {
-            throw new BusinessException("Não é possível matricular um aluno inativo.");
+            throw new ConflictException("Aluno inativo");
         }
     }
 
     private void validateClassGroupActiveForEnrollment(ClassGroup classGroup) {
         if (!Boolean.TRUE.equals(classGroup.getActive())) {
-            throw new BusinessException("The selected class group is inactive.");
+            throw new ConflictException("Turma inativa");
         }
     }
 
     private EnrollmentResponse toResponse(Enrollment enrollment) {
+        Student student = enrollment.getStudent();
+        ClassGroup classGroup = enrollment.getClassGroup();
+        
         return new EnrollmentResponse(
                 enrollment.getId(),
                 enrollment.getStudio().getId(),
-                enrollment.getStudent().getId(),
-                enrollment.getStudent().getFullName(),
-                enrollment.getClassGroup().getId(),
-                enrollment.getClassGroup().getName(),
+                student != null ? student.getId() : null,
+                student != null ? student.getFullName() : null,
+                classGroup != null ? classGroup.getId() : null,
+                classGroup != null ? classGroup.getName() : null,
                 enrollment.getEnrollmentDate(),
                 enrollment.getActive(),
                 enrollment.getCreatedAt(),
