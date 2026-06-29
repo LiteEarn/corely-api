@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -205,7 +206,161 @@ class ClassSessionServiceTest {
 
         assertThatThrownBy(() -> classSessionService.cancel(created.getId()))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("Sessão já está cancelada");
+                .hasMessage("A sessão já está cancelada.");
+    }
+
+    @Test
+    void cancel_whenSessionCompleted_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.complete(created.getId());
+
+        assertThatThrownBy(() -> classSessionService.cancel(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A sessão já foi concluída.");
+    }
+
+    @Test
+    void findById_whenSessionExists_returnsSession() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        ClassSessionResponse found = classSessionService.findById(created.getId());
+
+        assertThat(found).isNotNull();
+        assertThat(found.getId()).isEqualTo(created.getId());
+        assertThat(found.getClassGroupId()).isEqualTo(classGroup.getId());
+        assertThat(found.getInstructorId()).isEqualTo(instructor.getId());
+        assertThat(found.getSessionDate()).isEqualTo(LocalDate.now());
+        assertThat(found.getStatus()).isEqualTo(ClassSessionStatus.SCHEDULED);
+    }
+
+    @Test
+    void findById_whenSessionNotFound_throwsResourceNotFoundException() {
+        assertThatThrownBy(() -> classSessionService.findById(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Sessão inexistente");
+    }
+
+    @Test
+    void complete_whenValid_succeeds() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.complete(created.getId());
+
+        ClassSession completed = classSessionRepository.findById(created.getId()).orElseThrow();
+        assertThat(completed.getStatus()).isEqualTo(ClassSessionStatus.COMPLETED);
+    }
+
+    @Test
+    void complete_whenSessionNotFound_throwsResourceNotFoundException() {
+        assertThatThrownBy(() -> classSessionService.complete(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Sessão inexistente");
+    }
+
+    @Test
+    void complete_whenSessionCancelled_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.cancel(created.getId());
+
+        assertThatThrownBy(() -> classSessionService.complete(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A sessão está cancelada.");
+    }
+
+    @Test
+    void complete_whenSessionAlreadyCompleted_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.complete(created.getId());
+
+        assertThatThrownBy(() -> classSessionService.complete(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A sessão já foi concluída.");
+    }
+
+    @Test
+    void findAll_withNoFilters_returnsAllSessions() {
+        ClassSessionRequest request1 = new ClassSessionRequest();
+        request1.setClassGroupId(classGroup.getId());
+        request1.setSessionDate(LocalDate.now());
+        classSessionService.create(request1);
+
+        ClassSessionRequest request2 = new ClassSessionRequest();
+        request2.setClassGroupId(classGroup.getId());
+        request2.setSessionDate(LocalDate.now().plusDays(7));
+        classSessionService.create(request2);
+
+        List<ClassSessionResponse> result = classSessionService.findAll(null, null, null, null);
+
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void findAll_withStatusFilter_returnsFilteredSessions() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.complete(created.getId());
+
+        ClassSessionRequest request2 = new ClassSessionRequest();
+        request2.setClassGroupId(classGroup.getId());
+        request2.setSessionDate(LocalDate.now().plusDays(7));
+        classSessionService.create(request2);
+
+        List<ClassSessionResponse> result = classSessionService.findAll(null, null, ClassSessionStatus.COMPLETED, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getStatus()).isEqualTo(ClassSessionStatus.COMPLETED);
+    }
+
+    @Test
+    void findAll_withSessionDateFilter_returnsFilteredSessions() {
+        ClassSessionRequest request1 = new ClassSessionRequest();
+        request1.setClassGroupId(classGroup.getId());
+        request1.setSessionDate(LocalDate.now());
+        classSessionService.create(request1);
+
+        ClassSessionRequest request2 = new ClassSessionRequest();
+        request2.setClassGroupId(classGroup.getId());
+        request2.setSessionDate(LocalDate.now().plusDays(7));
+        classSessionService.create(request2);
+
+        List<ClassSessionResponse> result = classSessionService.findAll(null, null, null, LocalDate.now());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getSessionDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void findAll_withClassGroupFilter_returnsFilteredSessions() {
+        ClassSessionRequest request1 = new ClassSessionRequest();
+        request1.setClassGroupId(classGroup.getId());
+        request1.setSessionDate(LocalDate.now());
+        classSessionService.create(request1);
+
+        List<ClassSessionResponse> result = classSessionService.findAll(classGroup.getId(), null, null, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getClassGroupId()).isEqualTo(classGroup.getId());
     }
 
     @Test
