@@ -58,10 +58,10 @@ public class DashboardService {
         long activeInstructors = instructorRepository.countByStudioIdAndActiveTrue(studioId);
         long activeClassGroups = classGroupRepository.countByStudioIdAndActiveTrue(studioId);
         long totalEnrollments = enrollmentRepository.countByStudioIdAndActiveTrue(studioId);
-        long attendanceThisWeek = attendanceRepository.countByStudioIdAndAttendanceDateBetweenAndPresentTrue(
+        long attendanceThisWeek = attendanceRepository.countByStudioIdAndSessionDateBetweenAndPresent(
                 studioId, weekAgo, today
         );
-        long attendanceThisMonth = attendanceRepository.countByStudioIdAndAttendanceDateBetweenAndPresentTrue(
+        long attendanceThisMonth = attendanceRepository.countByStudioIdAndSessionDateBetweenAndPresent(
                 studioId, monthStart, monthEnd
         );
         long activeObjectives = objectiveRepository.countByStudioIdAndStatus(studioId, ObjectiveStatus.ACTIVE);

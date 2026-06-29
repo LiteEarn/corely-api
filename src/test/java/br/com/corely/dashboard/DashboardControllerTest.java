@@ -2,8 +2,12 @@ package br.com.corely.dashboard;
 
 import br.com.corely.attendance.Attendance;
 import br.com.corely.attendance.AttendanceRepository;
+import br.com.corely.attendance.AttendanceStatus;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.classsession.ClassSession;
+import br.com.corely.classsession.ClassSessionRepository;
+import br.com.corely.classsession.ClassSessionStatus;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.evaluation.Evaluation;
@@ -74,6 +78,9 @@ class DashboardControllerTest {
     private AttendanceRepository attendanceRepository;
 
     @Autowired
+    private ClassSessionRepository classSessionRepository;
+
+    @Autowired
     private ObjectiveRepository objectiveRepository;
 
     @Autowired
@@ -94,6 +101,7 @@ class DashboardControllerTest {
     private Instructor instructor;
     private ClassGroup classGroup;
     private Enrollment enrollment;
+    private ClassSession classSession;
     private User user;
 
     @BeforeEach
@@ -154,6 +162,15 @@ class DashboardControllerTest {
         enrollment.setActive(true);
         enrollment = enrollmentRepository.save(enrollment);
 
+        classSession = new ClassSession();
+        classSession.setClassGroup(classGroup);
+        classSession.setInstructor(instructor);
+        classSession.setSessionDate(LocalDate.now());
+        classSession.setStartTime(LocalTime.of(10, 0));
+        classSession.setEndTime(LocalTime.of(11, 0));
+        classSession.setStatus(ClassSessionStatus.COMPLETED);
+        classSession = classSessionRepository.save(classSession);
+
         user = new User();
         user.setName("Test User");
         user.setEmail("test@test.com");
@@ -167,11 +184,9 @@ class DashboardControllerTest {
     @Test
     void testGetDashboardWithData() throws Exception {
         Attendance attendance = new Attendance();
-        attendance.setStudio(studio);
-        attendance.setStudent(student);
-        attendance.setClassGroup(classGroup);
-        attendance.setAttendanceDate(LocalDate.now());
-        attendance.setPresent(true);
+        attendance.setClassSession(classSession);
+        attendance.setEnrollment(enrollment);
+        attendance.setStatus(AttendanceStatus.PRESENT);
         attendanceRepository.save(attendance);
 
         Objective objective = new Objective();
@@ -323,26 +338,31 @@ class DashboardControllerTest {
 
     @Test
     void testGetDashboardAttendanceDateFilters() throws Exception {
+        ClassSession oldSession = new ClassSession();
+        oldSession.setClassGroup(classGroup);
+        oldSession.setInstructor(instructor);
+        oldSession.setSessionDate(LocalDate.now().minusDays(10));
+        oldSession.setStartTime(LocalTime.of(10, 0));
+        oldSession.setEndTime(LocalTime.of(11, 0));
+        oldSession.setStatus(ClassSessionStatus.COMPLETED);
+        oldSession = classSessionRepository.save(oldSession);
+
         Attendance oldAttendance = new Attendance();
-        oldAttendance.setStudio(studio);
-        oldAttendance.setStudent(student);
-        oldAttendance.setClassGroup(classGroup);
-        oldAttendance.setAttendanceDate(LocalDate.now().minusDays(10));
-        oldAttendance.setPresent(true);
+        oldAttendance.setClassSession(oldSession);
+        oldAttendance.setEnrollment(enrollment);
+        oldAttendance.setStatus(AttendanceStatus.PRESENT);
         attendanceRepository.save(oldAttendance);
 
         Attendance recentAttendance = new Attendance();
-        recentAttendance.setStudio(studio);
-        recentAttendance.setStudent(student);
-        recentAttendance.setClassGroup(classGroup);
-        recentAttendance.setAttendanceDate(LocalDate.now());
-        recentAttendance.setPresent(true);
+        recentAttendance.setClassSession(classSession);
+        recentAttendance.setEnrollment(enrollment);
+        recentAttendance.setStatus(AttendanceStatus.PRESENT);
         attendanceRepository.save(recentAttendance);
 
         mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attendanceThisWeek").value(1))
-                .andExpect(jsonPath("$.attendanceThisMonth").value(1));
+                .andExpect(jsonPath("$.attendanceThisMonth").value(2));
     }
 
     @Test
