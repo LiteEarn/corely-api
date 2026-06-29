@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/sessions")
+@RequestMapping("/class-sessions")
 @RequiredArgsConstructor
 public class ClassSessionController {
 
@@ -36,15 +36,9 @@ public class ClassSessionController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ClassSessionResponse> update(@PathVariable UUID id, @Valid @RequestBody ClassSessionRequest request) {
-        ClassSessionResponse response = classSessionService.update(id, request);
-        return ResponseEntity.ok(response);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        classSessionService.delete(id);
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancel(@PathVariable UUID id) {
+        classSessionService.cancel(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,47 +1,66 @@
 package br.com.corely.classsession;
 
+import br.com.corely.classgroup.ClassGroup;
+import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
-import br.com.corely.instructor.Instructor;
-import br.com.corely.instructor.InstructorRepository;
+import br.com.corely.shared.exception.BusinessException;
+import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
-import br.com.corely.studio.Studio;
-import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ClassSessionService {
 
     private final ClassSessionRepository classSessionRepository;
-    private final StudioRepository studioRepository;
-    private final InstructorRepository instructorRepository;
+    private final ClassGroupRepository classGroupRepository;
 
     @Transactional
     public ClassSessionResponse create(ClassSessionRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
+        ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("Turma inexistente"));
 
-        Instructor instructor = instructorRepository.findById(request.getInstructorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
+        if (!Boolean.TRUE.equals(classGroup.getActive())) {
+            throw new ConflictException("Turma inativa");
+        }
+
+        if (!Boolean.TRUE.equals(classGroup.getInstructor().getActive())) {
+            throw new ConflictException("Instrutor inativo");
+        }
+
+        if (request.getSessionDate().isBefore(LocalDate.now())) {
+            throw new BusinessException("Data da sessão não pode ser anterior à data atual");
+        }
+
+        if (classSessionRepository.existsByClassGroupIdAndSessionDate(
+                request.getClassGroupId(), request.getSessionDate())) {
+            throw new ConflictException("Já existe uma sessão para esta turma nesta data");
+        }
 
         ClassSession classSession = new ClassSession();
-        classSession.setStudio(studio);
-        classSession.setInstructor(instructor);
-        classSession.setTitle(request.getTitle());
-        classSession.setScheduledDate(request.getScheduledDate());
-        classSession.setStartTime(request.getStartTime());
-        classSession.setEndTime(request.getEndTime());
-        classSession.setMaxStudents(request.getMaxStudents());
-        classSession.setStatus(request.getStatus() != null ? request.getStatus() : ClassSessionStatus.SCHEDULED);
+        classSession.setClassGroup(classGroup);
+        classSession.setInstructor(classGroup.getInstructor());
+        classSession.setSessionDate(request.getSessionDate());
+        classSession.setStartTime(classGroup.getStartTime());
+        classSession.setEndTime(classGroup.getEndTime());
+        classSession.setStatus(ClassSessionStatus.SCHEDULED);
+        classSession.setNotes(request.getNotes());
 
         classSession = classSessionRepository.save(classSession);
+        return toResponse(classSession);
+    }
+
+    @Transactional(readOnly = true)
+    public ClassSessionResponse findById(UUID id) {
+        ClassSession classSession = classSessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
         return toResponse(classSession);
     }
 
@@ -49,61 +68,34 @@ public class ClassSessionService {
     public List<ClassSessionResponse> findAll() {
         return classSessionRepository.findAll().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public ClassSessionResponse findById(UUID id) {
-        ClassSession classSession = classSessionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
-        return toResponse(classSession);
+                .toList();
     }
 
     @Transactional
-    public ClassSessionResponse update(UUID id, ClassSessionRequest request) {
+    public void cancel(UUID id) {
         ClassSession classSession = classSessionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
-        Studio studio = studioRepository.findById(request.getStudioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
-
-        Instructor instructor = instructorRepository.findById(request.getInstructorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
-
-        classSession.setStudio(studio);
-        classSession.setInstructor(instructor);
-        classSession.setTitle(request.getTitle());
-        classSession.setScheduledDate(request.getScheduledDate());
-        classSession.setStartTime(request.getStartTime());
-        classSession.setEndTime(request.getEndTime());
-        classSession.setMaxStudents(request.getMaxStudents());
-        if (request.getStatus() != null) {
-            classSession.setStatus(request.getStatus());
+        if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
+            throw new ConflictException("Sessão já está cancelada");
         }
 
-        classSession = classSessionRepository.save(classSession);
-        return toResponse(classSession);
-    }
-
-    @Transactional
-    public void delete(UUID id) {
-        ClassSession classSession = classSessionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
-        classSessionRepository.delete(classSession);
+        classSession.setStatus(ClassSessionStatus.CANCELLED);
     }
 
     private ClassSessionResponse toResponse(ClassSession classSession) {
         return new ClassSessionResponse(
                 classSession.getId(),
-                classSession.getTitle(),
-                classSession.getScheduledDate(),
-                classSession.getStartTime(),
-                classSession.getEndTime(),
-                classSession.getMaxStudents(),
-                classSession.getStatus(),
+                classSession.getClassGroup().getId(),
+                classSession.getClassGroup().getName(),
                 classSession.getInstructor().getId(),
                 classSession.getInstructor().getFullName(),
-                classSession.getStudio().getId(),
+                classSession.getSessionDate(),
+                classSession.getStartTime(),
+                classSession.getEndTime(),
+                classSession.getStatus(),
+                classSession.getNotes(),
+                classSession.getClassGroup().getStudio().getId(),
                 classSession.getCreatedAt(),
                 classSession.getUpdatedAt()
         );

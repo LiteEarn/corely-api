@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -16,14 +16,15 @@ import java.util.UUID;
 public class ClassSessionResponse {
 
     private UUID id;
-    private String title;
-    private LocalDate scheduledDate;
-    private LocalTime startTime;
-    private LocalTime endTime;
-    private Integer maxStudents;
-    private ClassSessionStatus status;
+    private UUID classGroupId;
+    private String classGroupName;
     private UUID instructorId;
     private String instructorName;
+    private LocalDate sessionDate;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private ClassSessionStatus status;
+    private String notes;
     private UUID studioId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
