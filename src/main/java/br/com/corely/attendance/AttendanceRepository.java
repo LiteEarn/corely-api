@@ -12,29 +12,24 @@ import java.util.UUID;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
-    Optional<Attendance> findByStudentIdAndClassGroupIdAndAttendanceDate(
-            UUID studentId, UUID classGroupId, LocalDate attendanceDate
-    );
 
-    List<Attendance> findByClassGroupId(UUID classGroupId);
+    List<Attendance> findByClassSessionId(UUID classSessionId);
 
-    List<Attendance> findByClassGroupIdAndStudentActiveTrue(UUID classGroupId);
+    List<Attendance> findByEnrollmentId(UUID enrollmentId);
 
-    List<Attendance> findByClassGroupIdAndStudentActiveTrueAndClassGroupActiveTrue(UUID classGroupId);
+    Optional<Attendance> findByClassSessionIdAndEnrollmentId(UUID classSessionId, UUID enrollmentId);
 
-    List<Attendance> findByClassGroupIdAndAttendanceDate(
-            UUID classGroupId, LocalDate attendanceDate
-    );
+    boolean existsByClassSessionIdAndEnrollmentId(UUID classSessionId, UUID enrollmentId);
 
-    List<Attendance> findByClassGroupIdAndAttendanceDateAndStudentActiveTrue(
-            UUID classGroupId, LocalDate attendanceDate
-    );
-
-    List<Attendance> findByClassGroupIdAndAttendanceDateAndStudentActiveTrueAndClassGroupActiveTrue(
-            UUID classGroupId, LocalDate attendanceDate
-    );
-
-    long countByStudioIdAndAttendanceDateBetweenAndPresentTrue(
-            UUID studioId, LocalDate startDate, LocalDate endDate
+    @Query("SELECT COUNT(a) FROM Attendance a " +
+           "JOIN a.enrollment e " +
+           "JOIN a.classSession cs " +
+           "WHERE e.studio.id = :studioId " +
+           "AND cs.sessionDate BETWEEN :startDate AND :endDate " +
+           "AND a.status = 'PRESENT'")
+    long countByStudioIdAndSessionDateBetweenAndPresent(
+            @Param("studioId") UUID studioId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
     );
 }

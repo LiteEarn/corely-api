@@ -1,11 +1,12 @@
 package br.com.corely.attendance.dto;
 
+import br.com.corely.attendance.AttendanceStatus;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -13,20 +14,12 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AttendanceRequest {
 
-    @NotNull(message = "Studio ID is required")
-    private UUID studioId;
+    @NotNull(message = "Enrollment ID is required")
+    private UUID enrollmentId;
 
-    @NotNull(message = "Student ID is required")
-    private UUID studentId;
+    @NotNull(message = "Status is required")
+    private AttendanceStatus status;
 
-    @NotNull(message = "Class group ID is required")
-    private UUID classGroupId;
-
-    @NotNull(message = "Attendance date is required")
-    private LocalDate attendanceDate;
-
-    @NotNull(message = "Present is required")
-    private Boolean present;
-
+    @Size(max = 500, message = "Notes must not exceed 500 characters")
     private String notes;
 }

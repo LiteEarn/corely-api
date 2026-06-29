@@ -1,16 +1,13 @@
 package br.com.corely.attendance;
 
-import br.com.corely.classgroup.ClassGroup;
+import br.com.corely.classsession.ClassSession;
+import br.com.corely.enrollment.Enrollment;
 import br.com.corely.shared.audit.BaseEntity;
-import br.com.corely.student.Student;
-import br.com.corely.studio.Studio;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "attendances")
@@ -21,23 +18,17 @@ import java.time.LocalDate;
 public class Attendance extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "studio_id", nullable = false)
-    private Studio studio;
+    @JoinColumn(name = "class_session_id", nullable = false)
+    private ClassSession classSession;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
-    private Student student;
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private Enrollment enrollment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_group_id", nullable = false)
-    private ClassGroup classGroup;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private AttendanceStatus status;
 
-    @Column(name = "attendance_date", nullable = false)
-    private LocalDate attendanceDate;
-
-    @Column(name = "present", nullable = false)
-    private Boolean present;
-
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(name = "notes", length = 500)
     private String notes;
 }
