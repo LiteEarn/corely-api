@@ -44,13 +44,16 @@ public class AttendanceService {
             throw new ConflictException("Matrícula não pertence à turma da sessão.");
         }
 
-        if (attendanceRepository.existsByClassSessionIdAndEnrollmentId(sessionId, enrollment.getId())) {
-            throw new ConflictException("Presença já registrada para esta matrícula nesta sessão.");
+        Attendance attendance = attendanceRepository
+                .findByClassSessionIdAndEnrollmentId(sessionId, enrollment.getId())
+                .orElse(null);
+
+        if (attendance == null) {
+            attendance = new Attendance();
+            attendance.setClassSession(session);
+            attendance.setEnrollment(enrollment);
         }
 
-        Attendance attendance = new Attendance();
-        attendance.setClassSession(session);
-        attendance.setEnrollment(enrollment);
         attendance.setStatus(request.getStatus());
         attendance.setNotes(request.getNotes());
 

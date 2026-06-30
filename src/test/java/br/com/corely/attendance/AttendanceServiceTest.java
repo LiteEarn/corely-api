@@ -238,17 +238,45 @@ class AttendanceServiceTest {
     }
 
     @Test
-    void register_duplicateAttendance() {
+    void register_duplicateAttendance_updatesExisting() {
         AttendanceRequest request = new AttendanceRequest(
                 enrollment.getId(),
                 AttendanceStatus.PRESENT,
-                null
+                "First registration"
         );
-        attendanceService.register(completedSession.getId(), request);
+        var first = attendanceService.register(completedSession.getId(), request);
 
-        assertThatThrownBy(() -> attendanceService.register(completedSession.getId(), request))
-                .isInstanceOf(ConflictException.class)
-                .hasMessage("Presença já registrada para esta matrícula nesta sessão.");
+        AttendanceRequest updateRequest = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.ABSENT,
+                "Updated notes"
+        );
+        var second = attendanceService.register(completedSession.getId(), updateRequest);
+
+        assertThat(second.id()).isEqualTo(first.id());
+        assertThat(second.status()).isEqualTo(AttendanceStatus.ABSENT);
+        assertThat(second.notes()).isEqualTo("Updated notes");
+    }
+
+    @Test
+    void register_updateExistingAttendance() {
+        AttendanceRequest request = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.PRESENT,
+                "Initial notes"
+        );
+        var response = attendanceService.register(completedSession.getId(), request);
+
+        AttendanceRequest updateRequest = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.JUSTIFIED,
+                "Justified absence"
+        );
+        var updated = attendanceService.register(completedSession.getId(), updateRequest);
+
+        assertThat(updated.id()).isEqualTo(response.id());
+        assertThat(updated.status()).isEqualTo(AttendanceStatus.JUSTIFIED);
+        assertThat(updated.notes()).isEqualTo("Justified absence");
     }
 
     @Test
