@@ -70,13 +70,8 @@ public class ClassSessionService {
     @Transactional(readOnly = true)
     public List<ClassSessionResponse> findAll(UUID classGroupId, UUID instructorId,
                                                ClassSessionStatus status, LocalDate sessionDate) {
-        if (classGroupId == null && instructorId == null && status == null && sessionDate == null) {
-            return classSessionRepository.findAll().stream()
-                    .map(this::toResponse)
-                    .toList();
-        }
-        return classSessionRepository.findWithFilters(classGroupId, instructorId, status, sessionDate)
-                .stream()
+        var spec = ClassSessionSpecification.withFilters(classGroupId, instructorId, status, sessionDate);
+        return classSessionRepository.findAll(spec).stream()
                 .map(this::toResponse)
                 .toList();
     }
