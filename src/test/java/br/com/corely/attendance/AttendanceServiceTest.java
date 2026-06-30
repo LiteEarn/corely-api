@@ -66,6 +66,7 @@ class AttendanceServiceTest {
     private Student student;
     private Enrollment enrollment;
     private ClassSession completedSession;
+    private ClassSession inProgressSession;
 
     @BeforeEach
     void setUp() {
@@ -133,6 +134,15 @@ class AttendanceServiceTest {
         completedSession.setEndTime(LocalTime.of(11, 0));
         completedSession.setStatus(ClassSessionStatus.COMPLETED);
         completedSession = classSessionRepository.save(completedSession);
+
+        inProgressSession = new ClassSession();
+        inProgressSession.setClassGroup(classGroup);
+        inProgressSession.setInstructor(instructor);
+        inProgressSession.setSessionDate(LocalDate.now());
+        inProgressSession.setStartTime(LocalTime.of(10, 0));
+        inProgressSession.setEndTime(LocalTime.of(11, 0));
+        inProgressSession.setStatus(ClassSessionStatus.IN_PROGRESS);
+        inProgressSession = classSessionRepository.save(inProgressSession);
     }
 
     @Test
@@ -143,10 +153,10 @@ class AttendanceServiceTest {
                 "Test notes"
         );
 
-        var response = attendanceService.register(completedSession.getId(), request);
+        var response = attendanceService.register(inProgressSession.getId(), request);
 
         assertThat(response).isNotNull();
-        assertThat(response.classSessionId()).isEqualTo(completedSession.getId());
+        assertThat(response.classSessionId()).isEqualTo(inProgressSession.getId());
         assertThat(response.enrollmentId()).isEqualTo(enrollment.getId());
         assertThat(response.status()).isEqualTo(AttendanceStatus.PRESENT);
         assertThat(response.notes()).isEqualTo("Test notes");
@@ -173,13 +183,13 @@ class AttendanceServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> attendanceService.register(completedSession.getId(), request))
+        assertThatThrownBy(() -> attendanceService.register(inProgressSession.getId(), request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Enrollment not found");
     }
 
     @Test
-    void register_sessionNotCompleted() {
+    void register_sessionNotInProgress() {
         ClassSession scheduledSession = new ClassSession();
         scheduledSession.setClassGroup(classGroup);
         scheduledSession.setInstructor(instructor);
@@ -197,7 +207,7 @@ class AttendanceServiceTest {
 
         assertThatThrownBy(() -> attendanceService.register(savedScheduled.getId(), request))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("A presença somente pode ser registrada após a conclusão da aula.");
+                .hasMessage("A presença somente pode ser registrada durante a aula.");
     }
 
     @Test
@@ -211,7 +221,7 @@ class AttendanceServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> attendanceService.register(completedSession.getId(), request))
+        assertThatThrownBy(() -> attendanceService.register(inProgressSession.getId(), request))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Matrícula inativa.");
     }
@@ -232,7 +242,7 @@ class AttendanceServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> attendanceService.register(completedSession.getId(), request))
+        assertThatThrownBy(() -> attendanceService.register(inProgressSession.getId(), request))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Matrícula não pertence à turma da sessão.");
     }
@@ -244,14 +254,14 @@ class AttendanceServiceTest {
                 AttendanceStatus.PRESENT,
                 "First registration"
         );
-        var first = attendanceService.register(completedSession.getId(), request);
+        var first = attendanceService.register(inProgressSession.getId(), request);
 
         AttendanceRequest updateRequest = new AttendanceRequest(
                 enrollment.getId(),
                 AttendanceStatus.ABSENT,
                 "Updated notes"
         );
-        var second = attendanceService.register(completedSession.getId(), updateRequest);
+        var second = attendanceService.register(inProgressSession.getId(), updateRequest);
 
         assertThat(second.id()).isEqualTo(first.id());
         assertThat(second.status()).isEqualTo(AttendanceStatus.ABSENT);
@@ -265,14 +275,14 @@ class AttendanceServiceTest {
                 AttendanceStatus.PRESENT,
                 "Initial notes"
         );
-        var response = attendanceService.register(completedSession.getId(), request);
+        var response = attendanceService.register(inProgressSession.getId(), request);
 
         AttendanceRequest updateRequest = new AttendanceRequest(
                 enrollment.getId(),
                 AttendanceStatus.JUSTIFIED,
                 "Justified absence"
         );
-        var updated = attendanceService.register(completedSession.getId(), updateRequest);
+        var updated = attendanceService.register(inProgressSession.getId(), updateRequest);
 
         assertThat(updated.id()).isEqualTo(response.id());
         assertThat(updated.status()).isEqualTo(AttendanceStatus.JUSTIFIED);
@@ -286,12 +296,12 @@ class AttendanceServiceTest {
                 AttendanceStatus.PRESENT,
                 null
         );
-        attendanceService.register(completedSession.getId(), request);
+        attendanceService.register(inProgressSession.getId(), request);
 
-        var result = attendanceService.findBySessionId(completedSession.getId());
+        var result = attendanceService.findBySessionId(inProgressSession.getId());
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).classSessionId()).isEqualTo(completedSession.getId());
+        assertThat(result.get(0).classSessionId()).isEqualTo(inProgressSession.getId());
     }
 
     @Test
@@ -314,7 +324,7 @@ class AttendanceServiceTest {
                 AttendanceStatus.PRESENT,
                 null
         );
-        attendanceService.register(completedSession.getId(), request);
+        attendanceService.register(inProgressSession.getId(), request);
 
         var result = attendanceService.findByEnrollmentId(enrollment.getId());
 
@@ -333,5 +343,42 @@ class AttendanceServiceTest {
     void findByEnrollmentId_emptyList() {
         var result = attendanceService.findByEnrollmentId(enrollment.getId());
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void register_whenSessionCompleted_throwsConflictException() {
+        AttendanceRequest request = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.PRESENT,
+                null
+        );
+
+        assertThatThrownBy(() -> attendanceService.register(completedSession.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A presença não pode ser registrada após a conclusão da aula.");
+    }
+
+    @Test
+    void register_updateWhenSessionCompleted_throwsConflictException() {
+        AttendanceRequest request = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.PRESENT,
+                "Initial"
+        );
+        attendanceService.register(inProgressSession.getId(), request);
+
+        ClassSession session = classSessionRepository.findById(inProgressSession.getId()).orElseThrow();
+        session.setStatus(ClassSessionStatus.COMPLETED);
+        classSessionRepository.save(session);
+
+        AttendanceRequest updateRequest = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.ABSENT,
+                "Updated"
+        );
+
+        assertThatThrownBy(() -> attendanceService.register(inProgressSession.getId(), updateRequest))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A presença não pode ser registrada após a conclusão da aula.");
     }
 }

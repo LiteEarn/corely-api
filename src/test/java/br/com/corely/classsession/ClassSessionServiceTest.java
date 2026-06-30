@@ -216,6 +216,7 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
+        classSessionService.start(created.getId());
         classSessionService.complete(created.getId());
 
         assertThatThrownBy(() -> classSessionService.cancel(created.getId()))
@@ -248,16 +249,92 @@ class ClassSessionServiceTest {
     }
 
     @Test
+    void start_whenValid_succeeds() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.start(created.getId());
+
+        ClassSession started = classSessionRepository.findById(created.getId()).orElseThrow();
+        assertThat(started.getStatus()).isEqualTo(ClassSessionStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void start_whenSessionNotFound_throwsResourceNotFoundException() {
+        assertThatThrownBy(() -> classSessionService.start(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Sessão inexistente");
+    }
+
+    @Test
+    void start_whenSessionCancelled_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.cancel(created.getId());
+
+        assertThatThrownBy(() -> classSessionService.start(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A aula está cancelada.");
+    }
+
+    @Test
+    void start_whenSessionCompleted_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.start(created.getId());
+        classSessionService.complete(created.getId());
+
+        assertThatThrownBy(() -> classSessionService.start(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A aula já foi concluída.");
+    }
+
+    @Test
+    void start_whenSessionAlreadyInProgress_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        classSessionService.start(created.getId());
+
+        assertThatThrownBy(() -> classSessionService.start(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A aula já está em andamento.");
+    }
+
+    @Test
     void complete_whenValid_succeeds() {
         ClassSessionRequest request = new ClassSessionRequest();
         request.setClassGroupId(classGroup.getId());
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
+        classSessionService.start(created.getId());
         classSessionService.complete(created.getId());
 
         ClassSession completed = classSessionRepository.findById(created.getId()).orElseThrow();
         assertThat(completed.getStatus()).isEqualTo(ClassSessionStatus.COMPLETED);
+    }
+
+    @Test
+    void complete_whenSessionNotStarted_throwsConflictException() {
+        ClassSessionRequest request = new ClassSessionRequest();
+        request.setClassGroupId(classGroup.getId());
+        request.setSessionDate(LocalDate.now());
+        ClassSessionResponse created = classSessionService.create(request);
+
+        assertThatThrownBy(() -> classSessionService.complete(created.getId()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A aula precisa ser iniciada antes de ser concluída.");
     }
 
     @Test
@@ -278,7 +355,7 @@ class ClassSessionServiceTest {
 
         assertThatThrownBy(() -> classSessionService.complete(created.getId()))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("A sessão está cancelada.");
+                .hasMessage("A aula está cancelada.");
     }
 
     @Test
@@ -288,11 +365,12 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
+        classSessionService.start(created.getId());
         classSessionService.complete(created.getId());
 
         assertThatThrownBy(() -> classSessionService.complete(created.getId()))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("A sessão já foi concluída.");
+                .hasMessage("A aula já foi concluída.");
     }
 
     @Test
@@ -319,6 +397,7 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
+        classSessionService.start(created.getId());
         classSessionService.complete(created.getId());
 
         ClassSessionRequest request2 = new ClassSessionRequest();

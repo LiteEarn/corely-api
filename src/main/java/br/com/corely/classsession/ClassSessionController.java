@@ -41,6 +41,12 @@ public class ClassSessionController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{id}/start")
+    public ResponseEntity<Void> start(@PathVariable UUID id) {
+        classSessionService.start(id);
+        return ResponseEntity.ok().build();
+    }
+
     @PatchMapping("/{id}/complete")
     public ResponseEntity<Void> complete(@PathVariable UUID id) {
         classSessionService.complete(id);

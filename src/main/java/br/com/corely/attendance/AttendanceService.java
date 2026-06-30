@@ -29,8 +29,12 @@ public class AttendanceService {
         ClassSession session = classSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
 
-        if (session.getStatus() != ClassSessionStatus.COMPLETED) {
-            throw new ConflictException("A presença somente pode ser registrada após a conclusão da aula.");
+        if (session.getStatus() == ClassSessionStatus.COMPLETED) {
+            throw new ConflictException("A presença não pode ser registrada após a conclusão da aula.");
+        }
+
+        if (session.getStatus() != ClassSessionStatus.IN_PROGRESS) {
+            throw new ConflictException("A presença somente pode ser registrada durante a aula.");
         }
 
         Enrollment enrollment = enrollmentRepository.findById(request.getEnrollmentId())
