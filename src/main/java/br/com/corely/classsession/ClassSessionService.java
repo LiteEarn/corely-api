@@ -77,16 +77,40 @@ public class ClassSessionService {
     }
 
     @Transactional
+    public void start(UUID id) {
+        ClassSession classSession = classSessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
+
+        if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
+            throw new ConflictException("A aula está cancelada.");
+        }
+
+        if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
+            throw new ConflictException("A aula já foi concluída.");
+        }
+
+        if (classSession.getStatus() == ClassSessionStatus.IN_PROGRESS) {
+            throw new ConflictException("A aula já está em andamento.");
+        }
+
+        classSession.setStatus(ClassSessionStatus.IN_PROGRESS);
+    }
+
+    @Transactional
     public void complete(UUID id) {
         ClassSession classSession = classSessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
         if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
-            throw new ConflictException("A sessão está cancelada.");
+            throw new ConflictException("A aula está cancelada.");
         }
 
         if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
-            throw new ConflictException("A sessão já foi concluída.");
+            throw new ConflictException("A aula já foi concluída.");
+        }
+
+        if (classSession.getStatus() != ClassSessionStatus.IN_PROGRESS) {
+            throw new ConflictException("A aula precisa ser iniciada antes de ser concluída.");
         }
 
         classSession.setStatus(ClassSessionStatus.COMPLETED);
