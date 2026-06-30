@@ -75,6 +75,7 @@ public class SecurityConfig {
         log.info("  - /instructors/**");
         log.info("  - /sessions/**");
         log.info("  - /class-groups/**");
+        log.info("  - /class-sessions/**");
         log.info("  - /enrollments/**");
         log.info("  - /attendance/**");
         log.info("  - /objectives/**");
@@ -99,6 +100,7 @@ public class SecurityConfig {
                         .requestMatchers("/instructors", "/instructors/**").permitAll()
                         .requestMatchers("/sessions", "/sessions/**").permitAll()
                         .requestMatchers("/class-groups", "/class-groups/**").permitAll()
+                        .requestMatchers("/class-sessions", "/class-sessions/**").permitAll()
                         .requestMatchers("/enrollments", "/enrollments/**").permitAll()
                         .requestMatchers("/attendance", "/attendance/**").permitAll()
                         .requestMatchers("/objectives", "/objectives/**").permitAll()
