@@ -15,4 +15,5 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, UUID
     List<ClassSession> findBySessionDate(LocalDate sessionDate);
     List<ClassSession> findByStatus(ClassSessionStatus status);
     List<ClassSession> findByInstructorId(UUID instructorId);
+    List<ClassSession> findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(UUID classGroupId, LocalDate sessionDate, ClassSessionStatus status);
 }

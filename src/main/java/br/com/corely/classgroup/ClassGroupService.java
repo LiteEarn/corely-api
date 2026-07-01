@@ -4,6 +4,7 @@ import br.com.corely.classgroup.dto.ClassGroupRequest;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.classgroup.dto.ConfirmInactivationRequest;
 import br.com.corely.classgroup.dto.InactivationResponse;
+import br.com.corely.classsession.ClassSessionService;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.instructor.Instructor;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class ClassGroupService {
     private final StudioRepository studioRepository;
     private final InstructorRepository instructorRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final ClassSessionService classSessionService;
 
     @Transactional
     public ClassGroupResponse create(ClassGroupRequest request) {
@@ -61,6 +64,11 @@ public class ClassGroupService {
         classGroup.setActive(request.getActive() != null ? request.getActive() : true);
 
         classGroup = classGroupRepository.save(classGroup);
+
+        if (Boolean.TRUE.equals(classGroup.getActive())) {
+            classSessionService.generateSessionsForGroup(classGroup);
+        }
+
         return toResponse(classGroup);
     }
 
@@ -92,6 +100,14 @@ public class ClassGroupService {
 
         ClassGroup classGroup = classGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+
+        // Capture before state
+        boolean wasActive = Boolean.TRUE.equals(classGroup.getActive());
+        String beforeDays = daysAsString(classGroup);
+        LocalTime beforeStart = classGroup.getStartTime();
+        LocalTime beforeEnd = classGroup.getEndTime();
+        UUID beforeInstructorId = classGroup.getInstructor().getId();
+        Integer beforeCapacity = classGroup.getCapacity();
 
         // Business rule: if trying to inactivate, check for active enrollments
         if (request.getActive() != null && !request.getActive() && Boolean.TRUE.equals(classGroup.getActive())) {
@@ -143,6 +159,21 @@ public class ClassGroupService {
         }
 
         classGroup = classGroupRepository.save(classGroup);
+
+        // Post-save actions based on changes
+        boolean isActive = Boolean.TRUE.equals(classGroup.getActive());
+
+        if (wasActive && !isActive) {
+            classSessionService.cancelFutureScheduledSessions(classGroup.getId());
+        } else if (!wasActive && isActive) {
+            classSessionService.deleteFutureCancelledSessions(classGroup.getId());
+            classSessionService.generateSessionsForGroup(classGroup);
+        } else if (isActive && hasScheduleChanged(beforeDays, beforeStart, beforeEnd,
+                beforeInstructorId, beforeCapacity, classGroup)) {
+            classSessionService.deleteFutureScheduledSessions(classGroup.getId());
+            classSessionService.generateSessionsForGroup(classGroup);
+        }
+
         return toResponse(classGroup);
     }
 
@@ -173,6 +204,9 @@ public class ClassGroupService {
         // Inactivate the class group
         classGroup.setActive(false);
         classGroupRepository.save(classGroup);
+
+        // Cancel future scheduled sessions
+        classSessionService.cancelFutureScheduledSessions(classGroup.getId());
 
         // Inactivate all active enrollments
         if (activeEnrollments > 0) {
@@ -232,5 +266,25 @@ public class ClassGroupService {
         if (!Boolean.TRUE.equals(instructor.getActive())) {
             throw new BusinessException("Selected instructor is inactive.");
         }
+    }
+
+    private String daysAsString(ClassGroup classGroup) {
+        return (Boolean.TRUE.equals(classGroup.getMonday()) ? "M" : "") +
+               (Boolean.TRUE.equals(classGroup.getTuesday()) ? "T" : "") +
+               (Boolean.TRUE.equals(classGroup.getWednesday()) ? "W" : "") +
+               (Boolean.TRUE.equals(classGroup.getThursday()) ? "Th" : "") +
+               (Boolean.TRUE.equals(classGroup.getFriday()) ? "F" : "") +
+               (Boolean.TRUE.equals(classGroup.getSaturday()) ? "Sa" : "") +
+               (Boolean.TRUE.equals(classGroup.getSunday()) ? "Su" : "");
+    }
+
+    private boolean hasScheduleChanged(String beforeDays, LocalTime beforeStart, LocalTime beforeEnd,
+                                        UUID beforeInstructorId, Integer beforeCapacity, ClassGroup classGroup) {
+        if (!beforeDays.equals(daysAsString(classGroup))) return true;
+        if (!beforeStart.equals(classGroup.getStartTime())) return true;
+        if (!beforeEnd.equals(classGroup.getEndTime())) return true;
+        if (!beforeInstructorId.equals(classGroup.getInstructor().getId())) return true;
+        if (!beforeCapacity.equals(classGroup.getCapacity())) return true;
+        return false;
     }
 }

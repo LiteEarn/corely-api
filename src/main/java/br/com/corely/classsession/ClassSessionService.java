@@ -145,6 +145,10 @@ public class ClassSessionService {
             throw new ConflictException("Instrutor inativo");
         }
 
+        return generateSessionsForGroup(classGroup);
+    }
+
+    public SessionGenerationResponse generateSessionsForGroup(ClassGroup classGroup) {
         var dayOfWeekMap = java.util.Map.<DayOfWeek, Function<ClassGroup, Boolean>>of(
                 DayOfWeek.MONDAY, ClassGroup::getMonday,
                 DayOfWeek.TUESDAY, ClassGroup::getTuesday,
@@ -157,6 +161,7 @@ public class ClassSessionService {
 
         int created = 0;
         int ignored = 0;
+        UUID classGroupId = classGroup.getId();
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusDays(60);
 
@@ -183,6 +188,32 @@ public class ClassSessionService {
         }
 
         return new SessionGenerationResponse(created, ignored);
+    }
+
+    @Transactional
+    public void cancelFutureScheduledSessions(UUID classGroupId) {
+        List<ClassSession> sessions = classSessionRepository
+                .findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(
+                        classGroupId, LocalDate.now(), ClassSessionStatus.SCHEDULED);
+        for (ClassSession session : sessions) {
+            session.setStatus(ClassSessionStatus.CANCELLED);
+        }
+    }
+
+    @Transactional
+    public void deleteFutureScheduledSessions(UUID classGroupId) {
+        List<ClassSession> sessions = classSessionRepository
+                .findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(
+                        classGroupId, LocalDate.now(), ClassSessionStatus.SCHEDULED);
+        classSessionRepository.deleteAll(sessions);
+    }
+
+    @Transactional
+    public void deleteFutureCancelledSessions(UUID classGroupId) {
+        List<ClassSession> sessions = classSessionRepository
+                .findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(
+                        classGroupId, LocalDate.now(), ClassSessionStatus.CANCELLED);
+        classSessionRepository.deleteAll(sessions);
     }
 
     private ClassSessionResponse toResponse(ClassSession classSession) {
