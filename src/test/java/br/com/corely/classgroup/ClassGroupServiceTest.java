@@ -3,6 +3,10 @@ package br.com.corely.classgroup;
 import br.com.corely.classgroup.dto.ClassGroupRequest;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.classgroup.dto.ConfirmInactivationRequest;
+import br.com.corely.classsession.ClassSession;
+import br.com.corely.classsession.ClassSessionRepository;
+import br.com.corely.classsession.ClassSessionService;
+import br.com.corely.classsession.ClassSessionStatus;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.instructor.Instructor;
@@ -49,6 +53,12 @@ class ClassGroupServiceTest {
 
     @Autowired
     private StudentRepository studentRepository;
+
+    @Autowired
+    private ClassSessionService classSessionService;
+
+    @Autowired
+    private ClassSessionRepository classSessionRepository;
 
     private Studio studio;
     private Instructor activeInstructor;
@@ -573,5 +583,264 @@ class ClassGroupServiceTest {
 
         Enrollment reloadedEnrollment = enrollmentRepository.findById(enrollment.getId()).orElseThrow();
         assertThat(reloadedEnrollment.getActive()).isFalse();
+    }
+
+    @Test
+    void create_activeClassGroup_generatesSessions() {
+        ClassGroupRequest request = new ClassGroupRequest();
+        request.setStudioId(studio.getId());
+        request.setInstructorId(activeInstructor.getId());
+        request.setName("Test Class Group");
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(10, 0));
+        request.setCapacity(20);
+        request.setMonday(true);
+        request.setWednesday(true);
+        request.setFriday(true);
+        request.setActive(true);
+
+        ClassGroupResponse response = classGroupService.create(request);
+
+        var sessions = classSessionRepository.findByClassGroupId(response.getId());
+        assertThat(sessions).isNotEmpty();
+        assertThat(sessions).allMatch(s -> s.getStatus() == ClassSessionStatus.SCHEDULED);
+        assertThat(sessions).allMatch(s -> s.getSessionDate().isAfter(LocalDate.now().minusDays(1)));
+        assertThat(sessions).allMatch(s -> s.getClassGroup().getId().equals(response.getId()));
+    }
+
+    @Test
+    void create_inactiveClassGroup_doesNotGenerateSessions() {
+        ClassGroupRequest request = new ClassGroupRequest();
+        request.setStudioId(studio.getId());
+        request.setInstructorId(activeInstructor.getId());
+        request.setName("Test Class Group");
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(10, 0));
+        request.setCapacity(20);
+        request.setMonday(true);
+        request.setActive(false);
+
+        ClassGroupResponse response = classGroupService.create(request);
+
+        var sessions = classSessionRepository.findByClassGroupId(response.getId());
+        assertThat(sessions).isEmpty();
+    }
+
+    @Test
+    void update_timeChange_regeneratesFutureSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        var sessionsBefore = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsBefore).isNotEmpty();
+        LocalTime oldStartTime = sessionsBefore.get(0).getStartTime();
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setStartTime(LocalTime.of(14, 0));
+        updateRequest.setEndTime(LocalTime.of(15, 0));
+        classGroupService.update(created.getId(), updateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+        assertThat(sessionsAfter).allMatch(s -> s.getStartTime().equals(LocalTime.of(14, 0)));
+        assertThat(sessionsAfter.get(0).getStartTime()).isNotEqualTo(oldStartTime);
+    }
+
+    @Test
+    void update_instructorChange_regeneratesFutureSessions() {
+        Instructor newInstructor = new Instructor();
+        newInstructor.setStudio(studio);
+        newInstructor.setFullName("New Instructor");
+        newInstructor.setEmail("new@example.com");
+        newInstructor.setActive(true);
+        Instructor savedInstructor = instructorRepository.save(newInstructor);
+
+        ClassGroupResponse created = createActiveClassGroup();
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setInstructorId(savedInstructor.getId());
+        classGroupService.update(created.getId(), updateRequest);
+
+        UUID instructorId = savedInstructor.getId();
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+        assertThat(sessionsAfter).allMatch(s -> s.getInstructor().getId().equals(instructorId));
+    }
+
+    @Test
+    void update_capacityChange_regeneratesFutureSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+        assertThat(classSessionRepository.findByClassGroupId(created.getId())).isNotEmpty();
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setCapacity(99);
+        classGroupService.update(created.getId(), updateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+    }
+
+    @Test
+    void update_daysChange_regeneratesFutureSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        var sessionsBefore = classSessionRepository.findByClassGroupId(created.getId());
+        long countBefore = sessionsBefore.size();
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setMonday(false);
+        updateRequest.setTuesday(true);
+        updateRequest.setWednesday(false);
+        updateRequest.setFriday(false);
+        classGroupService.update(created.getId(), updateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+        assertThat(sessionsAfter).allMatch(s ->
+                s.getSessionDate().getDayOfWeek() == java.time.DayOfWeek.TUESDAY);
+    }
+
+    @Test
+    void update_nameOnlyChange_doesNotRegenerateSessions() {
+        ClassGroupRequest request = createRequest();
+        ClassGroupResponse created = classGroupService.create(request);
+
+        var sessionsBefore = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsBefore).isNotEmpty();
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setName("Completely Different Name");
+        classGroupService.update(created.getId(), updateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).hasSize(sessionsBefore.size());
+        assertThat(sessionsAfter).extracting(s -> s.getStartTime())
+                .containsExactlyElementsOf(sessionsBefore.stream().map(ClassSession::getStartTime).toList());
+    }
+
+    @Test
+    void update_inactivateClassGroup_cancelsFutureScheduledSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        var sessionsBefore = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsBefore).isNotEmpty();
+        assertThat(sessionsBefore).allMatch(s -> s.getStatus() == ClassSessionStatus.SCHEDULED);
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setActive(false);
+        classGroupService.update(created.getId(), updateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+        assertThat(sessionsAfter).allMatch(s -> s.getStatus() == ClassSessionStatus.CANCELLED);
+    }
+
+    @Test
+    void update_reactivateClassGroup_regeneratesSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        ClassGroupRequest inactivateRequest = createUpdateRequest();
+        inactivateRequest.setActive(false);
+        classGroupService.update(created.getId(), inactivateRequest);
+
+        var cancelledSessions = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(cancelledSessions).allMatch(s -> s.getStatus() == ClassSessionStatus.CANCELLED);
+
+        ClassGroupRequest reactivateRequest = createUpdateRequest();
+        reactivateRequest.setActive(true);
+        classGroupService.update(created.getId(), reactivateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+        var newScheduled = sessionsAfter.stream().filter(s -> s.getStatus() == ClassSessionStatus.SCHEDULED).toList();
+        assertThat(newScheduled).isNotEmpty();
+    }
+
+    @Test
+    void update_inactivation_preservesHistory() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        ClassGroup group = classGroupRepository.findById(created.getId()).orElseThrow();
+        var sessions = classSessionRepository.findByClassGroupId(created.getId());
+        ClassSession pastSession = sessions.get(0);
+        pastSession.setSessionDate(LocalDate.now().minusDays(1));
+        pastSession.setStatus(ClassSessionStatus.COMPLETED);
+        classSessionRepository.save(pastSession);
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setActive(false);
+        classGroupService.update(created.getId(), updateRequest);
+
+        ClassSession completedReloaded = classSessionRepository.findById(pastSession.getId()).orElseThrow();
+        assertThat(completedReloaded.getStatus()).isEqualTo(ClassSessionStatus.COMPLETED);
+    }
+
+    @Test
+    void update_regeneration_doesNotDuplicateSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        var sessionsBefore = classSessionRepository.findByClassGroupId(created.getId());
+        long countBefore = sessionsBefore.size();
+
+        ClassGroupRequest updateRequest = createUpdateRequest();
+        updateRequest.setStartTime(LocalTime.of(14, 0));
+        updateRequest.setEndTime(LocalTime.of(15, 0));
+        classGroupService.update(created.getId(), updateRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        long distinctDates = sessionsAfter.stream()
+                .map(ClassSession::getSessionDate).distinct().count();
+        assertThat(sessionsAfter).hasSize((int) distinctDates);
+        assertThat(sessionsAfter).allMatch(s -> s.getStartTime().equals(LocalTime.of(14, 0)));
+    }
+
+    @Test
+    void inactivateEndpoint_cancelsFutureSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        var sessionsBefore = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsBefore).isNotEmpty();
+        assertThat(sessionsBefore).allMatch(s -> s.getStatus() == ClassSessionStatus.SCHEDULED);
+
+        ConfirmInactivationRequest confirmRequest = new ConfirmInactivationRequest(false);
+        classGroupService.inactivate(created.getId(), confirmRequest);
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(sessionsAfter).isNotEmpty();
+        assertThat(sessionsAfter).allMatch(s -> s.getStatus() == ClassSessionStatus.CANCELLED);
+    }
+
+    private ClassGroupResponse createActiveClassGroup() {
+        ClassGroupRequest request = createRequest();
+        return classGroupService.create(request);
+    }
+
+    private ClassGroupRequest createRequest() {
+        ClassGroupRequest request = new ClassGroupRequest();
+        request.setStudioId(studio.getId());
+        request.setInstructorId(activeInstructor.getId());
+        request.setName("Test Class Group");
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(10, 0));
+        request.setCapacity(20);
+        request.setMonday(true);
+        request.setWednesday(true);
+        request.setFriday(true);
+        request.setActive(true);
+        return request;
+    }
+
+    private ClassGroupRequest createUpdateRequest() {
+        ClassGroupRequest request = new ClassGroupRequest();
+        request.setStudioId(studio.getId());
+        request.setInstructorId(activeInstructor.getId());
+        request.setName("Test Class Group");
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(10, 0));
+        request.setCapacity(20);
+        request.setMonday(true);
+        request.setWednesday(true);
+        request.setFriday(true);
+        request.setActive(true);
+        return request;
     }
 }
