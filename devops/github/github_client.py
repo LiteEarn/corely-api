@@ -37,19 +37,12 @@ class GitHubClient:
 
     def execute_graphql(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = {"query": query, "variables": variables or {}}
+        data = self.execute_rest("POST", "/graphql", payload)
 
-        try:
-            response = self._session.post(
-                url="https://api.github.com/graphql",
-                json=payload,
-                timeout=30,
-            )
-            response.raise_for_status()
-            data = response.json()
+        if isinstance(data, dict) and data.get("errors"):
+            raise GitHubApiError(f"Erro GraphQL no GitHub: {data['errors']}")
 
-            if data.get("errors"):
-                raise GitHubApiError(f"Erro GraphQL no GitHub: {data['errors']}")
+        if not isinstance(data, dict):
+            raise GitHubApiError("Resposta GraphQL inválida do GitHub.")
 
-            return data
-        except requests.RequestException as exc:
-            raise GitHubApiError(f"Erro GraphQL no GitHub: {exc}") from exc
+        return data
