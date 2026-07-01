@@ -39,4 +39,10 @@ public class MakeupRequest extends BaseEntity {
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
+
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
 }

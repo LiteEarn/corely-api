@@ -1,5 +1,7 @@
 package br.com.corely.makeup;
 
+import br.com.corely.makeup.dto.MakeupApproveRequest;
+import br.com.corely.makeup.dto.MakeupRejectRequest;
 import br.com.corely.makeup.dto.MakeupRequestRequest;
 import br.com.corely.makeup.dto.MakeupRequestResponse;
 import jakarta.validation.Valid;
@@ -37,6 +39,22 @@ public class MakeupRequestController {
             @RequestParam(required = false) UUID studentId,
             @RequestParam(required = false) UUID classGroupId) {
         List<MakeupRequestResponse> response = makeupRequestService.findAll(status, studentId, classGroupId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/makeup-requests/{id}/approve")
+    public ResponseEntity<MakeupRequestResponse> approve(
+            @PathVariable UUID id,
+            @Valid @RequestBody MakeupApproveRequest request) {
+        MakeupRequestResponse response = makeupRequestService.approve(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/makeup-requests/{id}/reject")
+    public ResponseEntity<MakeupRequestResponse> reject(
+            @PathVariable UUID id,
+            @Valid @RequestBody MakeupRejectRequest request) {
+        MakeupRequestResponse response = makeupRequestService.reject(id, request);
         return ResponseEntity.ok(response);
     }
 }

@@ -425,7 +425,10 @@ class EnrollmentServiceTest {
         enrollmentService.delete(enrollment.getId());
 
         // Then
-        assertThat(enrollmentRepository.findById(enrollment.getId())).isEmpty();
+        Enrollment deleted = enrollmentRepository.findById(enrollment.getId()).orElseThrow();
+        assertThat(deleted.getActive()).isFalse();
+        assertThat(deleted.getStatus()).isEqualTo(EnrollmentStatus.CANCELLED);
+        assertThat(deleted.getCancelDate()).isEqualTo(LocalDate.now());
     }
 
     @Test
