@@ -809,6 +809,73 @@ class ClassGroupServiceTest {
         assertThat(sessionsAfter).allMatch(s -> s.getStatus() == ClassSessionStatus.CANCELLED);
     }
 
+    // ========== REACTIVATION TESTS ==========
+
+    @Test
+    void reactivate_inactiveClassGroup_succeeds() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        ConfirmInactivationRequest confirmRequest = new ConfirmInactivationRequest(false);
+        classGroupService.inactivate(created.getId(), confirmRequest);
+
+        ClassGroupResponse response = classGroupService.reactivate(created.getId());
+
+        assertThat(response.getActive()).isTrue();
+    }
+
+    @Test
+    void reactivate_whenNotFound_throwsResourceNotFoundException() {
+        assertThatThrownBy(() -> classGroupService.reactivate(UUID.randomUUID()))
+                .isInstanceOf(br.com.corely.shared.exception.ResourceNotFoundException.class)
+                .hasMessage("Class group not found");
+    }
+
+    @Test
+    void reactivate_whenAlreadyActive_throwsBusinessException() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        assertThatThrownBy(() -> classGroupService.reactivate(created.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("A turma já está ativa.");
+    }
+
+    @Test
+    void reactivate_generatesSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        ConfirmInactivationRequest confirmRequest = new ConfirmInactivationRequest(false);
+        classGroupService.inactivate(created.getId(), confirmRequest);
+
+        var cancelledSessions = classSessionRepository.findByClassGroupId(created.getId());
+        assertThat(cancelledSessions).allMatch(s -> s.getStatus() == ClassSessionStatus.CANCELLED);
+
+        classGroupService.reactivate(created.getId());
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        var scheduledSessions = sessionsAfter.stream()
+                .filter(s -> s.getStatus() == ClassSessionStatus.SCHEDULED)
+                .toList();
+        assertThat(scheduledSessions).isNotEmpty();
+        assertThat(scheduledSessions).allMatch(s -> s.getSessionDate().isAfter(LocalDate.now().minusDays(1)));
+    }
+
+    @Test
+    void reactivate_doesNotDuplicateSessions() {
+        ClassGroupResponse created = createActiveClassGroup();
+
+        ConfirmInactivationRequest confirmRequest = new ConfirmInactivationRequest(false);
+        classGroupService.inactivate(created.getId(), confirmRequest);
+
+        classGroupService.reactivate(created.getId());
+
+        var sessionsAfter = classSessionRepository.findByClassGroupId(created.getId());
+        long distinctDates = sessionsAfter.stream()
+                .map(ClassSession::getSessionDate)
+                .distinct()
+                .count();
+        assertThat(sessionsAfter).hasSize((int) distinctDates);
+    }
+
     private ClassGroupResponse createActiveClassGroup() {
         ClassGroupRequest request = createRequest();
         return classGroupService.create(request);

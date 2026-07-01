@@ -64,6 +64,12 @@ public class ClassGroupController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/reactivate")
+    public ResponseEntity<ClassGroupResponse> reactivate(@PathVariable UUID id) {
+        ClassGroupResponse response = classGroupService.reactivate(id);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{id}/generate-sessions")
     public ResponseEntity<SessionGenerationResponse> generateSessions(@PathVariable UUID id) {
         SessionGenerationResponse response = classSessionService.generateSessions(id);
