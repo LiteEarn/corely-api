@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
@@ -338,10 +339,17 @@ class DashboardControllerTest {
 
     @Test
     void testGetDashboardAttendanceDateFilters() throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate weekAgo = today.minusDays(7);
+        LocalDate monthStart = today.with(TemporalAdjusters.firstDayOfMonth());
+
+        boolean canDistinguishMonthFromWeek = monthStart.isBefore(weekAgo);
+        LocalDate oldDate = canDistinguishMonthFromWeek ? monthStart : today;
+
         ClassSession oldSession = new ClassSession();
         oldSession.setClassGroup(classGroup);
         oldSession.setInstructor(instructor);
-        oldSession.setSessionDate(LocalDate.now().minusDays(10));
+        oldSession.setSessionDate(oldDate);
         oldSession.setStartTime(LocalTime.of(10, 0));
         oldSession.setEndTime(LocalTime.of(11, 0));
         oldSession.setStatus(ClassSessionStatus.COMPLETED);
@@ -359,10 +367,13 @@ class DashboardControllerTest {
         recentAttendance.setStatus(AttendanceStatus.PRESENT);
         attendanceRepository.save(recentAttendance);
 
+        int expectedThisWeek = canDistinguishMonthFromWeek ? 1 : 2;
+        int expectedThisMonth = 2;
+
         mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.attendanceThisWeek").value(1))
-                .andExpect(jsonPath("$.attendanceThisMonth").value(2));
+                .andExpect(jsonPath("$.attendanceThisWeek").value(expectedThisWeek))
+                .andExpect(jsonPath("$.attendanceThisMonth").value(expectedThisMonth));
     }
 
     @Test
