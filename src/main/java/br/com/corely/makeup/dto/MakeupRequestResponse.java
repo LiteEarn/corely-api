@@ -13,6 +13,8 @@ public record MakeupRequestResponse(
         String reason,
         LocalDateTime requestedAt,
         LocalDateTime approvedAt,
+        LocalDateTime rejectedAt,
+        String rejectionReason,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}
