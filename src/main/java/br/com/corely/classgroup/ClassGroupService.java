@@ -178,6 +178,24 @@ public class ClassGroupService {
     }
 
     @Transactional
+    public ClassGroupResponse reactivate(UUID id) {
+        ClassGroup classGroup = classGroupRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+
+        if (Boolean.TRUE.equals(classGroup.getActive())) {
+            throw new BusinessException("A turma já está ativa.");
+        }
+
+        classGroup.setActive(true);
+        classGroup = classGroupRepository.save(classGroup);
+
+        classSessionService.deleteFutureCancelledSessions(classGroup.getId());
+        classSessionService.generateSessionsForGroup(classGroup);
+
+        return toResponse(classGroup);
+    }
+
+    @Transactional
     public void delete(UUID id) {
         ClassGroup classGroup = classGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
