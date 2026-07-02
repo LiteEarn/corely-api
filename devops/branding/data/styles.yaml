@@ -1,0 +1,124 @@
+styles:
+  - name: Minimal
+    slug: minimal
+    inspiration:
+      - Stripe
+      - Linear
+      - Notion
+      - Figma
+      - Ramp
+      - Vercel
+    selector: minimal
+    patterns:
+      - prefix+suffix
+      - prefix+middle
+      - prefix+middle+suffix
+    preferred_letters:
+      - l
+      - n
+      - r
+    preferred_endings:
+      - a
+      - e
+      - i
+      - o
+    min_length: 5
+    max_length: 8
+  - name: Scandinavian
+    slug: scandinavian
+    inspiration:
+      - Spotify
+      - Klarna
+      - Visma
+      - Opera
+    selector: scandinavian
+    patterns:
+      - prefix+suffix
+      - prefix+middle+suffix
+    preferred_letters:
+      - v
+      - k
+      - l
+      - r
+      - n
+    preferred_endings:
+      - a
+      - o
+      - ia
+      - or
+    min_length: 5
+    max_length: 9
+  - name: Premium
+    slug: premium
+    inspiration:
+      - Oracle
+      - Adobe
+      - Salesforce
+      - Atlassian
+    selector: premium
+    patterns:
+      - prefix+middle+suffix
+      - prefix+suffix
+    preferred_letters:
+      - a
+      - o
+      - r
+      - l
+    preferred_endings:
+      - a
+      - e
+      - o
+      - ia
+      - io
+    min_length: 6
+    max_length: 10
+  - name: Latin Modern
+    slug: latin-modern
+    inspiration:
+      - Asana
+      - Monday
+      - Nubank
+      - Totvs
+    selector: latin_modern
+    patterns:
+      - prefix+suffix
+      - prefix+middle
+      - prefix+middle+suffix
+    preferred_letters:
+      - a
+      - e
+      - i
+      - o
+      - n
+      - r
+    preferred_endings:
+      - a
+      - o
+      - ia
+      - um
+    min_length: 5
+    max_length: 9
+  - name: Invented Word
+    slug: invented-word
+    inspiration:
+      - Custom
+      - Future
+    selector: invented
+    patterns:
+      - blend
+      - prefix+middle+suffix
+      - prefix+suffix
+    preferred_letters:
+      - v
+      - x
+      - z
+      - n
+      - r
+    preferred_endings:
+      - a
+      - i
+      - o
+      - y
+      - x
+    min_length: 5
+    max_length: 10
