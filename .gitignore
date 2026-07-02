@@ -29,5 +29,8 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### Python ###
+__pycache__/
+
 ### VS Code ###
 .vscode/
