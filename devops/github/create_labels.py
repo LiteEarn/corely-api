@@ -26,26 +26,46 @@ class LabelSpec:
 
 
 LABELS: tuple[LabelSpec, ...] = (
-    LabelSpec("backend", "0E8A16", "Tarefas relacionadas ao backend."),
-    LabelSpec("frontend", "1D76DB", "Tarefas relacionadas ao frontend."),
-    LabelSpec("database", "5319E7", "Tarefas relacionadas ao banco de dados."),
-    LabelSpec("dashboard", "5319E7", "Tarefas relacionadas a dashboards."),
-    LabelSpec("finance", "0E8A16", "Tarefas relacionadas ao financeiro."),
-    LabelSpec("ux", "5319E7", "Tarefas relacionadas à experiência do usuário."),
-    LabelSpec("security", "B60205", "Tarefas relacionadas à segurança."),
-    LabelSpec("ai", "8250DF", "Tarefas relacionadas à inteligência artificial."),
+    LabelSpec("backend", "0E8A16", "Itens relacionados ao backend."),
+    LabelSpec("frontend", "1D76DB", "Itens relacionados ao frontend."),
+    LabelSpec("api", "0052CC", "Itens relacionados à API."),
+    LabelSpec("database", "5319E7", "Itens relacionados ao banco de dados."),
+    LabelSpec("ux", "FBCA04", "Itens relacionados à experiência do usuário."),
+    LabelSpec("infra", "8250DF", "Itens relacionados à infraestrutura."),
+    LabelSpec("devops", "6F42C1", "Itens relacionados a DevOps."),
+    LabelSpec("dashboard", "1D76DB", "Itens relacionados ao dashboard."),
+    LabelSpec("financeiro", "0E8A16", "Itens relacionados ao financeiro."),
+    LabelSpec("agenda", "5319E7", "Itens relacionados à agenda."),
+    LabelSpec("attendance", "FBCA04", "Itens relacionados à presença."),
+    LabelSpec("makeup", "D4C5F9", "Itens relacionados a reposições."),
+    LabelSpec("report", "C2E0C6", "Itens relacionados a relatórios."),
     LabelSpec("bug", "D73A4A", "Correção de defeito."),
-    LabelSpec("enhancement", "A2EEEF", "Melhoria incremental."),
-    LabelSpec("tech-debt", "7057FF", "Dívida técnica."),
     LabelSpec("epic", "5319E7", "Épico do backlog."),
     LabelSpec("story", "FBCA04", "História de usuário."),
-    LabelSpec("priority: critical", "B60205", "Prioridade crítica."),
-    LabelSpec("priority: high", "D93F0B", "Prioridade alta."),
-    LabelSpec("priority: medium", "FBCA04", "Prioridade média."),
-    LabelSpec("priority: low", "0E8A16", "Prioridade baixa."),
+    LabelSpec("task", "C2E0C6", "Tarefa técnica ou funcional."),
+    LabelSpec("spike", "D4C5F9", "Investigação ou descoberta."),
+    LabelSpec("critical", "B60205", "Prioridade crítica."),
+    LabelSpec("high", "D93F0B", "Prioridade alta."),
+    LabelSpec("medium", "FBCA04", "Prioridade média."),
+    LabelSpec("low", "0E8A16", "Prioridade baixa."),
     LabelSpec("blocked", "D73A4A", "Item bloqueado."),
-    LabelSpec("needs-discussion", "C2E0C6", "Item que precisa de discussão."),
 )
+
+
+def ensure_labels(client, owner: str, repo: str) -> tuple[int, int]:
+    existing_labels = list_labels(client, owner, repo)
+    created = 0
+    ignored = 0
+
+    for label in LABELS:
+        if label.name in existing_labels:
+            ignored += 1
+            continue
+        create_label(client, owner, repo, label)
+        created += 1
+        logger.info("Label criada: %s", label.name)
+
+    return created, ignored
 
 
 def list_labels(client, owner: str, repo: str) -> set[str]:
@@ -74,17 +94,7 @@ def create_label(client, owner: str, repo: str, spec: LabelSpec) -> None:
 def main() -> int:
     try:
         runtime = build_runtime_context()
-        existing_labels = list_labels(runtime.client, runtime.repository.owner, runtime.repository.name)
-        created = 0
-        ignored = 0
-
-        for label in LABELS:
-            if label.name in existing_labels:
-                ignored += 1
-                continue
-            create_label(runtime.client, runtime.repository.owner, runtime.repository.name, label)
-            created += 1
-            logger.info("Label criada: %s", label.name)
+        created, ignored = ensure_labels(runtime.client, runtime.repository.owner, runtime.repository.name)
 
         logger.info("Resumo labels: criadas=%s ignoradas=%s", created, ignored)
         return 0
