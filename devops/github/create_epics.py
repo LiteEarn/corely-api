@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True, slots=True)
 class EpicSpec:
     title: str
+    area: str
     objective: str
     description: str
     acceptance_criteria: tuple[str, ...]
@@ -31,13 +32,15 @@ class EpicSpec:
 EPICS: tuple[EpicSpec, ...] = (
     EpicSpec(
         title="EPIC - Fundação",
+        area="Arquitetura",
         objective="Estabelecer a base técnica e organizacional do Corely.",
         description="Estrutura inicial para suportar o restante da entrega.",
         acceptance_criteria=("Estrutura base validada.", "Dependências principais organizadas."),
-        labels=("epic", "tech-debt"),
+        labels=("epic", "infra"),
     ),
     EpicSpec(
         title="EPIC - Cadastros",
+        area="Cadastros",
         objective="Centralizar os cadastros principais do sistema.",
         description="Fluxos de cadastro de entidades essenciais do domínio.",
         acceptance_criteria=("Cadastros principais disponíveis.", "Validações essenciais aplicadas."),
@@ -45,6 +48,7 @@ EPICS: tuple[EpicSpec, ...] = (
     ),
     EpicSpec(
         title="EPIC - Agenda Operacional",
+        area="Agenda",
         objective="Organizar a agenda operacional dos estúdios.",
         description="Fluxos de agenda, recorrência e acompanhamento operacional.",
         acceptance_criteria=("Agenda operacional visível.", "Regras de agenda aplicadas."),
@@ -52,6 +56,7 @@ EPICS: tuple[EpicSpec, ...] = (
     ),
     EpicSpec(
         title="EPIC - Reposições",
+        area="Reposições",
         objective="Gerenciar reposições e compensações de aulas.",
         description="Fluxos de reposição para alunos e instrutores.",
         acceptance_criteria=("Solicitações de reposição suportadas.", "Fluxo de aprovação definido."),
@@ -59,6 +64,7 @@ EPICS: tuple[EpicSpec, ...] = (
     ),
     EpicSpec(
         title="EPIC - Dashboard",
+        area="Dashboard",
         objective="Consolidar indicadores operacionais e financeiros.",
         description="Visões gerenciais para acompanhamento da operação.",
         acceptance_criteria=("Métricas principais exibidas.", "Indicadores atualizados."),
@@ -66,13 +72,15 @@ EPICS: tuple[EpicSpec, ...] = (
     ),
     EpicSpec(
         title="EPIC - Financeiro",
+        area="Financeiro",
         objective="Cobrir os fluxos financeiros do Corely.",
         description="Rotinas de cobrança, recebimento e acompanhamento financeiro.",
         acceptance_criteria=("Fluxos financeiros cobertos.", "Visões financeiras consistentes."),
-        labels=("epic", "finance", "backend", "frontend"),
+        labels=("epic", "financeiro", "backend", "frontend"),
     ),
     EpicSpec(
         title="EPIC - Relatórios",
+        area="Relatórios",
         objective="Fornecer relatórios operacionais e financeiros.",
         description="Exportações e consultas consolidadas para gestão.",
         acceptance_criteria=("Relatórios principais disponíveis.", "Dados consolidados corretamente."),
@@ -80,6 +88,7 @@ EPICS: tuple[EpicSpec, ...] = (
     ),
     EpicSpec(
         title="EPIC - Mobile",
+        area="Mobile",
         objective="Cobrir as necessidades do uso mobile.",
         description="Funcionalidades priorizadas para o aplicativo mobile.",
         acceptance_criteria=("Fluxos mobile priorizados.", "Experiência mobile validada."),
@@ -87,17 +96,19 @@ EPICS: tuple[EpicSpec, ...] = (
     ),
     EpicSpec(
         title="EPIC - IA",
+        area="IA",
         objective="Adicionar recursos com inteligência artificial.",
         description="Casos de uso orientados por IA para ganho operacional.",
         acceptance_criteria=("Casos de uso de IA definidos.", "Integração planejada."),
-        labels=("epic", "ai", "backend"),
+        labels=("epic", "backend"),
     ),
     EpicSpec(
         title="EPIC - Infraestrutura",
+        area="Infraestrutura",
         objective="Fortalecer a infraestrutura do Corely.",
         description="Base de segurança, confiabilidade e manutenção técnica.",
         acceptance_criteria=("Infraestrutura mapeada.", "Pontos críticos priorizados."),
-        labels=("epic", "tech-debt", "security", "backend"),
+        labels=("epic", "infra", "devops", "backend"),
     ),
 )
 

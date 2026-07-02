@@ -1,4 +1,4 @@
-"""Cria os campos do Project V2 do Corely."""
+"""Cria e sincroniza os campos do Project V2 do Corely."""
 
 from __future__ import annotations
 
@@ -11,9 +11,8 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from devops.github.create_project import create_project, find_existing_project, get_owner_id
 from devops.github.github_client import GitHubApiError
-from devops.github.runtime import build_runtime_context
+from devops.github.runtime import build_runtime_context, ensure_project
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -24,6 +23,7 @@ logger = logging.getLogger(__name__)
 class FieldOptionSpec:
     name: str
     color: str
+    description: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +31,7 @@ class FieldSpec:
     name: str
     data_type: str
     options: tuple[FieldOptionSpec, ...] = ()
+    aliases: tuple[str, ...] = ()
 
 
 FIELD_SPECS: tuple[FieldSpec, ...] = (
@@ -40,15 +41,56 @@ FIELD_SPECS: tuple[FieldSpec, ...] = (
         options=(
             FieldOptionSpec("Backlog", "GRAY"),
             FieldOptionSpec("Refinado", "BLUE"),
-            FieldOptionSpec("AI Ready", "PURPLE"),
+            FieldOptionSpec("Ready", "PURPLE"),
             FieldOptionSpec("Em Desenvolvimento", "YELLOW"),
             FieldOptionSpec("Code Review", "ORANGE"),
             FieldOptionSpec("Testes", "PINK"),
-            FieldOptionSpec("Concluído", "GREEN"),
+            FieldOptionSpec("Homologado", "GREEN"),
+            FieldOptionSpec("Done", "GREEN"),
         ),
     ),
     FieldSpec(
-        name="Priority",
+        name="Tipo",
+        data_type="SINGLE_SELECT",
+        options=(
+            FieldOptionSpec("Epic", "RED"),
+            FieldOptionSpec("Story", "BLUE"),
+            FieldOptionSpec("Task", "GREEN"),
+            FieldOptionSpec("Bug", "ORANGE"),
+            FieldOptionSpec("Spike", "PURPLE"),
+        ),
+    ),
+    FieldSpec(
+        name="Área",
+        data_type="SINGLE_SELECT",
+        options=(
+            FieldOptionSpec("Arquitetura", "GRAY"),
+            FieldOptionSpec("Cadastros", "BLUE"),
+            FieldOptionSpec("Agenda", "GREEN"),
+            FieldOptionSpec("Reposições", "YELLOW"),
+            FieldOptionSpec("Dashboard", "ORANGE"),
+            FieldOptionSpec("Financeiro", "PURPLE"),
+            FieldOptionSpec("Relatórios", "PINK"),
+            FieldOptionSpec("IA", "RED"),
+            FieldOptionSpec("Mobile", "BLUE"),
+            FieldOptionSpec("Infraestrutura", "GREEN"),
+        ),
+    ),
+    FieldSpec(
+        name="Camada",
+        data_type="SINGLE_SELECT",
+        options=(
+            FieldOptionSpec("Backend", "RED"),
+            FieldOptionSpec("Frontend", "BLUE"),
+            FieldOptionSpec("API", "GREEN"),
+            FieldOptionSpec("Banco", "YELLOW"),
+            FieldOptionSpec("UX", "ORANGE"),
+            FieldOptionSpec("Infra", "PURPLE"),
+            FieldOptionSpec("DevOps", "PINK"),
+        ),
+    ),
+    FieldSpec(
+        name="Prioridade",
         data_type="SINGLE_SELECT",
         options=(
             FieldOptionSpec("Critical", "RED"),
@@ -56,19 +98,31 @@ FIELD_SPECS: tuple[FieldSpec, ...] = (
             FieldOptionSpec("Medium", "YELLOW"),
             FieldOptionSpec("Low", "GREEN"),
         ),
+        aliases=("Priority",),
     ),
-    FieldSpec(name="Epic", data_type="TEXT"),
-    FieldSpec(name="Sprint", data_type="TEXT"),
-    FieldSpec(name="Story Points", data_type="NUMBER"),
+    FieldSpec(
+        name="Sprint",
+        data_type="SINGLE_SELECT",
+        options=(
+            FieldOptionSpec("Backlog", "GRAY"),
+            FieldOptionSpec("Sprint 1", "BLUE"),
+            FieldOptionSpec("Sprint 2", "GREEN"),
+            FieldOptionSpec("Sprint 3", "YELLOW"),
+            FieldOptionSpec("Sprint 4", "ORANGE"),
+        ),
+    ),
+    FieldSpec(
+        name="Status Produto",
+        data_type="SINGLE_SELECT",
+        options=(
+            FieldOptionSpec("Planejado", "GRAY"),
+            FieldOptionSpec("Em andamento", "BLUE"),
+            FieldOptionSpec("Concluído", "GREEN"),
+        ),
+    ),
 )
 
-
-def ensure_project(runtime) -> str:
-    existing = find_existing_project(runtime.client, runtime.config.org, runtime.config.project_name)
-    if existing is not None:
-        return existing.id
-    owner_id = get_owner_id(runtime.client, runtime.config.org)
-    return create_project(runtime.client, owner_id, runtime.config.project_name).id
+LEGACY_FIELDS: tuple[str, ...] = ("Epic", "Story Points")
 
 
 def get_project_fields(client, project_id: str) -> dict[str, dict[str, Any]]:
@@ -128,65 +182,132 @@ def create_field(client, project_id: str, spec: FieldSpec) -> dict[str, Any]:
       }
     }
     """
-    data = client.execute_graphql(
-        mutation,
-        {"input": {"projectId": project_id, "name": spec.name, "dataType": spec.data_type}},
-    )
+    input_data: dict[str, Any] = {"projectId": project_id, "name": spec.name, "dataType": spec.data_type}
+    if spec.data_type == "SINGLE_SELECT" and spec.options:
+        input_data["singleSelectOptions"] = [
+            {"name": option.name, "color": option.color, "description": option.description or option.name}
+            for option in spec.options
+        ]
+
+    data = client.execute_graphql(mutation, {"input": input_data})
     field = data.get("data", {}).get("createProjectV2Field", {}).get("projectV2Field")
     if not field:
         raise GitHubApiError(f"Não foi possível criar o campo {spec.name}.")
     return field
 
 
-def create_single_select_option(client, project_id: str, field_id: str, option: FieldOptionSpec) -> None:
+def update_field(client, field_id: str, spec: FieldSpec, existing_options: dict[str, str] | None = None) -> dict[str, Any]:
     mutation = """
-    mutation($input: CreateProjectV2SingleSelectFieldOptionInput!) {
-      createProjectV2SingleSelectFieldOption(input: $input) {
-        projectV2SingleSelectFieldOption {
-          id
-          name
+    mutation($input: UpdateProjectV2FieldInput!) {
+      updateProjectV2Field(input: $input) {
+        projectV2Field {
+          __typename
+          ... on ProjectV2FieldCommon {
+            id
+            name
+            dataType
+          }
+          ... on ProjectV2SingleSelectField {
+            id
+            name
+            dataType
+            options {
+              id
+              name
+            }
+          }
         }
       }
     }
     """
-    client.execute_graphql(
-        mutation,
-        {
-            "input": {
-                "projectId": project_id,
-                "fieldId": field_id,
+
+    options = []
+    if spec.data_type == "SINGLE_SELECT" and spec.options:
+        for option in spec.options:
+            payload: dict[str, Any] = {
                 "name": option.name,
                 "color": option.color,
+                "description": option.description or option.name,
             }
-        },
-    )
+            if existing_options and option.name in existing_options:
+                payload["id"] = existing_options[option.name]
+            options.append(payload)
+
+    variables: dict[str, Any] = {"input": {"fieldId": field_id, "name": spec.name}}
+    if options:
+        variables["input"]["singleSelectOptions"] = options
+
+    data = client.execute_graphql(mutation, variables)
+    field = data.get("data", {}).get("updateProjectV2Field", {}).get("projectV2Field")
+    if not field:
+        raise GitHubApiError(f"Não foi possível atualizar o campo {spec.name}.")
+    return field
 
 
-def ensure_field(client, project_id: str, spec: FieldSpec) -> None:
+def delete_field(client, field_id: str, field_name: str) -> None:
+    mutation = """
+    mutation($input: DeleteProjectV2FieldInput!) {
+      deleteProjectV2Field(input: $input) {
+        projectV2Field {
+          id
+        }
+      }
+    }
+    """
+    client.execute_graphql(mutation, {"input": {"fieldId": field_id}})
+    logger.info("Campo removido: %s", field_name)
+
+
+def ensure_field(client, project_id: str, spec: FieldSpec, fields: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    field = fields.get(spec.name)
+    alias_field = next((fields[alias] for alias in spec.aliases if alias in fields), None)
+
+    if field is None and alias_field is not None:
+        field = alias_field
+
+    if field is not None and field.get("dataType") != spec.data_type:
+        delete_field(client, field["id"], field["name"])
+        field = None
+
+    if field is None:
+        field = create_field(client, project_id, spec)
+    elif field.get("name") != spec.name or spec.data_type == "SINGLE_SELECT":
+        existing_options = {option["name"]: option["id"] for option in field.get("options", []) or []}
+        field = update_field(client, field["id"], spec, existing_options)
+
+    return field
+
+
+def ensure_project_fields(client, project_id: str) -> dict[str, dict[str, Any]]:
     fields = get_project_fields(client, project_id)
-    if spec.name not in fields:
-        fields[spec.name] = create_field(client, project_id, spec)
 
-    if spec.data_type == "SINGLE_SELECT" and spec.options:
-        existing_options = {option["name"] for option in fields[spec.name].get("options", []) or []}
-        for option in spec.options:
-            if option.name in existing_options:
-                continue
-            create_single_select_option(client, project_id, fields[spec.name]["id"], option)
+    for legacy_name in LEGACY_FIELDS:
+        legacy_field = fields.get(legacy_name)
+        if legacy_field and legacy_name not in {spec.name for spec in FIELD_SPECS} and legacy_name != "Priority":
+            delete_field(client, legacy_field["id"], legacy_name)
+            fields.pop(legacy_name, None)
+
+    for spec in FIELD_SPECS:
+        field = ensure_field(client, project_id, spec, fields)
+        fields[field["name"]] = field
+        for alias in spec.aliases:
+            fields.pop(alias, None)
+        logger.info("Campo sincronizado: %s", spec.name)
+
+    # Remove nomes antigos que podem ter sido renomeados.
+    if "Priority" in fields and "Prioridade" in fields:
+        delete_field(client, fields["Priority"]["id"], "Priority")
+        fields.pop("Priority", None)
+
+    return get_project_fields(client, project_id)
 
 
 def main() -> int:
     try:
         runtime = build_runtime_context()
-        project_id = ensure_project(runtime)
-        processed = 0
-
-        for spec in FIELD_SPECS:
-            ensure_field(runtime.client, project_id, spec)
-            processed += 1
-            logger.info("Campo garantido: %s", spec.name)
-
-        logger.info("Resumo fields: processados=%s", processed)
+        project = ensure_project(runtime.client, runtime.config.org, runtime.config.project_name)
+        fields = ensure_project_fields(runtime.client, project.id)
+        logger.info("Resumo fields: total=%s", len(fields))
         return 0
     except (ValueError, GitHubApiError) as exc:
         logger.error(str(exc))

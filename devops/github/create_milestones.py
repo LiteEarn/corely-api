@@ -26,11 +26,29 @@ class MilestoneSpec:
 
 MILESTONES: tuple[MilestoneSpec, ...] = (
     MilestoneSpec("MVP", "Marco mínimo viável do Corely."),
-    MilestoneSpec("Beta", "Versão beta do Corely."),
-    MilestoneSpec("Produção", "Marco de entrada em produção."),
+    MilestoneSpec("V1", "Primeira versão pública do Corely."),
+    MilestoneSpec("V2", "Evolução da primeira versão do Corely."),
     MilestoneSpec("Mobile", "Entrega voltada ao aplicativo mobile."),
     MilestoneSpec("IA", "Entrega relacionada a inteligência artificial."),
+    MilestoneSpec("Financeiro", "Entrega relacionada ao módulo financeiro."),
+    MilestoneSpec("Marketplace", "Entrega relacionada ao marketplace."),
 )
+
+
+def ensure_milestones(client, owner: str, repo: str) -> tuple[int, int]:
+    existing_milestones = list_milestones(client, owner, repo)
+    created = 0
+    ignored = 0
+
+    for milestone in MILESTONES:
+        if milestone.title in existing_milestones:
+            ignored += 1
+            continue
+        create_milestone(client, owner, repo, milestone)
+        created += 1
+        logger.info("Milestone criado: %s", milestone.title)
+
+    return created, ignored
 
 
 def list_milestones(client, owner: str, repo: str) -> dict[str, int]:
@@ -62,17 +80,7 @@ def create_milestone(client, owner: str, repo: str, spec: MilestoneSpec) -> None
 def main() -> int:
     try:
         runtime = build_runtime_context()
-        existing_milestones = list_milestones(runtime.client, runtime.repository.owner, runtime.repository.name)
-        created = 0
-        ignored = 0
-
-        for milestone in MILESTONES:
-            if milestone.title in existing_milestones:
-                ignored += 1
-                continue
-            create_milestone(runtime.client, runtime.repository.owner, runtime.repository.name, milestone)
-            created += 1
-            logger.info("Milestone criado: %s", milestone.title)
+        created, ignored = ensure_milestones(runtime.client, runtime.repository.owner, runtime.repository.name)
 
         logger.info("Resumo milestones: criados=%s ignorados=%s", created, ignored)
         return 0

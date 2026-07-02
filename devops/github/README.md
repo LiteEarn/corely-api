@@ -1,6 +1,6 @@
 # GitHub Tools
 
-Ferramenta em Python para automatizar a configuração do GitHub do Corely.
+Automação idempotente do GitHub Project V2 do Corely.
 
 ## Instalação
 
@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 ## Configuração
 
-Defina as variáveis de ambiente:
+Variáveis obrigatórias:
 
 - `GITHUB_TOKEN`
 - `GITHUB_ORG`
@@ -25,29 +25,42 @@ GITHUB_ORG=LiteEarn
 PROJECT_NAME=Corely
 ```
 
-## Scripts
-
-- `create_project.py`: cria o Project V2 da organização.
-- `create_labels.py`: cria os labels padrão do Corely.
-- `create_milestones.py`: cria os milestones padrão.
-- `create_epics.py`: cria os épicos como issues no repositório.
-- `create_project_fields.py`: cria os campos do Project V2.
-- `configure_project.py`: cria as views e configura o Status.
-- `add_epics_to_project.py`: adiciona os épicos ao Project e os move para Backlog.
-- `bootstrap.py`: executa toda a sequência automaticamente.
-
 ## Execução
-
-Executar um script específico:
 
 ```bash
 python devops/github/create_project.py
 ```
 
-Executar a automação completa:
+O fluxo:
 
-```bash
-python devops/github/bootstrap.py
-```
+- cria o Project V2 se não existir
+- atualiza o Project se já existir
+- cria ou atualiza campos sem duplicar
+- garante labels e milestones
+- atualiza views do board
+- cria/atualiza épicos
+- sincroniza stories existentes
+- atualiza o template de issue
 
-Se um recurso já existir, o script apenas ignora e continua.
+## Como evoluir
+
+### Novos campos
+
+Edite `FIELD_SPECS` em `devops/github/create_project_fields.py`.
+
+### Novos labels
+
+Edite `LABELS` em `devops/github/create_labels.py`.
+
+### Novos épicos
+
+Edite `EPICS` em `devops/github/create_epics.py`.
+
+### Atualizar o board
+
+Edite as views em `devops/github/configure_project.py` e as colunas em `FIELD_SPECS`.
+
+### Reexecutar sem duplicar
+
+Rode novamente `python devops/github/create_project.py`.
+O fluxo valida o estado atual e só cria o que estiver faltando.
