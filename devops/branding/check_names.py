@@ -37,11 +37,12 @@ def main() -> None:
 
     base_dir = Path(__file__).resolve().parent
     candidates = load_candidates(base_dir / "candidates.yaml")
+    client = BrandingClient()
     weights = ScoreWeights()
 
     assessments: list[BrandAssessment] = []
     with ThreadPoolExecutor(max_workers=min(12, max(1, len(candidates)))) as executor:
-        futures = {executor.submit(build_assessment, candidate, weights): candidate for candidate in candidates}
+        futures = {executor.submit(build_assessment, client, candidate, weights): candidate for candidate in candidates}
         for future in as_completed(futures):
             assessments.append(future.result())
 
@@ -69,8 +70,7 @@ def load_candidates(path: Path) -> list[str]:
     return candidates
 
 
-def build_assessment(candidate: str, weights: ScoreWeights) -> BrandAssessment:
-    client = BrandingClient()
+def build_assessment(client: BrandingClient, candidate: str, weights: ScoreWeights) -> BrandAssessment:
     github = client.check_github(candidate)
     domain_com = client.check_domain(candidate, "com")
     domain_com_br = client.check_domain(candidate, "com.br")

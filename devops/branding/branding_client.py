@@ -7,6 +7,7 @@ from html.parser import HTMLParser
 import logging
 import re
 import unicodedata
+from threading import Lock
 from typing import Iterable
 from urllib.parse import quote_plus
 
@@ -55,9 +56,16 @@ class _DuckDuckGoResultParser(HTMLParser):
 
 
 class BrandingClient:
-    def __init__(self, timeout: int = 5) -> None:
+    def __init__(self, timeout: int = 5, offline: bool = False) -> None:
         self._timeout = timeout
+        self._offline = offline
         self._session = requests.Session()
+        self._lock = Lock()
+        self._github_unavailable = False
+        self._dns_unavailable = False
+        self._web_unavailable = False
+        self._npm_unavailable = False
+        self._dockerhub_unavailable = False
         self._session.headers.update(
             {
                 "User-Agent": "CorelyBrandingBot/1.0",
@@ -66,16 +74,37 @@ class BrandingClient:
         )
 
     def check_github(self, name: str) -> AvailabilityCheck:
+        if self._offline:
+            return AvailabilityCheck(value=f"https://github.com/{self._slugify_github_name(name)}", status="TAKEN")
+
+        with self._lock:
+            if self._github_unavailable:
+                return AvailabilityCheck(value=f"https://github.com/{self._slugify_github_name(name)}", status="TAKEN")
+
         slug = self._slugify_github_name(name)
         url = f"https://github.com/{slug}"
         return AvailabilityCheck(value=url, status=self._check_taken_by_http(url))
 
     def check_domain(self, name: str, tld: str) -> AvailabilityCheck:
+        if self._offline:
+            return AvailabilityCheck(value=self._build_domain(name, tld), status="TAKEN")
+
+        with self._lock:
+            if self._dns_unavailable:
+                return AvailabilityCheck(value=self._build_domain(name, tld), status="TAKEN")
+
         domain = self._build_domain(name, tld)
         status = self._check_domain_via_dns(domain)
         return AvailabilityCheck(value=domain, status=status)
 
     def assess_web_risk(self, name: str) -> WebRiskCheck:
+        if self._offline:
+            return WebRiskCheck(value=name, risk="MEDIUM")
+
+        with self._lock:
+            if self._web_unavailable:
+                return WebRiskCheck(value=name, risk="MEDIUM")
+
         query = quote_plus(f'"{name}" empresa')
         url = f"https://html.duckduckgo.com/html/?q={query}"
 
@@ -84,12 +113,75 @@ class BrandingClient:
             response.raise_for_status()
         except requests.RequestException as exc:
             logger.warning("Falha ao consultar busca web para %s: %s", name, exc)
+            with self._lock:
+                self._web_unavailable = True
             return WebRiskCheck(value=name, risk="MEDIUM")
 
         parser = _DuckDuckGoResultParser()
         parser.feed(response.text)
         risk = self._classify_risk(name, parser.results)
         return WebRiskCheck(value=name, risk=risk)
+
+    def check_npm_package(self, name: str) -> AvailabilityCheck:
+        package = self._slugify_package_name(name)
+        if self._offline:
+            return AvailabilityCheck(value=package, status="TAKEN")
+
+        with self._lock:
+            if self._npm_unavailable:
+                return AvailabilityCheck(value=package, status="TAKEN")
+
+        url = f"https://registry.npmjs.org/{package}"
+        try:
+            response = self._session.get(url, timeout=self._timeout)
+            if response.status_code == 404:
+                return AvailabilityCheck(value=package, status="AVAILABLE")
+            return AvailabilityCheck(value=package, status="TAKEN")
+        except requests.RequestException as exc:
+            logger.warning("Falha ao consultar NPM %s: %s", package, exc)
+            with self._lock:
+                self._npm_unavailable = True
+            return AvailabilityCheck(value=package, status="TAKEN")
+
+    def check_dockerhub(self, name: str) -> AvailabilityCheck:
+        repository = self._slugify_package_name(name)
+        if self._offline:
+            return AvailabilityCheck(value=repository, status="TAKEN")
+
+        with self._lock:
+            if self._dockerhub_unavailable:
+                return AvailabilityCheck(value=repository, status="TAKEN")
+
+        url = f"https://hub.docker.com/v2/search/repositories/?query={repository}"
+        try:
+            response = self._session.get(url, timeout=self._timeout)
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException as exc:
+            logger.warning("Falha ao consultar DockerHub %s: %s", repository, exc)
+            with self._lock:
+                self._dockerhub_unavailable = True
+            return AvailabilityCheck(value=repository, status="TAKEN")
+        except ValueError as exc:
+            logger.warning("Resposta DockerHub invalida para %s: %s", repository, exc)
+            with self._lock:
+                self._dockerhub_unavailable = True
+            return AvailabilityCheck(value=repository, status="TAKEN")
+
+        results = payload.get("results") if isinstance(payload, dict) else []
+        if not isinstance(results, list):
+            return AvailabilityCheck(value=repository, status="TAKEN")
+
+        normalized_repository = self._normalize_text(repository)
+        for item in results:
+            if not isinstance(item, dict):
+                continue
+            repo_name = self._normalize_text(str(item.get("name", "")))
+            namespace = self._normalize_text(str(item.get("namespace", "")))
+            if repo_name == normalized_repository or namespace == normalized_repository:
+                return AvailabilityCheck(value=repository, status="TAKEN")
+
+        return AvailabilityCheck(value=repository, status="AVAILABLE")
 
     def _check_taken_by_http(self, url: str) -> str:
         try:
@@ -99,6 +191,8 @@ class BrandingClient:
             return "TAKEN"
         except requests.RequestException as exc:
             logger.warning("Falha ao consultar %s: %s", url, exc)
+            with self._lock:
+                self._github_unavailable = True
             return "TAKEN"
 
     def _check_rdap_domain(self, url: str) -> str:
@@ -111,6 +205,8 @@ class BrandingClient:
             return "TAKEN"
         except requests.RequestException as exc:
             logger.warning("Falha ao consultar RDAP %s: %s", url, exc)
+            with self._lock:
+                self._dns_unavailable = True
             return "TAKEN"
 
     def _check_domain_via_dns(self, domain: str) -> str:
@@ -121,6 +217,8 @@ class BrandingClient:
             payload = response.json()
         except requests.RequestException as exc:
             logger.warning("Falha ao consultar DNS %s: %s", domain, exc)
+            with self._lock:
+                self._dns_unavailable = True
             return "TAKEN"
         except ValueError as exc:
             logger.warning("Resposta DNS invalida para %s: %s", domain, exc)
@@ -166,6 +264,11 @@ class BrandingClient:
         slug = self._slugify_domain_name(name)
         slug = re.sub(r"-+", "-", slug).strip("-")
         return slug or "candidate"
+
+    def _slugify_package_name(self, name: str) -> str:
+        package = self._slugify_domain_name(name)
+        package = re.sub(r"[^a-z0-9_-]", "", package)
+        return package or "candidate"
 
     def _slugify_domain_name(self, name: str) -> str:
         normalized = unicodedata.normalize("NFKD", name)
