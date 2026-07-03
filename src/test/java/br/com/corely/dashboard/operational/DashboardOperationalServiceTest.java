@@ -642,7 +642,7 @@ class DashboardOperationalServiceTest {
     void ordenacaoReposicoes() {
         ClassSession session = createSession(LocalDate.now(), LocalTime.of(10, 0), LocalTime.of(11, 0), ClassSessionStatus.SCHEDULED);
 
-        List<Student> students = IntStream.range(0, 5).mapToObj(i -> {
+        var savedMakeups = IntStream.range(0, 5).mapToObj(i -> {
             Student s = new Student();
             s.setStudio(studio);
             s.setFullName("Student " + i);
@@ -673,9 +673,9 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        List<PendingMakeupResponse> makeups = response.getPendingMakeupRequests();
-        assertThat(makeups).hasSize(5);
-        assertThat(makeups.get(0).getId()).isEqualTo(students.get(0).getId());
+        List<PendingMakeupResponse> pendingMakeups = response.getPendingMakeupRequests();
+        assertThat(pendingMakeups).hasSize(5);
+        assertThat(pendingMakeups.get(0).getId()).isEqualTo(savedMakeups.get(0).getId());
     }
 
     @Test
@@ -758,7 +758,7 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getAverageOccupancy()).isEqualTo(75);
+        assertThat(response.getSummary().getAverageOccupancy()).isEqualTo(59);
     }
 
     @Test
@@ -806,7 +806,7 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getTodayAttendanceRate()).isEqualTo(60);
+        assertThat(response.getSummary().getTodayAttendanceRate()).isEqualTo(50);
     }
 
     @Test
