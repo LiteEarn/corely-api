@@ -32,4 +32,12 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    @Query("SELECT COUNT(a) FROM Attendance a " +
+           "JOIN a.enrollment e " +
+           "JOIN a.classSession cs " +
+           "WHERE e.studio.id = :studioId " +
+           "AND cs.sessionDate = :date " +
+           "AND a.status = 'PRESENT'")
+    long countPresentByStudioIdAndSessionDate(@Param("studioId") UUID studioId, @Param("date") LocalDate date);
 }

@@ -5,6 +5,8 @@ import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.dashboard.dto.DashboardResponse;
 import br.com.corely.dashboard.dto.RecentEvaluationDTO;
 import br.com.corely.dashboard.dto.RecentEvolutionDTO;
+import br.com.corely.dashboard.operational.DashboardOperationalService;
+import br.com.corely.dashboard.operational.dto.DashboardOperationalResponse;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.evaluation.Evaluation;
 import br.com.corely.evaluation.EvaluationRepository;
@@ -34,6 +36,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DashboardService {
 
+    private final DashboardOperationalService dashboardOperationalService;
+
     private final StudioRepository studioRepository;
     private final StudentRepository studentRepository;
     private final InstructorRepository instructorRepository;
@@ -43,6 +47,21 @@ public class DashboardService {
     private final ObjectiveRepository objectiveRepository;
     private final EvaluationRepository evaluationRepository;
     private final EvolutionRepository evolutionRepository;
+
+    @Transactional(readOnly = true)
+    public DashboardOperationalResponse getOperationalDashboard(UUID studioId) {
+        UUID resolvedStudioId = resolveStudioId(studioId);
+        return dashboardOperationalService.getOperationalDashboard(resolvedStudioId);
+    }
+
+    private UUID resolveStudioId(UUID studioId) {
+        if (studioId != null) {
+            return studioId;
+        }
+        return studioRepository.findFirstByActiveTrueOrderByName()
+                .orElseThrow(() -> new ResourceNotFoundException("Nenhum studio ativo encontrado"))
+                .getId();
+    }
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard(UUID studioId) {

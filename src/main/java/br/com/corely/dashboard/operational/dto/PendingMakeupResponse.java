@@ -11,6 +11,7 @@ import java.util.UUID;
 public class PendingMakeupResponse {
     private UUID id;
     private String studentName;
+    private String className;
     private LocalDateTime requestedAt;
     private String reason;
 }

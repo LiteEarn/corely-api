@@ -1,0 +1,73 @@
+name: Sync Project Board
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract issue key from branch
+        id: extract
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          KEY=$(echo "$BRANCH" | grep -oP '[A-Z]+-\d+' | head -1)
+          echo "key=$KEY" >> $GITHUB_OUTPUT
+
+      - name: Find issue and update project
+        if: steps.extract.outputs.key != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_KEY: ${{ steps.extract.outputs.key }}
+          BRANCH: ${{ steps.extract.outputs.branch }}
+          PROJECT_NUMBER: 3
+        run: |
+          echo "Issue key: ${ISSUE_KEY}"
+          echo "Branch: ${BRANCH}"
+
+          ISSUE=$(gh issue list --state all --json number,title --jq ".[] | select(.title | contains(\"${ISSUE_KEY}\")) | .number" | head -1)
+          if [ -z "$ISSUE" ]; then
+            echo "No issue found with key ${ISSUE_KEY}"
+            exit 0
+          fi
+          echo "Found issue #${ISSUE}"
+
+          COMMITS=$(git log origin/main..HEAD --oneline --no-decorate 2>/dev/null || echo "(first commit)")
+          STAT=$(git diff origin/main...HEAD --stat 2>/dev/null || echo "")
+          COMMENT="## Implementação concluída\n\n### Commits incluídos\n\`\`\`\n${COMMITS}\n\`\`\`\n### Arquivos alterados\n\`\`\`\n${STAT}\n\`\`\`\n\n_Sincronizado automaticamente pelo GitHub Actions._"
+          gh issue comment "$ISSUE" --body "$(echo -e "$COMMENT")"
+
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          PROJECT_ID=$(gh api graphql -f query="query { user(login: \"$OWNER\") { projectV2(number: $PROJECT_NUMBER) { id } } }" --jq '.data.user.projectV2.id')
+          echo "Project ID: $PROJECT_ID"
+
+          STATUS_FIELD_ID=$(gh api graphql -f query="query { node(id: \"$PROJECT_ID\") { ... on ProjectV2 { fields(first: 50) { nodes { ... on ProjectV2SingleSelectField { id name } } } } } }" --jq '.data.node.fields.nodes[] | select(.name=="Status") | .id')
+          echo "Status field ID: $STATUS_FIELD_ID"
+
+          CODE_REVIEW_OPTION_ID=$(gh api graphql -f query="query { node(id: \"$STATUS_FIELD_ID\") { ... on ProjectV2SingleSelectField { options { id name } } } }" --jq '.data.node.options[] | select(.name=="Code Review") | .id')
+          echo "Code Review option ID: $CODE_REVIEW_OPTION_ID"
+
+          ISSUE_NODE_ID=$(gh api graphql -f query="query { repository(owner: \"$OWNER\", name: \"${GITHUB_REPOSITORY#*/}\") { issue(number: $ISSUE) { id } } }" --jq '.data.repository.issue.id')
+
+          PROJECT_ITEM_ID=$(gh api graphql -f query="query { node(id: \"$PROJECT_ID\") { ... on ProjectV2 { items(first: 100) { nodes { id content { ... on Issue { id } } } } } } }" --jq ".data.node.items.nodes[] | select(.content.id == \"$ISSUE_NODE_ID\") | .id")
+          if [ -z "$PROJECT_ITEM_ID" ]; then
+            echo "Item not found in project — adding it..."
+            ADD_RESULT=$(gh api graphql -f query="mutation { addProjectV2ItemById(input: {projectId: \"$PROJECT_ID\", contentId: \"$ISSUE_NODE_ID\"}) { item { id } } }")
+            PROJECT_ITEM_ID=$(echo "$ADD_RESULT" | jq -r '.data.addProjectV2ItemById.item.id')
+          fi
+          echo "Project item ID: $PROJECT_ITEM_ID"
+
+          gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: {projectId: \"$PROJECT_ID\", itemId: \"$PROJECT_ITEM_ID\", fieldId: \"$STATUS_FIELD_ID\", value: {singleSelectOptionId: \"$CODE_REVIEW_OPTION_ID\"}}) { projectV2Item { id } } }"
+
+          echo "✓ Issue #$ISSUE moved to Code Review in project."

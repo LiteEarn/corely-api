@@ -131,13 +131,14 @@ class DashboardOperationalServiceTest {
 
         assertThat(response.getSummary().getClassesToday()).isZero();
         assertThat(response.getSummary().getClassesInProgress()).isZero();
+        assertThat(response.getSummary().getActiveStudents()).isZero();
         assertThat(response.getSummary().getStudentsPresentToday()).isZero();
         assertThat(response.getSummary().getPendingMakeupRequests()).isZero();
         assertThat(response.getUpcomingSessions()).isEmpty();
         assertThat(response.getPendingMakeupRequests()).isEmpty();
-        assertThat(response.getOccupancy()).isEmpty();
+        assertThat(response.getClassOccupancy()).isEmpty();
         assertThat(response.getAlerts()).hasSize(1);
-        assertThat(response.getAlerts().get(0).getMessage()).isEqualTo("Nenhuma aula hoje");
+        assertThat(response.getAlerts().get(0).getMessage()).isEqualTo("Nenhuma aula programada");
     }
 
     @Test
@@ -150,31 +151,63 @@ class DashboardOperationalServiceTest {
         attendance.setStatus(AttendanceStatus.PRESENT);
         attendanceRepository.save(attendance);
 
-        MakeupRequest makeup = new MakeupRequest();
-        makeup.setAttendance(attendance);
-        makeup.setStatus(MakeupRequestStatus.REQUESTED);
-        makeup.setReason("Médico");
-        makeup.setRequestedAt(LocalDateTime.now());
-        makeupRequestRepository.save(makeup);
+        ClassGroup makeupGroup = new ClassGroup();
+        makeupGroup.setStudio(studio);
+        makeupGroup.setInstructor(instructor);
+        makeupGroup.setName("Makeup Group");
+        makeupGroup.setStartTime(LocalTime.of(10, 0));
+        makeupGroup.setEndTime(LocalTime.of(11, 0));
+        makeupGroup.setCapacity(100);
+        makeupGroup.setMonday(true);
+        makeupGroup.setActive(true);
+        makeupGroup = classGroupRepository.save(makeupGroup);
+
+        for (int i = 0; i < 11; i++) {
+            Student s = new Student();
+            s.setStudio(studio);
+            s.setFullName("Student " + i);
+            s.setActive(true);
+            s = studentRepository.save(s);
+
+            Enrollment e = new Enrollment();
+            e.setStudio(studio);
+            e.setStudent(s);
+            e.setClassGroup(makeupGroup);
+            e.setEnrollmentDate(LocalDate.now());
+            e.setActive(true);
+            e = enrollmentRepository.save(e);
+
+            Attendance a = new Attendance();
+            a.setClassSession(session);
+            a.setEnrollment(e);
+            a.setStatus(AttendanceStatus.ABSENT);
+            a = attendanceRepository.save(a);
+
+            MakeupRequest mr = new MakeupRequest();
+            mr.setAttendance(a);
+            mr.setStatus(MakeupRequestStatus.REQUESTED);
+            mr.setReason("Test " + i);
+            mr.setRequestedAt(LocalDateTime.now());
+            makeupRequestRepository.save(mr);
+        }
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
         assertThat(response.getSummary().getClassesToday()).isEqualTo(1);
         assertThat(response.getSummary().getStudentsPresentToday()).isEqualTo(1);
-        assertThat(response.getSummary().getPendingMakeupRequests()).isEqualTo(1);
+        assertThat(response.getSummary().getActiveStudents()).isEqualTo(12);
+        assertThat(response.getSummary().getPendingMakeupRequests()).isEqualTo(11);
 
         assertThat(response.getUpcomingSessions()).hasSize(1);
-        assertThat(response.getUpcomingSessions().get(0).getClassGroupName()).isEqualTo("Test Class Group");
-        assertThat(response.getUpcomingSessions().get(0).getEnrolledStudents()).isEqualTo(1);
+        assertThat(response.getUpcomingSessions().get(0).getClassName()).isEqualTo("Test Class Group");
 
-        assertThat(response.getPendingMakeupRequests()).hasSize(1);
-        assertThat(response.getPendingMakeupRequests().get(0).getStudentName()).isEqualTo("Test Student");
-        assertThat(response.getPendingMakeupRequests().get(0).getReason()).isEqualTo("Médico");
+        assertThat(response.getPendingMakeupRequests()).hasSize(11);
+        assertThat(response.getPendingMakeupRequests().get(0).getStudentName()).isEqualTo("Student 0");
+        assertThat(response.getPendingMakeupRequests().get(0).getClassName()).isEqualTo("Makeup Group");
 
-        assertThat(response.getOccupancy()).hasSize(1);
-        assertThat(response.getOccupancy().get(0).getOccupancyPercentage()).isEqualTo(10);
+        assertThat(response.getClassOccupancy()).hasSize(2);
 
-        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Reposições pendentes"));
+        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Muitas reposições pendentes"));
     }
 
     @Test
@@ -183,7 +216,7 @@ class DashboardOperationalServiceTest {
 
         assertThat(response.getSummary().getClassesToday()).isZero();
         assertThat(response.getUpcomingSessions()).isEmpty();
-        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula hoje"));
+        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula programada"));
     }
 
     @Test
@@ -194,7 +227,7 @@ class DashboardOperationalServiceTest {
 
         assertThat(response.getSummary().getPendingMakeupRequests()).isZero();
         assertThat(response.getPendingMakeupRequests()).isEmpty();
-        assertThat(response.getAlerts()).noneMatch(a -> a.getMessage().contains("Reposições pendentes"));
+        assertThat(response.getAlerts()).noneMatch(a -> a.getMessage().contains("Muitas reposições pendentes"));
     }
 
     @Test
@@ -255,25 +288,25 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getOccupancy()).hasSize(2);
+        assertThat(response.getClassOccupancy()).hasSize(2);
 
-        var classGroupOcc = response.getOccupancy().stream()
+        var classGroupOcc = response.getClassOccupancy().stream()
                 .filter(o -> o.getClassGroupId().equals(classGroup.getId()))
                 .findFirst().orElseThrow();
         assertThat(classGroupOcc.getCapacity()).isEqualTo(10);
         assertThat(classGroupOcc.getEnrolled()).isEqualTo(1);
-        assertThat(classGroupOcc.getOccupancyPercentage()).isEqualTo(10);
+        assertThat(classGroupOcc.getOccupancyPercent()).isEqualTo(10);
 
-        var yogaOcc = response.getOccupancy().stream()
+        var yogaOcc = response.getClassOccupancy().stream()
                 .filter(o -> o.getClassGroupId().equals(classGroup2.getId()))
                 .findFirst().orElseThrow();
         assertThat(yogaOcc.getCapacity()).isEqualTo(20);
         assertThat(yogaOcc.getEnrolled()).isEqualTo(2);
-        assertThat(yogaOcc.getOccupancyPercentage()).isEqualTo(10);
+        assertThat(yogaOcc.getOccupancyPercent()).isEqualTo(10);
     }
 
     @Test
-    void alertas() {
+    void alertaOcupacao() {
         ClassGroup fullGroup = new ClassGroup();
         fullGroup.setStudio(studio);
         fullGroup.setInstructor(instructor);
@@ -288,29 +321,151 @@ class DashboardOperationalServiceTest {
         enrollment.setClassGroup(fullGroup);
         enrollmentRepository.save(enrollment);
 
-        ClassSession session = createSession(LocalDate.now(), LocalTime.of(8, 0), LocalTime.of(9, 0), ClassSessionStatus.IN_PROGRESS);
-        session.setClassGroup(fullGroup);
-        classSessionRepository.save(session);
+        var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        Attendance attendance = new Attendance();
-        attendance.setClassSession(session);
-        attendance.setEnrollment(enrollment);
-        attendance.setStatus(AttendanceStatus.PRESENT);
-        attendanceRepository.save(attendance);
+        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Turma quase lotada"));
+    }
 
-        MakeupRequest makeup = new MakeupRequest();
-        makeup.setAttendance(attendance);
-        makeup.setStatus(MakeupRequestStatus.REQUESTED);
-        makeup.setReason("Médico");
-        makeup.setRequestedAt(LocalDateTime.now());
-        makeupRequestRepository.save(makeup);
+    @Test
+    void alertaReposicoes() {
+        ClassSession session = createSession(LocalDate.now(), LocalTime.of(10, 0), LocalTime.of(11, 0), ClassSessionStatus.SCHEDULED);
+
+        for (int i = 0; i < 11; i++) {
+            Student s = new Student();
+            s.setStudio(studio);
+            s.setFullName("Student " + i);
+            s.setActive(true);
+            s = studentRepository.save(s);
+
+            Enrollment e = new Enrollment();
+            e.setStudio(studio);
+            e.setStudent(s);
+            e.setClassGroup(classGroup);
+            e.setEnrollmentDate(LocalDate.now());
+            e.setActive(true);
+            e = enrollmentRepository.save(e);
+
+            Attendance a = new Attendance();
+            a.setClassSession(session);
+            a.setEnrollment(e);
+            a.setStatus(AttendanceStatus.ABSENT);
+            a = attendanceRepository.save(a);
+
+            MakeupRequest mr = new MakeupRequest();
+            mr.setAttendance(a);
+            mr.setStatus(MakeupRequestStatus.REQUESTED);
+            mr.setReason("Test " + i);
+            mr.setRequestedAt(LocalDateTime.now());
+            makeupRequestRepository.save(mr);
+        }
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Turma lotada"));
-        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Reposições pendentes"));
-        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Aulas em andamento"));
-        assertThat(response.getAlerts()).noneMatch(a -> a.getMessage().contains("Nenhuma aula hoje"));
+        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Muitas reposições pendentes"));
+    }
+
+    @Test
+    void alertaNenhumaAula() {
+        var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
+
+        assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula programada"));
+    }
+
+    @Test
+    void ocupacaoCorreta() {
+        ClassGroup cg = new ClassGroup();
+        cg.setStudio(studio);
+        cg.setInstructor(instructor);
+        cg.setName("Half Full");
+        cg.setStartTime(LocalTime.of(14, 0));
+        cg.setEndTime(LocalTime.of(15, 0));
+        cg.setCapacity(10);
+        cg.setMonday(true);
+        cg.setActive(true);
+        ClassGroup halfGroup = classGroupRepository.save(cg);
+
+        for (int i = 0; i < 5; i++) {
+            Student s = new Student();
+            s.setStudio(studio);
+            s.setFullName("Student " + i);
+            s.setActive(true);
+            s = studentRepository.save(s);
+
+            Enrollment e = new Enrollment();
+            e.setStudio(studio);
+            e.setStudent(s);
+            e.setClassGroup(halfGroup);
+            e.setEnrollmentDate(LocalDate.now());
+            e.setActive(true);
+            enrollmentRepository.save(e);
+        }
+
+        var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
+
+        var halfOcc = response.getClassOccupancy().stream()
+                .filter(o -> o.getClassGroupId().equals(halfGroup.getId()))
+                .findFirst().orElseThrow();
+        assertThat(halfOcc.getOccupancyPercent()).isEqualTo(50);
+    }
+
+    @Test
+    void resumoCorreto() {
+        createSession(LocalDate.now(), LocalTime.of(10, 0), LocalTime.of(11, 0), ClassSessionStatus.SCHEDULED);
+        createSession(LocalDate.now(), LocalTime.of(11, 0), LocalTime.of(12, 0), ClassSessionStatus.IN_PROGRESS);
+
+        var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
+
+        assertThat(response.getSummary().getClassesToday()).isEqualTo(2);
+        assertThat(response.getSummary().getClassesInProgress()).isEqualTo(1);
+        assertThat(response.getSummary().getActiveStudents()).isEqualTo(1);
+    }
+
+    @Test
+    void listaOrdenada() {
+        ClassGroup cg1 = new ClassGroup();
+        cg1.setStudio(studio);
+        cg1.setInstructor(instructor);
+        cg1.setName("Group A");
+        cg1.setStartTime(LocalTime.of(10, 0));
+        cg1.setEndTime(LocalTime.of(11, 0));
+        cg1.setCapacity(10);
+        cg1.setMonday(true);
+        cg1.setActive(true);
+        cg1 = classGroupRepository.save(cg1);
+
+        ClassGroup cg2 = new ClassGroup();
+        cg2.setStudio(studio);
+        cg2.setInstructor(instructor);
+        cg2.setName("Group B");
+        cg2.setStartTime(LocalTime.of(14, 0));
+        cg2.setEndTime(LocalTime.of(15, 0));
+        cg2.setCapacity(10);
+        cg2.setMonday(true);
+        cg2.setActive(true);
+        cg2 = classGroupRepository.save(cg2);
+
+        for (int i = 0; i < 8; i++) {
+            Student s = new Student();
+            s.setStudio(studio);
+            s.setFullName("Student " + i);
+            s.setActive(true);
+            s = studentRepository.save(s);
+            Enrollment e = new Enrollment();
+            e.setStudio(studio);
+            e.setStudent(s);
+            e.setClassGroup(cg1);
+            e.setEnrollmentDate(LocalDate.now());
+            e.setActive(true);
+            enrollmentRepository.save(e);
+        }
+
+        var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
+
+        assertThat(response.getClassOccupancy()).hasSize(3);
+        assertThat(response.getClassOccupancy().get(0).getOccupancyPercent())
+                .isGreaterThanOrEqualTo(response.getClassOccupancy().get(1).getOccupancyPercent());
+        assertThat(response.getClassOccupancy().get(1).getOccupancyPercent())
+                .isGreaterThanOrEqualTo(response.getClassOccupancy().get(2).getOccupancyPercent());
     }
 
     @Test
@@ -366,15 +521,16 @@ class DashboardOperationalServiceTest {
         var otherResponse = dashboardOperationalService.getOperationalDashboard(otherStudio.getId());
 
         assertThat(studioResponse.getSummary().getClassesToday()).isZero();
+        assertThat(studioResponse.getSummary().getActiveStudents()).isEqualTo(1);
         assertThat(studioResponse.getSummary().getPendingMakeupRequests()).isZero();
         assertThat(studioResponse.getUpcomingSessions()).isEmpty();
-        assertThat(studioResponse.getOccupancy()).hasSize(1);
-        assertThat(studioResponse.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula hoje"));
+        assertThat(studioResponse.getClassOccupancy()).hasSize(1);
+        assertThat(studioResponse.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula programada"));
 
         assertThat(otherResponse.getSummary().getClassesToday()).isEqualTo(1);
         assertThat(otherResponse.getSummary().getPendingMakeupRequests()).isEqualTo(1);
         assertThat(otherResponse.getUpcomingSessions()).hasSize(1);
-        assertThat(otherResponse.getOccupancy()).hasSize(1);
+        assertThat(otherResponse.getClassOccupancy()).hasSize(1);
         assertThat(otherResponse.getPendingMakeupRequests()).hasSize(1);
         assertThat(otherResponse.getPendingMakeupRequests().get(0).getStudentName()).isEqualTo("Other Student");
     }

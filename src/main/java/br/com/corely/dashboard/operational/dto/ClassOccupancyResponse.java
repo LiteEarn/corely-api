@@ -7,10 +7,10 @@ import java.util.UUID;
 
 @Data
 @AllArgsConstructor
-public class OccupancyResponse {
+public class ClassOccupancyResponse {
     private UUID classGroupId;
-    private String classGroupName;
+    private String className;
     private int capacity;
     private long enrolled;
-    private int occupancyPercentage;
+    private int occupancyPercent;
 }

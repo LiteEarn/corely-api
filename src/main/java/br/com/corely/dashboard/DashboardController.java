@@ -1,6 +1,7 @@
 package br.com.corely.dashboard;
 
 import br.com.corely.dashboard.dto.DashboardResponse;
+import br.com.corely.dashboard.operational.dto.DashboardOperationalResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +30,15 @@ public class DashboardController {
             @RequestParam UUID studioId) {
         log.info("ENTERED DASHBOARD CONTROLLER - getDashboard with studioId: {}", studioId);
         DashboardResponse response = dashboardService.getDashboard(studioId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/operational")
+    @Operation(summary = "Get operational dashboard", description = "Retorna dados agregados do Dashboard Operacional")
+    public ResponseEntity<DashboardOperationalResponse> getOperationalDashboard(
+            @Parameter(description = "Studio ID (opcional - usa o primeiro studio ativo quando não informado)")
+            @RequestParam(required = false) UUID studioId) {
+        DashboardOperationalResponse response = dashboardService.getOperationalDashboard(studioId);
         return ResponseEntity.ok(response);
     }
 }

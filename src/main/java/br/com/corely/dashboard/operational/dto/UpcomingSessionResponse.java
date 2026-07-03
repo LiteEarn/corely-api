@@ -4,7 +4,6 @@ import br.com.corely.classsession.ClassSessionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -13,11 +12,9 @@ import java.util.UUID;
 public class UpcomingSessionResponse {
     private UUID id;
     private UUID classGroupId;
-    private String classGroupName;
-    private LocalDate sessionDate;
+    private String className;
+    private String instructorName;
     private LocalTime startTime;
     private LocalTime endTime;
     private ClassSessionStatus status;
-    private String instructorName;
-    private long enrolledStudents;
 }

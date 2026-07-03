@@ -20,4 +20,6 @@ public interface ClassGroupRepository extends JpaRepository<ClassGroup, UUID> {
     List<ClassGroup> findByInstructorIdAndActiveTrue(UUID instructorId);
 
     List<ClassGroup> findByActiveTrue();
+
+    List<ClassGroup> findByStudioIdAndActiveTrue(UUID studioId);
 }

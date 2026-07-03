@@ -7,10 +7,10 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class OperationalDashboardResponse {
+public class DashboardOperationalResponse {
     private SummaryResponse summary;
     private List<UpcomingSessionResponse> upcomingSessions;
     private List<PendingMakeupResponse> pendingMakeupRequests;
-    private List<OccupancyResponse> occupancy;
+    private List<ClassOccupancyResponse> classOccupancy;
     private List<DashboardAlertResponse> alerts;
 }

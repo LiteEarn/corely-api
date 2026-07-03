@@ -8,6 +8,7 @@ import lombok.Data;
 public class SummaryResponse {
     private long classesToday;
     private long classesInProgress;
+    private long activeStudents;
     private long studentsPresentToday;
     private long pendingMakeupRequests;
 }

@@ -16,6 +16,9 @@ import br.com.corely.evolution.Evolution;
 import br.com.corely.evolution.EvolutionRepository;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
+import br.com.corely.makeup.MakeupRequest;
+import br.com.corely.makeup.MakeupRequestRepository;
+import br.com.corely.makeup.MakeupRequestStatus;
 import br.com.corely.objective.Objective;
 import br.com.corely.objective.ObjectiveRepository;
 import br.com.corely.objective.ObjectiveStatus;
@@ -96,6 +99,9 @@ class DashboardControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private MakeupRequestRepository makeupRequestRepository;
+
     private Studio studio;
     private Studio emptyStudio;
     private Student student;
@@ -107,6 +113,7 @@ class DashboardControllerTest {
 
     @BeforeEach
     void setUp() {
+        makeupRequestRepository.deleteAll();
         evolutionRepository.deleteAll();
         evaluationRepository.deleteAll();
         attendanceRepository.deleteAll();
@@ -595,5 +602,42 @@ class DashboardControllerTest {
                 // Total active capacity = 20 + 25 = 45, active enrollments = 2
                 // Occupancy rate = (2 * 100) / 45 = 4.44
                 .andExpect(jsonPath("$.occupancyRate").value(4.44));
+    }
+
+    @Test
+    void testGetOperationalDashboard() throws Exception {
+        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.classesToday").value(1))
+                .andExpect(jsonPath("$.summary.activeStudents").value(1))
+                .andExpect(jsonPath("$.upcomingSessions").isArray())
+                .andExpect(jsonPath("$.pendingMakeupRequests").isArray())
+                .andExpect(jsonPath("$.classOccupancy").isArray())
+                .andExpect(jsonPath("$.alerts").isArray());
+    }
+
+    @Test
+    void testGetOperationalDashboardEmpty() throws Exception {
+        mockMvc.perform(get("/dashboard/operational").param("studioId", emptyStudio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.classesToday").value(0))
+                .andExpect(jsonPath("$.summary.activeStudents").value(0))
+                .andExpect(jsonPath("$.summary.studentsPresentToday").value(0))
+                .andExpect(jsonPath("$.summary.pendingMakeupRequests").value(0))
+                .andExpect(jsonPath("$.upcomingSessions").isEmpty())
+                .andExpect(jsonPath("$.pendingMakeupRequests").isEmpty())
+                .andExpect(jsonPath("$.classOccupancy").isEmpty())
+                .andExpect(jsonPath("$.alerts[0].message").value("Nenhuma aula programada"));
+    }
+
+    @Test
+    void testGetOperationalDashboardSemStudioId() throws Exception {
+        mockMvc.perform(get("/dashboard/operational"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary").exists())
+                .andExpect(jsonPath("$.upcomingSessions").isArray())
+                .andExpect(jsonPath("$.pendingMakeupRequests").isArray())
+                .andExpect(jsonPath("$.classOccupancy").isArray())
+                .andExpect(jsonPath("$.alerts").isArray());
     }
 }
