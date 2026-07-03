@@ -6,5 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class DashboardAlertResponse {
+    private String type;
     private String message;
 }

@@ -129,11 +129,10 @@ class DashboardOperationalServiceTest {
     void dashboardVazio() {
         var response = dashboardOperationalService.getOperationalDashboard(otherStudio.getId());
 
-        assertThat(response.getSummary().getClassesToday()).isZero();
-        assertThat(response.getSummary().getClassesInProgress()).isZero();
-        assertThat(response.getSummary().getActiveStudents()).isZero();
-        assertThat(response.getSummary().getStudentsPresentToday()).isZero();
-        assertThat(response.getSummary().getPendingMakeupRequests()).isZero();
+        assertThat(response.getTodayClasses()).isZero();
+        assertThat(response.getOngoingClasses()).isZero();
+        assertThat(response.getPresentStudents()).isZero();
+        assertThat(response.getPendingMakeups()).isZero();
         assertThat(response.getUpcomingSessions()).isEmpty();
         assertThat(response.getPendingMakeupRequests()).isEmpty();
         assertThat(response.getClassOccupancy()).isEmpty();
@@ -193,10 +192,9 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getClassesToday()).isEqualTo(1);
-        assertThat(response.getSummary().getStudentsPresentToday()).isEqualTo(1);
-        assertThat(response.getSummary().getActiveStudents()).isEqualTo(12);
-        assertThat(response.getSummary().getPendingMakeupRequests()).isEqualTo(11);
+        assertThat(response.getTodayClasses()).isEqualTo(1);
+        assertThat(response.getPresentStudents()).isEqualTo(1);
+        assertThat(response.getPendingMakeups()).isEqualTo(11);
 
         assertThat(response.getUpcomingSessions()).hasSize(1);
         assertThat(response.getUpcomingSessions().get(0).getClassName()).isEqualTo("Test Class Group");
@@ -214,7 +212,7 @@ class DashboardOperationalServiceTest {
     void semAulas() {
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getClassesToday()).isZero();
+        assertThat(response.getTodayClasses()).isZero();
         assertThat(response.getUpcomingSessions()).isEmpty();
         assertThat(response.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula programada"));
     }
@@ -225,7 +223,7 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getPendingMakeupRequests()).isZero();
+        assertThat(response.getPendingMakeups()).isZero();
         assertThat(response.getPendingMakeupRequests()).isEmpty();
         assertThat(response.getAlerts()).noneMatch(a -> a.getMessage().contains("Muitas reposições pendentes"));
     }
@@ -242,7 +240,7 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getStudentsPresentToday()).isZero();
+        assertThat(response.getPresentStudents()).isZero();
     }
 
     @Test
@@ -415,9 +413,8 @@ class DashboardOperationalServiceTest {
 
         var response = dashboardOperationalService.getOperationalDashboard(studio.getId());
 
-        assertThat(response.getSummary().getClassesToday()).isEqualTo(2);
-        assertThat(response.getSummary().getClassesInProgress()).isEqualTo(1);
-        assertThat(response.getSummary().getActiveStudents()).isEqualTo(1);
+        assertThat(response.getTodayClasses()).isEqualTo(2);
+        assertThat(response.getOngoingClasses()).isEqualTo(1);
     }
 
     @Test
@@ -520,15 +517,14 @@ class DashboardOperationalServiceTest {
         var studioResponse = dashboardOperationalService.getOperationalDashboard(studio.getId());
         var otherResponse = dashboardOperationalService.getOperationalDashboard(otherStudio.getId());
 
-        assertThat(studioResponse.getSummary().getClassesToday()).isZero();
-        assertThat(studioResponse.getSummary().getActiveStudents()).isEqualTo(1);
-        assertThat(studioResponse.getSummary().getPendingMakeupRequests()).isZero();
+        assertThat(studioResponse.getTodayClasses()).isZero();
+        assertThat(studioResponse.getPendingMakeups()).isZero();
         assertThat(studioResponse.getUpcomingSessions()).isEmpty();
         assertThat(studioResponse.getClassOccupancy()).hasSize(1);
         assertThat(studioResponse.getAlerts()).anyMatch(a -> a.getMessage().contains("Nenhuma aula programada"));
 
-        assertThat(otherResponse.getSummary().getClassesToday()).isEqualTo(1);
-        assertThat(otherResponse.getSummary().getPendingMakeupRequests()).isEqualTo(1);
+        assertThat(otherResponse.getTodayClasses()).isEqualTo(1);
+        assertThat(otherResponse.getPendingMakeups()).isEqualTo(1);
         assertThat(otherResponse.getUpcomingSessions()).hasSize(1);
         assertThat(otherResponse.getClassOccupancy()).hasSize(1);
         assertThat(otherResponse.getPendingMakeupRequests()).hasSize(1);

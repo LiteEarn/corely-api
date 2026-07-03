@@ -159,12 +159,22 @@ public class MakeupRequestService {
     }
 
     private MakeupRequestResponse toResponse(MakeupRequest makeupRequest) {
+        br.com.corely.attendance.Attendance attendance = makeupRequest.getAttendance();
+        br.com.corely.enrollment.Enrollment enrollment = attendance.getEnrollment();
+        br.com.corely.student.Student student = enrollment.getStudent();
+        br.com.corely.classgroup.ClassGroup classGroup = enrollment.getClassGroup();
+        br.com.corely.classsession.ClassSession session = attendance.getClassSession();
+
         return new MakeupRequestResponse(
                 makeupRequest.getId(),
-                makeupRequest.getAttendance().getId(),
+                attendance.getId(),
                 makeupRequest.getTargetSession() != null ? makeupRequest.getTargetSession().getId() : null,
                 makeupRequest.getStatus(),
                 makeupRequest.getReason(),
+                student.getFullName(),
+                classGroup.getName(),
+                session.getSessionDate(),
+                classGroup.getInstructor().getFullName(),
                 makeupRequest.getRequestedAt(),
                 makeupRequest.getApprovedAt(),
                 makeupRequest.getRejectedAt(),

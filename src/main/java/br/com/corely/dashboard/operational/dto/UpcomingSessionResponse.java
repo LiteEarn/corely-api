@@ -16,5 +16,7 @@ public class UpcomingSessionResponse {
     private String instructorName;
     private LocalTime startTime;
     private LocalTime endTime;
+    private long enrolledCount;
+    private int capacity;
     private ClassSessionStatus status;
 }

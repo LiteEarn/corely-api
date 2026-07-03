@@ -11,7 +11,6 @@ import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.makeup.MakeupRequest;
 import br.com.corely.makeup.MakeupRequestRepository;
 import br.com.corely.makeup.MakeupRequestStatus;
-import br.com.corely.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +28,6 @@ public class DashboardOperationalService {
     private final ClassGroupRepository classGroupRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final MakeupRequestRepository makeupRequestRepository;
-    private final StudentRepository studentRepository;
 
     @Transactional(readOnly = true)
     public DashboardOperationalResponse getOperationalDashboard(UUID studioId) {
@@ -37,32 +35,35 @@ public class DashboardOperationalService {
 
         long classesToday = classSessionRepository.countByStudioIdAndSessionDate(studioId, today);
         long classesInProgress = classSessionRepository.countByStudioIdAndStatus(studioId, ClassSessionStatus.IN_PROGRESS);
-        long activeStudents = studentRepository.countByStudioIdAndActiveTrue(studioId);
         long studentsPresentToday = attendanceRepository.countPresentByStudioIdAndSessionDate(studioId, today);
         long pendingMakeupCount = makeupRequestRepository.countByStudioIdAndStatus(studioId, MakeupRequestStatus.REQUESTED);
-
-        SummaryResponse summary = new SummaryResponse(classesToday, classesInProgress, activeStudents, studentsPresentToday, pendingMakeupCount);
 
         List<UpcomingSessionResponse> upcomingSessions = buildUpcomingSessions(studioId, today);
         List<PendingMakeupResponse> pendingMakeupResponses = buildPendingMakeups(studioId);
         List<ClassOccupancyResponse> occupancyList = buildOccupancy(studioId);
-        List<DashboardAlertResponse> alerts = buildAlerts(summary, occupancyList);
+        List<DashboardAlertResponse> alerts = buildAlerts(classesToday, classesInProgress, studentsPresentToday, pendingMakeupCount, occupancyList);
 
-        return new DashboardOperationalResponse(summary, upcomingSessions, pendingMakeupResponses, occupancyList, alerts);
+        return new DashboardOperationalResponse(classesToday, classesInProgress, studentsPresentToday, pendingMakeupCount, upcomingSessions, pendingMakeupResponses, occupancyList, alerts);
     }
 
     private List<UpcomingSessionResponse> buildUpcomingSessions(UUID studioId, LocalDate today) {
         List<ClassSession> sessions = classSessionRepository.findTodaySessionsByStudio(studioId, today);
         return sessions.stream()
-                .map(s -> new UpcomingSessionResponse(
-                        s.getId(),
-                        s.getClassGroup().getId(),
-                        s.getClassGroup().getName(),
-                        s.getInstructor().getFullName(),
-                        s.getStartTime(),
-                        s.getEndTime(),
-                        s.getStatus()
-                ))
+                .map(s -> {
+                    long enrolled = enrollmentRepository.countByClassGroupIdAndActiveTrue(s.getClassGroup().getId());
+                    int capacity = s.getClassGroup().getCapacity() != null ? s.getClassGroup().getCapacity() : 0;
+                    return new UpcomingSessionResponse(
+                            s.getId(),
+                            s.getClassGroup().getId(),
+                            s.getClassGroup().getName(),
+                            s.getInstructor().getFullName(),
+                            s.getStartTime(),
+                            s.getEndTime(),
+                            enrolled,
+                            capacity,
+                            s.getStatus()
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -73,7 +74,7 @@ public class DashboardOperationalService {
                         mr.getId(),
                         mr.getAttendance().getEnrollment().getStudent().getFullName(),
                         mr.getAttendance().getEnrollment().getClassGroup().getName(),
-                        mr.getRequestedAt(),
+                        mr.getAttendance().getClassSession().getSessionDate(),
                         mr.getReason()
                 ))
                 .collect(Collectors.toList());
@@ -92,21 +93,25 @@ public class DashboardOperationalService {
                 .collect(Collectors.toList());
     }
 
-    private List<DashboardAlertResponse> buildAlerts(SummaryResponse summary, List<ClassOccupancyResponse> occupancyList) {
+    private List<DashboardAlertResponse> buildAlerts(long classesToday, long classesInProgress, long studentsPresentToday, long pendingMakeupCount, List<ClassOccupancyResponse> occupancyList) {
         List<DashboardAlertResponse> alerts = new ArrayList<>();
 
         for (ClassOccupancyResponse occ : occupancyList) {
             if (occ.getOccupancyPercent() >= 90) {
-                alerts.add(new DashboardAlertResponse("Turma quase lotada: " + occ.getClassName()));
+                alerts.add(new DashboardAlertResponse("full_class", "Turma quase lotada: " + occ.getClassName()));
             }
         }
 
-        if (summary.getPendingMakeupRequests() > 10) {
-            alerts.add(new DashboardAlertResponse("Muitas reposições pendentes"));
+        if (pendingMakeupCount > 10) {
+            alerts.add(new DashboardAlertResponse("pending_makeup", "Muitas reposições pendentes"));
         }
 
-        if (summary.getClassesToday() == 0) {
-            alerts.add(new DashboardAlertResponse("Nenhuma aula programada"));
+        if (classesInProgress > 0) {
+            alerts.add(new DashboardAlertResponse("ongoing_class", classesInProgress + " aula(s) em andamento agora"));
+        }
+
+        if (classesToday == 0) {
+            alerts.add(new DashboardAlertResponse("pending_makeup", "Nenhuma aula programada"));
         }
 
         return alerts;

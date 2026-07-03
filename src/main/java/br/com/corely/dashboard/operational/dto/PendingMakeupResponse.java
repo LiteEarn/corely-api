@@ -3,7 +3,7 @@ package br.com.corely.dashboard.operational.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -12,6 +12,6 @@ public class PendingMakeupResponse {
     private UUID id;
     private String studentName;
     private String className;
-    private LocalDateTime requestedAt;
+    private LocalDate absenceDate;
     private String reason;
 }

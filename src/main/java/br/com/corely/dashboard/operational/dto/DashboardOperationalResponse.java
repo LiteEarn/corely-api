@@ -8,7 +8,10 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class DashboardOperationalResponse {
-    private SummaryResponse summary;
+    private long todayClasses;
+    private long ongoingClasses;
+    private long presentStudents;
+    private long pendingMakeups;
     private List<UpcomingSessionResponse> upcomingSessions;
     private List<PendingMakeupResponse> pendingMakeupRequests;
     private List<ClassOccupancyResponse> classOccupancy;
