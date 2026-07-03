@@ -10,6 +10,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PendingMakeupResponse {
     private UUID id;
+    private UUID classGroupId;
     private String studentName;
     private String className;
     private LocalDate absenceDate;

@@ -1,8 +1,11 @@
 package br.com.corely.enrollment;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,4 +25,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     long countByClassGroupIdAndActiveTrue(UUID classGroupId);
 
     List<Enrollment> findByClassGroupIdAndActiveTrue(UUID classGroupId);
+
+    @Query("SELECT COUNT(DISTINCT e.id) FROM Enrollment e " +
+           "JOIN ClassSession cs ON cs.classGroup = e.classGroup " +
+           "WHERE e.studio.id = :studioId AND cs.sessionDate = :date AND e.active = true")
+    long countEnrolledTodayByStudioId(@Param("studioId") UUID studioId, @Param("date") LocalDate date);
 }
