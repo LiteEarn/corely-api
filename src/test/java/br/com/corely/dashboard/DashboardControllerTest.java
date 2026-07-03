@@ -450,7 +450,6 @@ class DashboardControllerTest {
 
     @Test
     void testGetDashboardOccupancyRateUsesOnlyActiveEntities() throws Exception {
-        // Create inactive class group with capacity - should not be counted in totalCapacity
         ClassGroup inactiveClassGroup = new ClassGroup();
         inactiveClassGroup.setStudio(studio);
         inactiveClassGroup.setInstructor(instructor);
@@ -463,7 +462,6 @@ class DashboardControllerTest {
         inactiveClassGroup.setActive(false);
         inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
 
-        // Create inactive enrollment - should not be counted in totalEnrollments
         Enrollment inactiveEnrollment = new Enrollment();
         inactiveEnrollment.setStudio(studio);
         inactiveEnrollment.setStudent(student);
@@ -472,8 +470,6 @@ class DashboardControllerTest {
         inactiveEnrollment.setActive(false);
         inactiveEnrollment = enrollmentRepository.save(inactiveEnrollment);
 
-        // Only 1 active enrollment and active class group capacity is 20
-        // Occupancy rate should be (1 * 100) / 20 = 5.00
         mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalEnrollments").value(1))
@@ -483,7 +479,6 @@ class DashboardControllerTest {
 
     @Test
     void testGetDashboardWithAllInactiveEntities() throws Exception {
-        // Set all entities to inactive
         student.setActive(false);
         studentRepository.save(student);
 
@@ -507,7 +502,6 @@ class DashboardControllerTest {
 
     @Test
     void testGetDashboardWithMultipleActiveAndInactiveEntities() throws Exception {
-        // Create multiple active and inactive students
         Student activeStudent2 = new Student();
         activeStudent2.setStudio(studio);
         activeStudent2.setFullName("Active Student 2");
@@ -532,7 +526,6 @@ class DashboardControllerTest {
         inactiveStudent3.setActive(false);
         inactiveStudent3 = studentRepository.save(inactiveStudent3);
 
-        // Create multiple active and inactive instructors
         Instructor activeInstructor2 = new Instructor();
         activeInstructor2.setStudio(studio);
         activeInstructor2.setFullName("Active Instructor 2");
@@ -551,7 +544,6 @@ class DashboardControllerTest {
         inactiveInstructor2.setActive(false);
         inactiveInstructor2 = instructorRepository.save(inactiveInstructor2);
 
-        // Create multiple active and inactive class groups
         ClassGroup activeClassGroup2 = new ClassGroup();
         activeClassGroup2.setStudio(studio);
         activeClassGroup2.setInstructor(activeInstructor2);
@@ -576,7 +568,6 @@ class DashboardControllerTest {
         inactiveClassGroup2.setActive(false);
         inactiveClassGroup2 = classGroupRepository.save(inactiveClassGroup2);
 
-        // Create multiple active and inactive enrollments
         Enrollment activeEnrollment2 = new Enrollment();
         activeEnrollment2.setStudio(studio);
         activeEnrollment2.setStudent(activeStudent2);
@@ -599,8 +590,6 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.activeInstructors").value(2))
                 .andExpect(jsonPath("$.activeClassGroups").value(2))
                 .andExpect(jsonPath("$.totalEnrollments").value(2))
-                // Total active capacity = 20 + 25 = 45, active enrollments = 2
-                // Occupancy rate = (2 * 100) / 45 = 4.44
                 .andExpect(jsonPath("$.occupancyRate").value(4.44));
     }
 
@@ -608,8 +597,10 @@ class DashboardControllerTest {
     void testGetOperationalDashboard() throws Exception {
         mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.classesToday").value(1))
-                .andExpect(jsonPath("$.summary.activeStudents").value(1))
+                .andExpect(jsonPath("$.summary.kpis.classesToday").value(1))
+                .andExpect(jsonPath("$.summary.kpis.activeStudents").value(1))
+                .andExpect(jsonPath("$.summary.averageOccupancy").isNumber())
+                .andExpect(jsonPath("$.summary.todayAttendanceRate").isNumber())
                 .andExpect(jsonPath("$.upcomingSessions").isArray())
                 .andExpect(jsonPath("$.pendingMakeupRequests").isArray())
                 .andExpect(jsonPath("$.classOccupancy").isArray())
@@ -620,14 +611,16 @@ class DashboardControllerTest {
     void testGetOperationalDashboardEmpty() throws Exception {
         mockMvc.perform(get("/dashboard/operational").param("studioId", emptyStudio.getId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.classesToday").value(0))
-                .andExpect(jsonPath("$.summary.activeStudents").value(0))
-                .andExpect(jsonPath("$.summary.studentsPresentToday").value(0))
-                .andExpect(jsonPath("$.summary.pendingMakeupRequests").value(0))
+                .andExpect(jsonPath("$.summary.kpis.classesToday").value(0))
+                .andExpect(jsonPath("$.summary.kpis.activeStudents").value(0))
+                .andExpect(jsonPath("$.summary.kpis.studentsPresentToday").value(0))
+                .andExpect(jsonPath("$.summary.kpis.pendingMakeups").value(0))
+                .andExpect(jsonPath("$.summary.averageOccupancy").value(0))
+                .andExpect(jsonPath("$.summary.todayAttendanceRate").value(0))
                 .andExpect(jsonPath("$.upcomingSessions").isEmpty())
                 .andExpect(jsonPath("$.pendingMakeupRequests").isEmpty())
                 .andExpect(jsonPath("$.classOccupancy").isEmpty())
-                .andExpect(jsonPath("$.alerts[0].message").value("Nenhuma aula programada"));
+                .andExpect(jsonPath("$.alerts[0].message").value("Nenhuma aula programada para hoje"));
     }
 
     @Test
@@ -635,6 +628,7 @@ class DashboardControllerTest {
         mockMvc.perform(get("/dashboard/operational"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary").exists())
+                .andExpect(jsonPath("$.summary.kpis").exists())
                 .andExpect(jsonPath("$.upcomingSessions").isArray())
                 .andExpect(jsonPath("$.pendingMakeupRequests").isArray())
                 .andExpect(jsonPath("$.classOccupancy").isArray())
