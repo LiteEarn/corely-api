@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -18,6 +19,9 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, UUID
     List<ClassSession> findByStatus(ClassSessionStatus status);
     List<ClassSession> findByInstructorId(UUID instructorId);
     List<ClassSession> findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(UUID classGroupId, LocalDate sessionDate, ClassSessionStatus status);
+
+    Optional<ClassSession> findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTime(
+            UUID classGroupId, LocalDate sessionDate, ClassSessionStatus status);
 
     @Query("SELECT COUNT(cs) FROM ClassSession cs JOIN cs.classGroup cg WHERE cg.studio.id = :studioId AND cs.sessionDate = :date")
     long countByStudioIdAndSessionDate(@Param("studioId") UUID studioId, @Param("date") LocalDate date);
