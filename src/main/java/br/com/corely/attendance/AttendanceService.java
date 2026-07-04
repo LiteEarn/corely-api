@@ -2,6 +2,8 @@ package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
+import br.com.corely.attendance.dto.BulkAttendanceRequest;
+import br.com.corely.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
@@ -97,6 +99,48 @@ public class AttendanceService {
         return attendanceRepository.findByClassGroupIdAndDate(classGroupId, date, studioId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public BulkAttendanceResponse bulkSave(BulkAttendanceRequest request) {
+        ClassSession session = classSessionRepository
+                .findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTime(
+                        request.getClassGroupId(), request.getAttendanceDate(), ClassSessionStatus.IN_PROGRESS)
+                .orElseThrow(() -> new ConflictException("Nenhuma sessão em andamento encontrada para esta turma e data."));
+
+        int savedCount = 0;
+
+        for (var item : request.getAttendances()) {
+            Enrollment enrollment = enrollmentRepository
+                    .findByStudentIdAndClassGroupId(item.getStudentId(), request.getClassGroupId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Matrícula não encontrada para o studentId: " + item.getStudentId()));
+
+            if (!Boolean.TRUE.equals(enrollment.getActive())) {
+                throw new ConflictException("Matrícula inativa.");
+            }
+
+            if (!enrollment.getStudio().getId().equals(request.getStudioId())) {
+                throw new ConflictException("Matrícula não pertence ao studio informado.");
+            }
+
+            Attendance attendance = attendanceRepository
+                    .findByClassSessionIdAndEnrollmentId(session.getId(), enrollment.getId())
+                    .orElse(null);
+
+            if (attendance == null) {
+                attendance = new Attendance();
+                attendance.setClassSession(session);
+                attendance.setEnrollment(enrollment);
+            }
+
+            attendance.setStatus(item.isPresent() ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT);
+            attendance.setNotes(item.getObservation());
+
+            attendanceRepository.save(attendance);
+            savedCount++;
+        }
+
+        return new BulkAttendanceResponse(savedCount + " presença(s) salva(s) com sucesso.", savedCount);
     }
 
     private AttendanceResponse toResponse(Attendance attendance) {

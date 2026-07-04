@@ -2,8 +2,12 @@ package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
+import br.com.corely.attendance.dto.BulkAttendanceRequest;
+import br.com.corely.attendance.dto.BulkAttendanceResponse;
+import br.com.corely.user.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +28,15 @@ public class AttendanceController {
             @Valid @RequestBody AttendanceRequest request) {
         AttendanceResponse response = attendanceService.register(sessionId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/attendance/bulk")
+    public ResponseEntity<BulkAttendanceResponse> bulkSave(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody BulkAttendanceRequest request) {
+        request.setStudioId(user.getStudio().getId());
+        BulkAttendanceResponse response = attendanceService.bulkSave(request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/class-sessions/{sessionId}/attendance")

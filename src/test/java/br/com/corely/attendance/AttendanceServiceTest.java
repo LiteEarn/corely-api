@@ -1,6 +1,7 @@
 package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
+import br.com.corely.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -410,5 +412,98 @@ class AttendanceServiceTest {
     void findByClassGroupAndDate_emptyList() {
         var result = attendanceService.findByClassGroupAndDate(classGroup.getId(), LocalDate.now());
         assertThat(result).isEmpty();
+    }
+
+    private BulkAttendanceRequest.AttendanceItem attendanceItem(UUID studentId, boolean present, String observation) {
+        var item = new BulkAttendanceRequest.AttendanceItem();
+        item.setStudentId(studentId);
+        item.setPresent(present);
+        item.setObservation(observation);
+        return item;
+    }
+
+    private BulkAttendanceRequest bulkRequest(List<BulkAttendanceRequest.AttendanceItem> items) {
+        var req = new BulkAttendanceRequest();
+        req.setStudioId(studio.getId());
+        req.setClassGroupId(classGroup.getId());
+        req.setAttendanceDate(LocalDate.now());
+        req.setAttendances(items);
+        return req;
+    }
+
+    @Test
+    void bulkSave_validEntries() {
+        var response = attendanceService.bulkSave(
+                bulkRequest(List.of(attendanceItem(student.getId(), true, "Present"))));
+
+        assertThat(response.savedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void bulkSave_multipleEntries() {
+        var response = attendanceService.bulkSave(bulkRequest(List.of(
+                attendanceItem(student.getId(), true, "First"),
+                attendanceItem(student.getId(), false, "Second"))));
+
+        assertThat(response.savedCount()).isEqualTo(2);
+    }
+
+    @Test
+    void bulkSave_upsertExisting() {
+        var item = attendanceItem(student.getId(), true, "Original");
+        attendanceService.bulkSave(bulkRequest(List.of(item)));
+
+        var updated = attendanceItem(student.getId(), false, "Updated");
+        var response = attendanceService.bulkSave(bulkRequest(List.of(updated)));
+
+        assertThat(response.savedCount()).isEqualTo(1);
+
+        var attendances = attendanceRepository.findByClassSessionId(inProgressSession.getId());
+        assertThat(attendances).hasSize(1);
+        assertThat(attendances.get(0).getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+        assertThat(attendances.get(0).getNotes()).isEqualTo("Updated");
+    }
+
+    @Test
+    void bulkSave_presentTrue_mapsToPRESENT() {
+        attendanceService.bulkSave(
+                bulkRequest(List.of(attendanceItem(student.getId(), true, null))));
+
+        var attendances = attendanceRepository.findByEnrollmentId(enrollment.getId());
+        assertThat(attendances.get(0).getStatus()).isEqualTo(AttendanceStatus.PRESENT);
+    }
+
+    @Test
+    void bulkSave_presentFalse_mapsToABSENT() {
+        attendanceService.bulkSave(
+                bulkRequest(List.of(attendanceItem(student.getId(), false, null))));
+
+        var attendances = attendanceRepository.findByEnrollmentId(enrollment.getId());
+        assertThat(attendances.get(0).getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+    }
+
+    @Test
+    void bulkSave_enrollmentFromDifferentStudio_throwsConflictException() {
+        var otherStudio = new Studio();
+        otherStudio.setName("Other Studio");
+        var savedOtherStudio = studioRepository.save(otherStudio);
+
+        var req = bulkRequest(List.of(attendanceItem(student.getId(), true, null)));
+        req.setStudioId(savedOtherStudio.getId());
+
+        assertThatThrownBy(() -> attendanceService.bulkSave(req))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("studio");
+    }
+
+    @Test
+    void bulkSave_noInProgressSession_throwsConflictException() {
+        inProgressSession.setStatus(ClassSessionStatus.SCHEDULED);
+        classSessionRepository.save(inProgressSession);
+
+        assertThatThrownBy(() -> attendanceService.bulkSave(
+                bulkRequest(List.of(attendanceItem(student.getId(), true, null)))))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("sessão em andamento");
     }
 }
