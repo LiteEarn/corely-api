@@ -1,6 +1,7 @@
 package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
+import br.com.corely.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
@@ -25,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -410,5 +413,102 @@ class AttendanceServiceTest {
     void findByClassGroupAndDate_emptyList() {
         var result = attendanceService.findByClassGroupAndDate(classGroup.getId(), LocalDate.now());
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void bulkSave_validEntries() {
+        var entry1 = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), enrollment.getId(),
+                AttendanceStatus.PRESENT, "Present"
+        );
+        var request = new BulkAttendanceRequest(List.of(entry1));
+
+        var response = attendanceService.bulkSave(studio.getId(), request);
+
+        assertThat(response.savedCount()).isEqualTo(1);
+        assertThat(response.message()).contains("1");
+    }
+
+    @Test
+    void bulkSave_multipleEntries() {
+        var entry1 = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), enrollment.getId(),
+                AttendanceStatus.PRESENT, "First"
+        );
+        var entry2 = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), enrollment.getId(),
+                AttendanceStatus.ABSENT, "Second"
+        );
+        var request = new BulkAttendanceRequest(List.of(entry1, entry2));
+
+        var response = attendanceService.bulkSave(studio.getId(), request);
+
+        assertThat(response.savedCount()).isEqualTo(2);
+        assertThat(response.message()).contains("2");
+    }
+
+    @Test
+    void bulkSave_upsertExisting() {
+        var entry1 = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), enrollment.getId(),
+                AttendanceStatus.PRESENT, "Original"
+        );
+        attendanceService.bulkSave(studio.getId(), new BulkAttendanceRequest(List.of(entry1)));
+
+        var entry2 = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), enrollment.getId(),
+                AttendanceStatus.JUSTIFIED, "Updated"
+        );
+        var response = attendanceService.bulkSave(studio.getId(), new BulkAttendanceRequest(List.of(entry2)));
+
+        assertThat(response.savedCount()).isEqualTo(1);
+
+        var attendances = attendanceRepository.findByClassSessionId(inProgressSession.getId());
+        assertThat(attendances).hasSize(1);
+        assertThat(attendances.get(0).getStatus()).isEqualTo(AttendanceStatus.JUSTIFIED);
+        assertThat(attendances.get(0).getNotes()).isEqualTo("Updated");
+    }
+
+    @Test
+    void bulkSave_enrollmentFromDifferentStudio_throwsConflictException() {
+        var otherStudio = new Studio();
+        otherStudio.setName("Other Studio");
+        var savedOtherStudio = studioRepository.save(otherStudio);
+
+        var entry = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), enrollment.getId(),
+                AttendanceStatus.PRESENT, null
+        );
+        var request = new BulkAttendanceRequest(List.of(entry));
+
+        assertThatThrownBy(() -> attendanceService.bulkSave(savedOtherStudio.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("studio");
+    }
+
+    @Test
+    void bulkSave_sessionNotFound_throwsResourceNotFoundException() {
+        var entry = new BulkAttendanceRequest.AttendanceEntry(
+                java.util.UUID.randomUUID(), enrollment.getId(),
+                AttendanceStatus.PRESENT, null
+        );
+        var request = new BulkAttendanceRequest(List.of(entry));
+
+        assertThatThrownBy(() -> attendanceService.bulkSave(studio.getId(), request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Class session not found");
+    }
+
+    @Test
+    void bulkSave_enrollmentNotFound_throwsResourceNotFoundException() {
+        var entry = new BulkAttendanceRequest.AttendanceEntry(
+                inProgressSession.getId(), java.util.UUID.randomUUID(),
+                AttendanceStatus.PRESENT, null
+        );
+        var request = new BulkAttendanceRequest(List.of(entry));
+
+        assertThatThrownBy(() -> attendanceService.bulkSave(studio.getId(), request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Enrollment not found");
     }
 }
