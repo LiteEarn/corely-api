@@ -31,6 +31,7 @@ Backend
 - Services
 - Repositories
 - Controllers
+- Schedulers (Spring @Scheduled)
 - Bean Validation
 - Exceptions centralizadas
 
