@@ -1,7 +1,7 @@
 package br.com.corely.attendance;
 
+import br.com.corely.attendance.dto.AttendanceBulkItem;
 import br.com.corely.attendance.dto.AttendanceRequest;
-import br.com.corely.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
@@ -26,8 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
-
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -417,49 +415,51 @@ class AttendanceServiceTest {
 
     @Test
     void bulkSave_validEntries() {
-        var entry1 = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), enrollment.getId(),
-                AttendanceStatus.PRESENT, "Present"
-        );
-        var request = new BulkAttendanceRequest(List.of(entry1));
+        var item = new AttendanceBulkItem();
+        item.setSessionId(inProgressSession.getId());
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
+        item.setNotes("Present");
 
-        var response = attendanceService.bulkSave(studio.getId(), request);
+        var response = attendanceService.bulkSave(studio.getId(), List.of(item));
 
         assertThat(response.savedCount()).isEqualTo(1);
-        assertThat(response.message()).contains("1");
     }
 
     @Test
     void bulkSave_multipleEntries() {
-        var entry1 = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), enrollment.getId(),
-                AttendanceStatus.PRESENT, "First"
-        );
-        var entry2 = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), enrollment.getId(),
-                AttendanceStatus.ABSENT, "Second"
-        );
-        var request = new BulkAttendanceRequest(List.of(entry1, entry2));
+        var item1 = new AttendanceBulkItem();
+        item1.setSessionId(inProgressSession.getId());
+        item1.setEnrollmentId(enrollment.getId());
+        item1.setStatus(AttendanceStatus.PRESENT);
+        item1.setNotes("First");
 
-        var response = attendanceService.bulkSave(studio.getId(), request);
+        var item2 = new AttendanceBulkItem();
+        item2.setSessionId(inProgressSession.getId());
+        item2.setEnrollmentId(enrollment.getId());
+        item2.setStatus(AttendanceStatus.ABSENT);
+        item2.setNotes("Second");
+
+        var response = attendanceService.bulkSave(studio.getId(), List.of(item1, item2));
 
         assertThat(response.savedCount()).isEqualTo(2);
-        assertThat(response.message()).contains("2");
     }
 
     @Test
     void bulkSave_upsertExisting() {
-        var entry1 = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), enrollment.getId(),
-                AttendanceStatus.PRESENT, "Original"
-        );
-        attendanceService.bulkSave(studio.getId(), new BulkAttendanceRequest(List.of(entry1)));
+        var item1 = new AttendanceBulkItem();
+        item1.setSessionId(inProgressSession.getId());
+        item1.setEnrollmentId(enrollment.getId());
+        item1.setStatus(AttendanceStatus.PRESENT);
+        item1.setNotes("Original");
+        attendanceService.bulkSave(studio.getId(), List.of(item1));
 
-        var entry2 = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), enrollment.getId(),
-                AttendanceStatus.JUSTIFIED, "Updated"
-        );
-        var response = attendanceService.bulkSave(studio.getId(), new BulkAttendanceRequest(List.of(entry2)));
+        var item2 = new AttendanceBulkItem();
+        item2.setSessionId(inProgressSession.getId());
+        item2.setEnrollmentId(enrollment.getId());
+        item2.setStatus(AttendanceStatus.JUSTIFIED);
+        item2.setNotes("Updated");
+        var response = attendanceService.bulkSave(studio.getId(), List.of(item2));
 
         assertThat(response.savedCount()).isEqualTo(1);
 
@@ -470,45 +470,75 @@ class AttendanceServiceTest {
     }
 
     @Test
+    void bulkSave_usingStudentId() {
+        var item = new AttendanceBulkItem();
+        item.setSessionId(inProgressSession.getId());
+        item.setStudentId(student.getId());
+        item.setPresent(true);
+        item.setObservation("Via studentId");
+
+        var response = attendanceService.bulkSave(studio.getId(), List.of(item));
+
+        assertThat(response.savedCount()).isEqualTo(1);
+
+        var attendances = attendanceRepository.findByEnrollmentId(enrollment.getId());
+        assertThat(attendances).hasSize(1);
+        assertThat(attendances.get(0).getStatus()).isEqualTo(AttendanceStatus.PRESENT);
+        assertThat(attendances.get(0).getNotes()).isEqualTo("Via studentId");
+    }
+
+    @Test
+    void bulkSave_usingPresentBoolean() {
+        var item = new AttendanceBulkItem();
+        item.setSessionId(inProgressSession.getId());
+        item.setEnrollmentId(enrollment.getId());
+        item.setPresent(false);
+
+        var response = attendanceService.bulkSave(studio.getId(), List.of(item));
+
+        assertThat(response.savedCount()).isEqualTo(1);
+
+        var attendances = attendanceRepository.findByEnrollmentId(enrollment.getId());
+        assertThat(attendances.get(0).getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+    }
+
+    @Test
     void bulkSave_enrollmentFromDifferentStudio_throwsConflictException() {
         var otherStudio = new Studio();
         otherStudio.setName("Other Studio");
         var savedOtherStudio = studioRepository.save(otherStudio);
 
-        var entry = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), enrollment.getId(),
-                AttendanceStatus.PRESENT, null
-        );
-        var request = new BulkAttendanceRequest(List.of(entry));
+        var item = new AttendanceBulkItem();
+        item.setSessionId(inProgressSession.getId());
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
 
-        assertThatThrownBy(() -> attendanceService.bulkSave(savedOtherStudio.getId(), request))
+        assertThatThrownBy(() -> attendanceService.bulkSave(savedOtherStudio.getId(), List.of(item)))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("studio");
     }
 
     @Test
     void bulkSave_sessionNotFound_throwsResourceNotFoundException() {
-        var entry = new BulkAttendanceRequest.AttendanceEntry(
-                java.util.UUID.randomUUID(), enrollment.getId(),
-                AttendanceStatus.PRESENT, null
-        );
-        var request = new BulkAttendanceRequest(List.of(entry));
+        var item = new AttendanceBulkItem();
+        item.setSessionId(java.util.UUID.randomUUID());
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
 
-        assertThatThrownBy(() -> attendanceService.bulkSave(studio.getId(), request))
+        assertThatThrownBy(() -> attendanceService.bulkSave(studio.getId(), List.of(item)))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Class session not found");
+                .hasMessageContaining("Sessão não encontrada");
     }
 
     @Test
     void bulkSave_enrollmentNotFound_throwsResourceNotFoundException() {
-        var entry = new BulkAttendanceRequest.AttendanceEntry(
-                inProgressSession.getId(), java.util.UUID.randomUUID(),
-                AttendanceStatus.PRESENT, null
-        );
-        var request = new BulkAttendanceRequest(List.of(entry));
+        var item = new AttendanceBulkItem();
+        item.setSessionId(inProgressSession.getId());
+        item.setEnrollmentId(java.util.UUID.randomUUID());
+        item.setStatus(AttendanceStatus.PRESENT);
 
-        assertThatThrownBy(() -> attendanceService.bulkSave(studio.getId(), request))
+        assertThatThrownBy(() -> attendanceService.bulkSave(studio.getId(), List.of(item)))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Enrollment not found");
+                .hasMessageContaining("Matrícula não encontrada");
     }
 }

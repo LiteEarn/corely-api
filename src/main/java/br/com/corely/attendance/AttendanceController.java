@@ -2,7 +2,7 @@ package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
-import br.com.corely.attendance.dto.BulkAttendanceRequest;
+import br.com.corely.attendance.dto.AttendanceBulkItem;
 import br.com.corely.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.user.User;
 import jakarta.validation.Valid;
@@ -33,8 +33,8 @@ public class AttendanceController {
     @PostMapping("/attendance/bulk")
     public ResponseEntity<BulkAttendanceResponse> bulkSave(
             @AuthenticationPrincipal User user,
-            @Valid @RequestBody BulkAttendanceRequest request) {
-        BulkAttendanceResponse response = attendanceService.bulkSave(user.getStudio().getId(), request);
+            @Valid @RequestBody List<@Valid AttendanceBulkItem> items) {
+        BulkAttendanceResponse response = attendanceService.bulkSave(user.getStudio().getId(), items);
         return ResponseEntity.ok(response);
     }
 

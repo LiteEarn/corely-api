@@ -2,7 +2,7 @@ package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
-import br.com.corely.attendance.dto.BulkAttendanceRequest;
+import br.com.corely.attendance.dto.AttendanceBulkItem;
 import br.com.corely.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
@@ -102,12 +102,12 @@ public class AttendanceService {
     }
 
     @Transactional
-    public BulkAttendanceResponse bulkSave(UUID studioId, BulkAttendanceRequest request) {
+    public BulkAttendanceResponse bulkSave(UUID studioId, List<AttendanceBulkItem> items) {
         int savedCount = 0;
 
-        for (var entry : request.getEntries()) {
-            ClassSession session = classSessionRepository.findById(entry.getSessionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Class session not found: " + entry.getSessionId()));
+        for (var item : items) {
+            ClassSession session = classSessionRepository.findById(item.getSessionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sessão não encontrada: " + item.getSessionId()));
 
             if (session.getStatus() == ClassSessionStatus.COMPLETED) {
                 throw new ConflictException("A presença não pode ser registrada após a conclusão da aula.");
@@ -117,15 +117,10 @@ public class AttendanceService {
                 throw new ConflictException("A presença somente pode ser registrada durante a aula.");
             }
 
-            Enrollment enrollment = enrollmentRepository.findById(entry.getEnrollmentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found: " + entry.getEnrollmentId()));
+            Enrollment enrollment = resolveEnrollment(item, session);
 
             if (!Boolean.TRUE.equals(enrollment.getActive())) {
                 throw new ConflictException("Matrícula inativa.");
-            }
-
-            if (!enrollment.getClassGroup().getId().equals(session.getClassGroup().getId())) {
-                throw new ConflictException("Matrícula não pertence à turma da sessão.");
             }
 
             if (!enrollment.getStudio().getId().equals(studioId)) {
@@ -133,7 +128,7 @@ public class AttendanceService {
             }
 
             Attendance attendance = attendanceRepository
-                    .findByClassSessionIdAndEnrollmentId(entry.getSessionId(), entry.getEnrollmentId())
+                    .findByClassSessionIdAndEnrollmentId(session.getId(), enrollment.getId())
                     .orElse(null);
 
             if (attendance == null) {
@@ -142,14 +137,41 @@ public class AttendanceService {
                 attendance.setEnrollment(enrollment);
             }
 
-            attendance.setStatus(entry.getStatus());
-            attendance.setNotes(entry.getNotes());
+            attendance.setStatus(resolveStatus(item));
+            attendance.setNotes(resolveNotes(item));
 
             attendanceRepository.save(attendance);
             savedCount++;
         }
 
         return new BulkAttendanceResponse(savedCount + " presença(s) salva(s) com sucesso.", savedCount);
+    }
+
+    private Enrollment resolveEnrollment(AttendanceBulkItem item, ClassSession session) {
+        if (item.getEnrollmentId() != null) {
+            return enrollmentRepository.findById(item.getEnrollmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Matrícula não encontrada: " + item.getEnrollmentId()));
+        }
+        if (item.getStudentId() != null) {
+            return enrollmentRepository.findByStudentIdAndClassGroupId(item.getStudentId(), session.getClassGroup().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Matrícula não encontrada para o studentId: " + item.getStudentId()));
+        }
+        throw new IllegalArgumentException("enrollmentId ou studentId é obrigatório");
+    }
+
+    private AttendanceStatus resolveStatus(AttendanceBulkItem item) {
+        if (item.getStatus() != null) {
+            return item.getStatus();
+        }
+        if (item.getPresent() != null) {
+            return Boolean.TRUE.equals(item.getPresent()) ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT;
+        }
+        throw new IllegalArgumentException("status ou present é obrigatório");
+    }
+
+    private String resolveNotes(AttendanceBulkItem item) {
+        if (item.getNotes() != null) return item.getNotes();
+        return item.getObservation();
     }
 
     private AttendanceResponse toResponse(Attendance attendance) {
