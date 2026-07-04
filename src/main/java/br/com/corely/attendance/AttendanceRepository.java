@@ -21,6 +21,19 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
 
     boolean existsByClassSessionIdAndEnrollmentId(UUID classSessionId, UUID enrollmentId);
 
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN FETCH a.enrollment e " +
+           "JOIN FETCH e.student s " +
+           "JOIN a.classSession cs " +
+           "WHERE cs.classGroup.id = :classGroupId " +
+           "AND cs.sessionDate = :date " +
+           "AND e.studio.id = :studioId")
+    List<Attendance> findByClassGroupIdAndDate(
+            @Param("classGroupId") UUID classGroupId,
+            @Param("date") LocalDate date,
+            @Param("studioId") UUID studioId
+    );
+
     @Query("SELECT COUNT(a) FROM Attendance a " +
            "JOIN a.enrollment e " +
            "JOIN a.classSession cs " +
