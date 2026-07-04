@@ -2,6 +2,8 @@ package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
+import br.com.corely.classgroup.ClassGroup;
+import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
 import br.com.corely.classsession.ClassSessionRepository;
 import br.com.corely.classsession.ClassSessionStatus;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +26,7 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final ClassSessionRepository classSessionRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final ClassGroupRepository classGroupRepository;
 
     @Transactional
     public AttendanceResponse register(UUID sessionId, AttendanceRequest request) {
@@ -81,6 +85,16 @@ public class AttendanceService {
             throw new ResourceNotFoundException("Enrollment not found");
         }
         return attendanceRepository.findByEnrollmentId(enrollmentId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> findByClassGroupAndDate(UUID classGroupId, LocalDate date) {
+        ClassGroup classGroup = classGroupRepository.findById(classGroupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class group not found"));
+        UUID studioId = classGroup.getStudio().getId();
+        return attendanceRepository.findByClassGroupIdAndDate(classGroupId, date, studioId).stream()
                 .map(this::toResponse)
                 .toList();
     }

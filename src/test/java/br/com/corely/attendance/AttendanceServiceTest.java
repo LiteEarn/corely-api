@@ -381,4 +381,34 @@ class AttendanceServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("A presença não pode ser registrada após a conclusão da aula.");
     }
+
+    @Test
+    void findByClassGroupAndDate_returnsAttendances() {
+        AttendanceRequest request = new AttendanceRequest(
+                enrollment.getId(),
+                AttendanceStatus.PRESENT,
+                null
+        );
+        attendanceService.register(inProgressSession.getId(), request);
+
+        var result = attendanceService.findByClassGroupAndDate(classGroup.getId(), LocalDate.now());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).classSessionId()).isEqualTo(inProgressSession.getId());
+        assertThat(result.get(0).enrollmentId()).isEqualTo(enrollment.getId());
+        assertThat(result.get(0).status()).isEqualTo(AttendanceStatus.PRESENT);
+    }
+
+    @Test
+    void findByClassGroupAndDate_classGroupNotFound() {
+        assertThatThrownBy(() -> attendanceService.findByClassGroupAndDate(java.util.UUID.randomUUID(), LocalDate.now()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Class group not found");
+    }
+
+    @Test
+    void findByClassGroupAndDate_emptyList() {
+        var result = attendanceService.findByClassGroupAndDate(classGroup.getId(), LocalDate.now());
+        assertThat(result).isEmpty();
+    }
 }

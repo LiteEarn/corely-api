@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +35,14 @@ public class AttendanceController {
     @GetMapping("/enrollments/{enrollmentId}/attendance")
     public ResponseEntity<List<AttendanceResponse>> findByEnrollment(@PathVariable UUID enrollmentId) {
         List<AttendanceResponse> response = attendanceService.findByEnrollmentId(enrollmentId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/attendance/class-group/{classGroupId}/date/{date}")
+    public ResponseEntity<List<AttendanceResponse>> findByClassGroupAndDate(
+            @PathVariable UUID classGroupId,
+            @PathVariable LocalDate date) {
+        List<AttendanceResponse> response = attendanceService.findByClassGroupAndDate(classGroupId, date);
         return ResponseEntity.ok(response);
     }
 }
