@@ -22,4 +22,11 @@ public interface ClassGroupRepository extends JpaRepository<ClassGroup, UUID> {
     List<ClassGroup> findByActiveTrue();
 
     List<ClassGroup> findByStudioIdAndActiveTrue(UUID studioId);
+
+    @Query("SELECT cg.id, cg.name, cg.capacity, COUNT(e.id) " +
+           "FROM ClassGroup cg " +
+           "LEFT JOIN Enrollment e ON e.classGroup = cg AND e.active = true " +
+           "WHERE cg.studio.id = :studioId AND cg.active = true " +
+           "GROUP BY cg.id, cg.name, cg.capacity")
+    List<Object[]> findActiveClassGroupsWithEnrollmentCount(@Param("studioId") UUID studioId);
 }

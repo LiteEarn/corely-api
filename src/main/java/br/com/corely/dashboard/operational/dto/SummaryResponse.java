@@ -6,9 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class SummaryResponse {
-    private long classesToday;
-    private long classesInProgress;
-    private long activeStudents;
-    private long studentsPresentToday;
-    private long pendingMakeupRequests;
+    private DashboardKpiResponse kpis;
+    private Integer averageOccupancy;
+    private Integer todayAttendanceRate;
 }

@@ -13,10 +13,10 @@ public class UpcomingSessionResponse {
     private UUID id;
     private UUID classGroupId;
     private String className;
+    private UUID instructorId;
     private String instructorName;
     private LocalTime startTime;
     private LocalTime endTime;
-    private long enrolledCount;
-    private int capacity;
+    private long enrolledStudents;
     private ClassSessionStatus status;
 }
