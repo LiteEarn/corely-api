@@ -20,4 +20,5 @@ spring:
 
 jwt:
   secret: my-secret-key-for-corely-application-2024
-  expiration: 86400000
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000

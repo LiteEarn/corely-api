@@ -357,6 +357,6 @@ class EvolutionControllerTest {
     @Test
     void testUnauthorizedAccess() throws Exception {
         mockMvc.perform(get("/evolutions"))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 }

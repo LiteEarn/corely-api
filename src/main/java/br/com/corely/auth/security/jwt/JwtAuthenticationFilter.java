@@ -1,26 +1,24 @@
-package br.com.corely.shared.security;
+package br.com.corely.auth.security.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -30,33 +28,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
-
-        String requestURI = request.getRequestURI();
-        String method = request.getMethod();
-
-        log.info("=== JWT FILTER START ===");
-        log.info("Request: {} {}", method, requestURI);
-        log.info("Authorization header present: {}", authHeader != null);
-        log.info("Current authentication: {}", SecurityContextHolder.getContext().getAuthentication());
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("No valid Authorization header found - Request may be blocked if endpoint requires authentication");
-            log.info("=== JWT FILTER END (NO AUTH) ===");
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
-
-        log.info("JWT extracted, userEmail: {}", userEmail);
+        final String jwt = authHeader.substring(7);
+        final String userEmail = jwtService.extractUsername(jwt);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+            if (jwtService.isTokenValid(jwt)) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-            if (jwtService.isTokenValid(jwt, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
@@ -64,15 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                log.info("Authentication SUCCESS for user: {}", userEmail);
-                log.info("User authorities: {}", userDetails.getAuthorities());
-                log.info("User enabled: {}", userDetails.isEnabled());
-            } else {
-                log.warn("JWT token is INVALID for user: {}", userEmail);
             }
         }
 
-        log.info("=== JWT FILTER END ===");
         filterChain.doFilter(request, response);
     }
 }

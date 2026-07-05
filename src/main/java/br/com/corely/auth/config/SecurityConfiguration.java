@@ -1,9 +1,7 @@
-package br.com.corely.shared.security;
+package br.com.corely.auth.config;
 
-import br.com.corely.user.UserRepository;
+import br.com.corely.auth.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,7 +14,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -30,18 +27,10 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class SecurityConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
-
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    }
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -51,7 +40,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -62,34 +51,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtService, userDetailsService());
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("=== SECURITY CONFIG START ===");
-        log.info("Endpoints with permitAll (NO AUTH REQUIRED):");
-        log.info("  - /auth/**");
-        log.info("  - /students/**");
-        log.info("  - /instructors/**");
-        log.info("  - /sessions/**");
-        log.info("  - /class-groups/**");
-        log.info("  - /class-sessions/**");
-        log.info("  - /enrollments/**");
-        log.info("  - /attendance/**");
-        log.info("  - /objectives/**");
-        log.info("  - /evaluations/**");
-        log.info("  - /evolutions/**");
-        log.info("  - /dashboard/**");
-        log.info("  - /makeup-requests/**");
-        log.info("  - /dev/**");
-        log.info("  - /swagger-ui/**");
-        log.info("  - /v3/api-docs/**");
-        log.info("Endpoints requiring authentication (.anyRequest().authenticated()):");
-        log.info("  - All other endpoints not explicitly listed above");
-        log.info("=== SECURITY CONFIG END ===");
-
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -98,24 +60,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/students", "/students/**").permitAll()
-                        .requestMatchers("/instructors", "/instructors/**").permitAll()
-                        .requestMatchers("/sessions", "/sessions/**").permitAll()
-                        .requestMatchers("/class-groups", "/class-groups/**").permitAll()
-                        .requestMatchers("/class-sessions", "/class-sessions/**").permitAll()
-                        .requestMatchers("/enrollments", "/enrollments/**").permitAll()
-                        .requestMatchers("/attendance", "/attendance/**").permitAll()
-                        .requestMatchers("/objectives", "/objectives/**").permitAll()
-                        .requestMatchers("/evaluations", "/evaluations/**").permitAll()
-                        .requestMatchers("/evolutions", "/evolutions/**").permitAll()
-                        .requestMatchers("/dashboard", "/dashboard/**").permitAll()
-                        .requestMatchers("/makeup-requests", "/makeup-requests/**").permitAll()
-                        .requestMatchers("/dev", "/dev/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
