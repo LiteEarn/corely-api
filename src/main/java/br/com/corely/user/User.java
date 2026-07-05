@@ -11,6 +11,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,6 +38,9 @@ public class User extends BaseEntity implements UserDetails {
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;
+
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "studio_id", nullable = false)
