@@ -1,5 +1,6 @@
 package br.com.corely.auth.service;
 
+import br.com.corely.auth.dto.CurrentStudioResponse;
 import br.com.corely.auth.dto.CurrentUserResponse;
 import br.com.corely.auth.dto.LoginRequest;
 import br.com.corely.auth.dto.LoginResponse;
@@ -7,6 +8,7 @@ import br.com.corely.auth.dto.RefreshTokenRequest;
 import br.com.corely.auth.dto.RefreshTokenResponse;
 import br.com.corely.auth.entity.RefreshToken;
 import br.com.corely.auth.repository.RefreshTokenRepository;
+import br.com.corely.auth.security.AuthenticationFacade;
 import br.com.corely.auth.security.jwt.JwtService;
 import br.com.corely.user.User;
 import br.com.corely.user.UserRepository;
@@ -18,7 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,6 +34,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AuthenticationFacade authenticationFacade;
 
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
@@ -37,6 +43,9 @@ public class AuthenticationService {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
 
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -47,14 +56,36 @@ public class AuthenticationService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .expiresIn(jwtService.getAccessTokenExpiration())
-                .user(CurrentUserResponse.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .build())
+                .user(buildCurrentUserResponse(user))
                 .studioId(user.getStudio().getId())
                 .studioName(user.getStudio().getName())
                 .role(user.getRole().name())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public CurrentUserResponse me() {
+        User user = authenticationFacade.getCurrentUser();
+        if (user == null) {
+            throw new BadCredentialsException("User not authenticated");
+        }
+        User freshUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+        return buildCurrentUserResponse(freshUser);
+    }
+
+    private CurrentUserResponse buildCurrentUserResponse(User user) {
+        return CurrentUserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .studio(CurrentStudioResponse.builder()
+                        .id(user.getStudio().getId())
+                        .name(user.getStudio().getName())
+                        .build())
+                .permissions(Collections.emptyList())
+                .lastLogin(user.getLastLogin())
                 .build();
     }
 
