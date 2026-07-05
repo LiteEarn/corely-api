@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -209,4 +210,39 @@ class AuthControllerTest {
                         .content("{}"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void me_withValidToken_shouldReturnCurrentUser() throws Exception {
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+
+        String loginResponse = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        LoginResponse response = objectMapper.readValue(loginResponse, LoginResponse.class);
+
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer " + response.getAccessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(user.getId().toString()))
+                .andExpect(jsonPath("$.name").value(user.getName()))
+                .andExpect(jsonPath("$.email").value(user.getEmail()))
+                .andExpect(jsonPath("$.role").value(user.getRole().name()))
+                .andExpect(jsonPath("$.studio.id").value(user.getStudio().getId().toString()))
+                .andExpect(jsonPath("$.studio.name").value(user.getStudio().getName()))
+                .andExpect(jsonPath("$.permissions").isArray())
+                .andExpect(jsonPath("$.lastLogin").isNotEmpty());
+    }
+
+    @Test
+    void me_withoutToken_shouldReturn401() throws Exception {
+        mockMvc.perform(get("/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+
 }
