@@ -1,8 +1,10 @@
 package br.com.corely.user;
 
 public enum UserRole {
-    ADMIN,
     OWNER,
+    ADMIN,
     RECEPTIONIST,
-    INSTRUCTOR
+    INSTRUCTOR,
+    FINANCIAL,
+    STUDENT
 }
