@@ -5,19 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CurrentUserResponse {
-
+public class CurrentStudioResponse {
     private UUID id;
     private String name;
-    private String email;
-    private String role;
-    private CurrentStudioResponse studio;
-    private List<String> permissions;
 }

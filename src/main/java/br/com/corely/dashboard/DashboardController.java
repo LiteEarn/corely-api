@@ -1,7 +1,9 @@
 package br.com.corely.dashboard;
 
+import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.dashboard.dto.DashboardResponse;
 import br.com.corely.dashboard.operational.dto.DashboardOperationalResponse;
+import br.com.corely.user.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +26,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping
+    @RequireRole({UserRole.ADMIN, UserRole.OWNER})
     @Operation(summary = "Get dashboard metrics", description = "Retrieves dashboard metrics for a specific studio")
     public ResponseEntity<DashboardResponse> getDashboard(
             @Parameter(description = "Studio ID", required = true)
@@ -34,6 +37,7 @@ public class DashboardController {
     }
 
     @GetMapping("/operational")
+    @RequireRole({UserRole.ADMIN, UserRole.OWNER})
     @Operation(summary = "Get operational dashboard", description = "Retorna dados agregados do Dashboard Operacional")
     public ResponseEntity<DashboardOperationalResponse> getOperationalDashboard(
             @Parameter(description = "Studio ID (opcional - usa o primeiro studio ativo quando não informado)")

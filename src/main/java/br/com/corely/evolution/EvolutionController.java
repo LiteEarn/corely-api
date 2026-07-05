@@ -1,7 +1,9 @@
 package br.com.corely.evolution;
 
+import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.evolution.dto.EvolutionRequest;
 import br.com.corely.evolution.dto.EvolutionResponse;
+import br.com.corely.user.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,7 @@ public class EvolutionController {
     private final EvolutionService evolutionService;
 
     @PostMapping
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Create a new evolution", description = "Creates a new evolution for a student")
     public ResponseEntity<EvolutionResponse> create(@Valid @RequestBody EvolutionRequest request) {
         log.info("EvolutionController.create - Request received");
@@ -36,6 +39,7 @@ public class EvolutionController {
     }
 
     @GetMapping
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Get all evolutions", description = "Retrieves all evolutions with optional filters")
     public ResponseEntity<List<EvolutionResponse>> findAll(
             @Parameter(description = "Filter by student ID") @RequestParam(required = false) UUID studentId,
@@ -68,6 +72,7 @@ public class EvolutionController {
     }
 
     @GetMapping("/{id}")
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Get evolution by ID", description = "Retrieves a specific evolution by its ID")
     public ResponseEntity<EvolutionResponse> findById(@PathVariable UUID id) {
         log.info("EvolutionController.findById - Request received for id: {}", id);
@@ -76,6 +81,7 @@ public class EvolutionController {
     }
 
     @PutMapping("/{id}")
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Update evolution", description = "Updates an existing evolution")
     public ResponseEntity<EvolutionResponse> update(@PathVariable UUID id, @Valid @RequestBody EvolutionRequest request) {
         log.info("EvolutionController.update - Request received for id: {}", id);
@@ -84,6 +90,7 @@ public class EvolutionController {
     }
 
     @DeleteMapping("/{id}")
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Delete evolution", description = "Deletes an evolution by its ID")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         log.info("EvolutionController.delete - Request received for id: {}", id);

@@ -1,5 +1,6 @@
 package br.com.corely.auth.controller;
 
+import br.com.corely.auth.dto.CurrentUserResponse;
 import br.com.corely.auth.dto.LoginRequest;
 import br.com.corely.auth.dto.LoginResponse;
 import br.com.corely.auth.dto.RefreshTokenRequest;
@@ -8,6 +9,7 @@ import br.com.corely.auth.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +38,11 @@ public class AuthController {
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authenticationService.logout(request.getRefreshToken());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<CurrentUserResponse> me() {
+        CurrentUserResponse response = authenticationService.getCurrentUser();
+        return ResponseEntity.ok(response);
     }
 }

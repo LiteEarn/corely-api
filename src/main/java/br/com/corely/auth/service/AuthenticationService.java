@@ -1,5 +1,7 @@
 package br.com.corely.auth.service;
 
+import br.com.corely.auth.authorization.RolePermissions;
+import br.com.corely.auth.dto.CurrentStudioResponse;
 import br.com.corely.auth.dto.CurrentUserResponse;
 import br.com.corely.auth.dto.LoginRequest;
 import br.com.corely.auth.dto.LoginResponse;
@@ -7,6 +9,7 @@ import br.com.corely.auth.dto.RefreshTokenRequest;
 import br.com.corely.auth.dto.RefreshTokenResponse;
 import br.com.corely.auth.entity.RefreshToken;
 import br.com.corely.auth.repository.RefreshTokenRepository;
+import br.com.corely.auth.security.AuthenticationFacade;
 import br.com.corely.auth.security.jwt.JwtService;
 import br.com.corely.user.User;
 import br.com.corely.user.UserRepository;
@@ -18,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,6 +32,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AuthenticationFacade authenticationFacade;
 
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
@@ -43,6 +47,10 @@ public class AuthenticationService {
 
         saveRefreshToken(user, refreshToken);
 
+        List<String> permissions = RolePermissions.getPermissions(user.getRole()).stream()
+                .map(Enum::name)
+                .toList();
+
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -51,10 +59,17 @@ public class AuthenticationService {
                         .id(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
+                        .role(user.getRole().name())
+                        .studio(CurrentStudioResponse.builder()
+                                .id(user.getStudio().getId())
+                                .name(user.getStudio().getName())
+                                .build())
+                        .permissions(permissions)
                         .build())
                 .studioId(user.getStudio().getId())
                 .studioName(user.getStudio().getName())
                 .role(user.getRole().name())
+                .permissions(permissions)
                 .build();
     }
 
@@ -89,6 +104,29 @@ public class AuthenticationService {
             token.setRevoked(true);
             refreshTokenRepository.save(token);
         });
+    }
+
+    public CurrentUserResponse getCurrentUser() {
+        User user = authenticationFacade.getCurrentUser();
+        if (user == null) {
+            throw new BadCredentialsException("User not authenticated");
+        }
+
+        List<String> permissions = RolePermissions.getPermissions(user.getRole()).stream()
+                .map(Enum::name)
+                .toList();
+
+        return CurrentUserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .studio(CurrentStudioResponse.builder()
+                        .id(user.getStudio().getId())
+                        .name(user.getStudio().getName())
+                        .build())
+                .permissions(permissions)
+                .build();
     }
 
     private void saveRefreshToken(User user, String token) {
