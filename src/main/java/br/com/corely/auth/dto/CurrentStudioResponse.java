@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CurrentStudioResponse {
+
     private UUID id;
     private String name;
 }

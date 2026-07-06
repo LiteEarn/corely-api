@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -194,5 +196,40 @@ class AuthenticationServiceTest {
     @Test
     void logout_withInvalidToken_shouldNotThrowException() {
         authenticationService.logout("invalid-token");
+    }
+
+    @Test
+    void me_whenAuthenticated_shouldReturnCurrentUser() {
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+        authenticationService.login(loginRequest);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities())
+        );
+
+        var response = authenticationService.me();
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(user.getId());
+        assertThat(response.getName()).isEqualTo(user.getName());
+        assertThat(response.getEmail()).isEqualTo(user.getEmail());
+        assertThat(response.getRole()).isEqualTo(user.getRole().name());
+        assertThat(response.getStudio()).isNotNull();
+        assertThat(response.getStudio().getId()).isEqualTo(user.getStudio().getId());
+        assertThat(response.getStudio().getName()).isEqualTo(user.getStudio().getName());
+        assertThat(response.getPermissions()).isNotNull();
+        assertThat(response.getLastLogin()).isNotNull();
+
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void me_whenNotAuthenticated_shouldThrowException() {
+        SecurityContextHolder.clearContext();
+        assertThatThrownBy(() -> authenticationService.me())
+                .isInstanceOf(BadCredentialsException.class);
     }
 }
