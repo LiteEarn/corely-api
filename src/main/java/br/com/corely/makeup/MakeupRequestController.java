@@ -1,9 +1,11 @@
 package br.com.corely.makeup;
 
+import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.makeup.dto.MakeupApproveRequest;
 import br.com.corely.makeup.dto.MakeupRejectRequest;
 import br.com.corely.makeup.dto.MakeupRequestRequest;
 import br.com.corely.makeup.dto.MakeupRequestResponse;
+import br.com.corely.user.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ public class MakeupRequestController {
     private final MakeupRequestService makeupRequestService;
 
     @PostMapping("/attendance/{attendanceId}/makeup-request")
+    @RequireRole({UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<MakeupRequestResponse> request(
             @PathVariable UUID attendanceId,
             @Valid @RequestBody MakeupRequestRequest request) {
@@ -28,12 +31,14 @@ public class MakeupRequestController {
     }
 
     @GetMapping("/attendance/{attendanceId}/makeup-request")
+    @RequireRole({UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<MakeupRequestResponse> findByAttendance(@PathVariable UUID attendanceId) {
         MakeupRequestResponse response = makeupRequestService.findByAttendanceId(attendanceId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/makeup-requests")
+    @RequireRole({UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<List<MakeupRequestResponse>> findAll(
             @RequestParam(required = false) MakeupRequestStatus status,
             @RequestParam(required = false) UUID studentId,
@@ -43,6 +48,7 @@ public class MakeupRequestController {
     }
 
     @PatchMapping("/makeup-requests/{id}/approve")
+    @RequireRole({UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<MakeupRequestResponse> approve(
             @PathVariable UUID id,
             @Valid @RequestBody MakeupApproveRequest request) {
@@ -51,6 +57,7 @@ public class MakeupRequestController {
     }
 
     @PatchMapping("/makeup-requests/{id}/reject")
+    @RequireRole({UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<MakeupRequestResponse> reject(
             @PathVariable UUID id,
             @Valid @RequestBody MakeupRejectRequest request) {

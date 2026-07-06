@@ -100,7 +100,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testCreateEvolution() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
         request.setStudioId(studio.getId());
@@ -128,7 +128,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testCreateEvolutionWithoutObjectiveAndEvaluation() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
         request.setStudioId(studio.getId());
@@ -147,7 +147,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testCreateEvolutionValidation() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
         request.setStudioId(studio.getId());
@@ -163,7 +163,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testFindAllEvolutions() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -183,7 +183,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testFindEvolutionById() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -203,7 +203,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testFindEvolutionByIdNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
@@ -212,7 +212,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testFindByStudentId() throws Exception {
         Evolution evolution1 = new Evolution();
         evolution1.setStudio(studio);
@@ -238,7 +238,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testFindByObjectiveId() throws Exception {
         Evolution evolution1 = new Evolution();
         evolution1.setStudio(studio);
@@ -257,7 +257,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testFindByEvolutionDateBetween() throws Exception {
         LocalDate startDate = LocalDate.now().minusDays(5);
         LocalDate endDate = LocalDate.now().plusDays(5);
@@ -279,7 +279,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testUpdateEvolution() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -309,7 +309,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testUpdateEvolutionNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
@@ -327,7 +327,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testDeleteEvolution() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -346,7 +346,7 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void testDeleteEvolutionNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 

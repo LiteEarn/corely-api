@@ -1,7 +1,9 @@
 package br.com.corely.evaluation;
 
+import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.evaluation.dto.EvaluationRequest;
 import br.com.corely.evaluation.dto.EvaluationResponse;
+import br.com.corely.user.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,7 @@ public class EvaluationController {
     private final EvaluationService evaluationService;
 
     @PostMapping
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Create a new evaluation", description = "Creates a new evaluation for a student")
     public ResponseEntity<EvaluationResponse> create(@Valid @RequestBody EvaluationRequest request) {
         log.info("EvaluationController.create - Request received");
@@ -36,6 +39,7 @@ public class EvaluationController {
     }
 
     @GetMapping
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Get all evaluations", description = "Retrieves all evaluations with optional filters")
     public ResponseEntity<List<EvaluationResponse>> findAll(
             @Parameter(description = "Filter by student ID") @RequestParam(required = false) UUID studentId,
@@ -61,6 +65,7 @@ public class EvaluationController {
     }
 
     @GetMapping("/{id}")
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Get evaluation by ID", description = "Retrieves a specific evaluation by its ID")
     public ResponseEntity<EvaluationResponse> findById(@PathVariable UUID id) {
         log.info("EvaluationController.findById - Request received for id: {}", id);
@@ -69,6 +74,7 @@ public class EvaluationController {
     }
 
     @PutMapping("/{id}")
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Update evaluation", description = "Updates an existing evaluation")
     public ResponseEntity<EvaluationResponse> update(@PathVariable UUID id, @Valid @RequestBody EvaluationRequest request) {
         log.info("EvaluationController.update - Request received for id: {}", id);
@@ -77,6 +83,7 @@ public class EvaluationController {
     }
 
     @DeleteMapping("/{id}")
+    @RequireRole({UserRole.INSTRUCTOR, UserRole.ADMIN})
     @Operation(summary = "Delete evaluation", description = "Deletes an evaluation by its ID")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         log.info("EvaluationController.delete - Request received for id: {}", id);

@@ -1,5 +1,6 @@
 package br.com.corely.auth.service;
 
+import br.com.corely.auth.authorization.RolePermissions;
 import br.com.corely.auth.dto.CurrentStudioResponse;
 import br.com.corely.auth.dto.CurrentUserResponse;
 import br.com.corely.auth.dto.LoginRequest;
@@ -52,6 +53,10 @@ public class AuthenticationService {
 
         saveRefreshToken(user, refreshToken);
 
+        List<String> permissions = RolePermissions.getPermissions(user.getRole()).stream()
+                .map(Enum::name)
+                .toList();
+
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -60,6 +65,7 @@ public class AuthenticationService {
                 .studioId(user.getStudio().getId())
                 .studioName(user.getStudio().getName())
                 .role(user.getRole().name())
+                .permissions(permissions)
                 .build();
     }
 
@@ -75,6 +81,9 @@ public class AuthenticationService {
     }
 
     private CurrentUserResponse buildCurrentUserResponse(User user) {
+        List<String> permissions = RolePermissions.getPermissions(user.getRole()).stream()
+                .map(Enum::name)
+                .toList();
         return CurrentUserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
@@ -84,7 +93,7 @@ public class AuthenticationService {
                         .id(user.getStudio().getId())
                         .name(user.getStudio().getName())
                         .build())
-                .permissions(Collections.emptyList())
+                .permissions(permissions)
                 .lastLogin(user.getLastLogin())
                 .build();
     }

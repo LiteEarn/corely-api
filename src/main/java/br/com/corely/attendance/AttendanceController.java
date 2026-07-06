@@ -4,7 +4,9 @@ import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
 import br.com.corely.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.attendance.dto.BulkAttendanceResponse;
+import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.user.User;
+import br.com.corely.user.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +25,7 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
 
     @PostMapping("/class-sessions/{sessionId}/attendance")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
     public ResponseEntity<AttendanceResponse> register(
             @PathVariable UUID sessionId,
             @Valid @RequestBody AttendanceRequest request) {
@@ -31,6 +34,7 @@ public class AttendanceController {
     }
 
     @PostMapping("/attendance/bulk")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
     public ResponseEntity<BulkAttendanceResponse> bulkSave(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody BulkAttendanceRequest request) {
@@ -40,18 +44,21 @@ public class AttendanceController {
     }
 
     @GetMapping("/class-sessions/{sessionId}/attendance")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
     public ResponseEntity<List<AttendanceResponse>> findBySession(@PathVariable UUID sessionId) {
         List<AttendanceResponse> response = attendanceService.findBySessionId(sessionId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/enrollments/{enrollmentId}/attendance")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
     public ResponseEntity<List<AttendanceResponse>> findByEnrollment(@PathVariable UUID enrollmentId) {
         List<AttendanceResponse> response = attendanceService.findByEnrollmentId(enrollmentId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/attendance/class-group/{classGroupId}/date/{date}")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
     public ResponseEntity<List<AttendanceResponse>> findByClassGroupAndDate(
             @PathVariable UUID classGroupId,
             @PathVariable LocalDate date) {

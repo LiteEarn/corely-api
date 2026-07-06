@@ -131,7 +131,7 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void findByClassGroupAndDate_returnsAttendances() throws Exception {
         AttendanceRequest request = new AttendanceRequest(
                 enrollment.getId(),
@@ -156,7 +156,7 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void findByClassGroupAndDate_whenNoAttendance_returnsEmptyList() throws Exception {
         mockMvc.perform(get("/attendance/class-group/{classGroupId}/date/{date}",
                         classGroup.getId(), LocalDate.now().toString()))
@@ -165,7 +165,7 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void findByClassGroupAndDate_whenClassGroupNotFound_returnsNotFound() throws Exception {
         mockMvc.perform(get("/attendance/class-group/{classGroupId}/date/{date}",
                         java.util.UUID.randomUUID(), LocalDate.now().toString()))

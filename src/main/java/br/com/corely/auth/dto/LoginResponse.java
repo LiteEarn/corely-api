@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -22,4 +23,5 @@ public class LoginResponse {
     private UUID studioId;
     private String studioName;
     private String role;
+    private List<String> permissions;
 }
