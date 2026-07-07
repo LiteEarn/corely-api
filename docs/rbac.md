@@ -52,7 +52,7 @@ Utiliza `@RequireRole`, `@RequireAnyRole` e `@RequirePermission` para proteção
 
 | Recurso | OWNER | ADMIN | RECEPTIONIST | INSTRUCTOR | FINANCIAL | STUDENT |
 |---------|-------|-------|--------------|------------|-----------|---------|
-| Dashboard | READ | READ | - | - | - | - |
+| Dashboard | READ | READ | READ | READ | - | - |
 | Alunos | READ/WRITE | READ/WRITE | READ/WRITE | READ | READ | - |
 | Instrutores | READ/WRITE | READ/WRITE | - | - | - | - |
 | Turmas | READ/WRITE | READ/WRITE | READ | READ | - | - |
@@ -71,7 +71,7 @@ Utiliza `@RequireRole`, `@RequireAnyRole` e `@RequirePermission` para proteção
 
 ### Dashboard (`/dashboard`)
 - `GET /dashboard` - ADMIN, OWNER
-- `GET /dashboard/operational` - ADMIN, OWNER
+- `GET /dashboard/operational` - ADMIN, OWNER, RECEPTIONIST, INSTRUCTOR
 
 ### Alunos (`/students`)
 - Todos os endpoints - ADMIN, RECEPTIONIST

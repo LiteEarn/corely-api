@@ -37,7 +37,7 @@ public class DashboardController {
     }
 
     @GetMapping("/operational")
-    @RequireRole({UserRole.ADMIN, UserRole.OWNER})
+    @RequireRole({UserRole.ADMIN, UserRole.OWNER, UserRole.RECEPTIONIST, UserRole.INSTRUCTOR})
     @Operation(summary = "Get operational dashboard", description = "Retorna dados agregados do Dashboard Operacional")
     public ResponseEntity<DashboardOperationalResponse> getOperationalDashboard(
             @Parameter(description = "Studio ID (opcional - usa o primeiro studio ativo quando não informado)")

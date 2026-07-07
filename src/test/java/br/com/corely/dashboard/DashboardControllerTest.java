@@ -635,4 +635,41 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.classOccupancy").isArray())
                 .andExpect(jsonPath("$.alerts").isArray());
     }
+
+    @Test
+    @WithMockUser(roles = "RECEPTIONIST")
+    void testGetOperationalDashboardAsReceptionist() throws Exception {
+        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.kpis.classesToday").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "INSTRUCTOR")
+    void testGetOperationalDashboardAsInstructor() throws Exception {
+        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.kpis.classesToday").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "FINANCIAL")
+    void testGetOperationalDashboardAsFinancialReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "RECEPTIONIST")
+    void testGetDashboardAsReceptionistReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "INSTRUCTOR")
+    void testGetDashboardAsInstructorReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+                .andExpect(status().isForbidden());
+    }
 }

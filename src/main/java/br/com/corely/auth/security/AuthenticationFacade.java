@@ -33,7 +33,8 @@ public class AuthenticationFacade {
 
     public UUID getCurrentStudioId() {
         User user = getCurrentUser();
-        return user != null ? user.getStudio().getId() : null;
+        if (user == null) return null;
+        return user.getStudio() != null ? user.getStudio().getId() : null;
     }
 
     public String getCurrentUserEmail() {

@@ -62,8 +62,8 @@ public class AuthenticationService {
                 .refreshToken(refreshToken)
                 .expiresIn(jwtService.getAccessTokenExpiration())
                 .user(buildCurrentUserResponse(user))
-                .studioId(user.getStudio().getId())
-                .studioName(user.getStudio().getName())
+                .studioId(user.getStudio() != null ? user.getStudio().getId() : null)
+                .studioName(user.getStudio() != null ? user.getStudio().getName() : null)
                 .role(user.getRole().name())
                 .permissions(permissions)
                 .build();
@@ -84,15 +84,18 @@ public class AuthenticationService {
         List<String> permissions = RolePermissions.getPermissions(user.getRole()).stream()
                 .map(Enum::name)
                 .toList();
+        CurrentStudioResponse studioResponse = user.getStudio() != null
+                ? CurrentStudioResponse.builder()
+                        .id(user.getStudio().getId())
+                        .name(user.getStudio().getName())
+                        .build()
+                : null;
         return CurrentUserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
-                .studio(CurrentStudioResponse.builder()
-                        .id(user.getStudio().getId())
-                        .name(user.getStudio().getName())
-                        .build())
+                .studio(studioResponse)
                 .permissions(permissions)
                 .lastLogin(user.getLastLogin())
                 .build();
@@ -111,6 +114,9 @@ public class AuthenticationService {
         refreshTokenRepository.save(storedToken);
 
         User user = storedToken.getUser();
+        if (user == null) {
+            throw new BadCredentialsException("Invalid refresh token: user not found");
+        }
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
 
