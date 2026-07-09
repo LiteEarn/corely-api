@@ -29,8 +29,17 @@ public class EnrollmentController {
 
     @GetMapping
     @RequireRole({UserRole.ADMIN, UserRole.RECEPTIONIST})
-    public ResponseEntity<List<EnrollmentResponse>> findAll() {
-        List<EnrollmentResponse> response = enrollmentService.findAll();
+    public ResponseEntity<List<EnrollmentResponse>> findAll(
+            @RequestParam(required = false) UUID classGroupId,
+            @RequestParam(required = false) UUID studentId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean active) {
+        List<EnrollmentResponse> response;
+        if (classGroupId != null) {
+            response = enrollmentService.findStudentsByClassGroupId(classGroupId);
+        } else {
+            response = enrollmentService.findAll();
+        }
         return ResponseEntity.ok(response);
     }
 

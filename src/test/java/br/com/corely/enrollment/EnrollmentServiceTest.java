@@ -162,6 +162,49 @@ class EnrollmentServiceTest {
     }
 
     @Test
+    void findStudentsByClassGroupId_doesNotReturnStudentsFromOtherClassGroup() {
+        ClassGroup otherClassGroup = new ClassGroup();
+        otherClassGroup.setStudio(studio);
+        otherClassGroup.setInstructor(instructor);
+        otherClassGroup.setName("Other Class Group");
+        otherClassGroup.setStartTime(LocalTime.of(14, 0));
+        otherClassGroup.setEndTime(LocalTime.of(15, 0));
+        otherClassGroup.setCapacity(10);
+        otherClassGroup.setMonday(true);
+        otherClassGroup.setActive(true);
+        otherClassGroup = classGroupRepository.save(otherClassGroup);
+
+        Student otherStudent = new Student();
+        otherStudent.setStudio(studio);
+        otherStudent.setFullName("Other Student");
+        otherStudent.setEmail("other@test.com");
+        otherStudent.setActive(true);
+        otherStudent = studentRepository.save(otherStudent);
+
+        Enrollment enrollmentA = new Enrollment();
+        enrollmentA.setStudio(studio);
+        enrollmentA.setStudent(student);
+        enrollmentA.setClassGroup(classGroup);
+        enrollmentA.setEnrollmentDate(LocalDate.now());
+        enrollmentA.setActive(true);
+        enrollmentRepository.save(enrollmentA);
+
+        Enrollment enrollmentB = new Enrollment();
+        enrollmentB.setStudio(studio);
+        enrollmentB.setStudent(otherStudent);
+        enrollmentB.setClassGroup(otherClassGroup);
+        enrollmentB.setEnrollmentDate(LocalDate.now());
+        enrollmentB.setActive(true);
+        enrollmentRepository.save(enrollmentB);
+
+        List<EnrollmentResponse> responses = enrollmentService.findStudentsByClassGroupId(classGroup.getId());
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getStudentName()).isEqualTo("Test Student");
+        assertThat(responses.get(0).getStudentName()).isNotEqualTo("Other Student");
+    }
+
+    @Test
     void update_whenClassGroupInactive_throwsConflictException() {
         // Given - create an enrollment
         Enrollment newEnrollment = new Enrollment();
