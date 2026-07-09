@@ -2,9 +2,12 @@ package br.com.corely.classsession;
 
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.attendance.AttendanceRepository;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
+import br.com.corely.classsession.dto.DailyScheduleResponse;
 import br.com.corely.classsession.dto.SessionGenerationResponse;
+import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -24,6 +27,8 @@ public class ClassSessionService {
 
     private final ClassSessionRepository classSessionRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final AttendanceRepository attendanceRepository;
 
     @Transactional
     public ClassSessionResponse create(ClassSessionRequest request) {
@@ -214,6 +219,64 @@ public class ClassSessionService {
                 .findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(
                         classGroupId, LocalDate.now(), ClassSessionStatus.CANCELLED);
         classSessionRepository.deleteAll(sessions);
+    }
+
+    @Transactional(readOnly = true)
+    public DailyScheduleResponse getDailySchedule(UUID studioId, LocalDate date, UUID instructorId, ClassSessionStatus status, UUID classGroupId) {
+        List<ClassSession> sessions;
+
+        if (instructorId != null && status != null) {
+            sessions = classSessionRepository.findByStudioIdAndSessionDateAndInstructorIdAndStatus(studioId, date, instructorId, status);
+        } else if (instructorId != null) {
+            sessions = classSessionRepository.findByStudioIdAndSessionDateAndInstructorId(studioId, date, instructorId);
+        } else if (status != null) {
+            sessions = classSessionRepository.findByStudioIdAndSessionDateAndStatus(studioId, date, status);
+        } else if (classGroupId != null) {
+            sessions = classSessionRepository.findByStudioIdAndSessionDateAndClassGroupId(studioId, date, classGroupId);
+        } else {
+            sessions = classSessionRepository.findByStudioIdAndSessionDate(studioId, date);
+        }
+
+        long totalToday = 0;
+        long inProgress = 0;
+        long completed = 0;
+        long cancelled = 0;
+
+        for (ClassSession s : sessions) {
+            totalToday++;
+            switch (s.getStatus()) {
+                case IN_PROGRESS -> inProgress++;
+                case COMPLETED -> completed++;
+                case CANCELLED -> cancelled++;
+            }
+        }
+
+        List<DailyScheduleResponse.DailySessionItem> items = sessions.stream()
+                .map(this::toDailySessionItem)
+                .toList();
+
+        DailyScheduleResponse.DailyKpis kpis = new DailyScheduleResponse.DailyKpis(totalToday, inProgress, completed, cancelled);
+        return new DailyScheduleResponse(kpis, items);
+    }
+
+    private DailyScheduleResponse.DailySessionItem toDailySessionItem(ClassSession s) {
+        long enrolledCount = enrollmentRepository.countByClassGroupIdAndActiveTrue(s.getClassGroup().getId());
+        long presentCount = attendanceRepository.countPresentByClassGroupIdAndSessionDate(s.getClassGroup().getId(), s.getSessionDate());
+        return new DailyScheduleResponse.DailySessionItem(
+                s.getId(),
+                s.getClassGroup().getId(),
+                s.getClassGroup().getName(),
+                s.getInstructor().getId(),
+                s.getInstructor().getFullName(),
+                s.getSessionDate(),
+                s.getStartTime(),
+                s.getEndTime(),
+                s.getStatus(),
+                s.getClassGroup().getCapacity(),
+                enrolledCount,
+                presentCount,
+                s.getNotes()
+        );
     }
 
     private ClassSessionResponse toResponse(ClassSession classSession) {

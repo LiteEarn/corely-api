@@ -31,4 +31,19 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, UUID
 
     @Query("SELECT cs FROM ClassSession cs JOIN FETCH cs.classGroup cg JOIN FETCH cs.instructor i WHERE cg.studio.id = :studioId AND cs.sessionDate = :date ORDER BY cs.startTime")
     List<ClassSession> findTodaySessionsByStudio(@Param("studioId") UUID studioId, @Param("date") LocalDate date);
+
+    @Query("SELECT cs FROM ClassSession cs JOIN FETCH cs.classGroup cg JOIN FETCH cs.instructor i WHERE cg.studio.id = :studioId AND cs.sessionDate = :date ORDER BY cs.startTime")
+    List<ClassSession> findByStudioIdAndSessionDate(@Param("studioId") UUID studioId, @Param("date") LocalDate date);
+
+    @Query("SELECT cs FROM ClassSession cs JOIN FETCH cs.classGroup cg JOIN FETCH cs.instructor i WHERE cg.studio.id = :studioId AND cs.sessionDate = :date AND cs.status = :status ORDER BY cs.startTime")
+    List<ClassSession> findByStudioIdAndSessionDateAndStatus(@Param("studioId") UUID studioId, @Param("date") LocalDate date, @Param("status") ClassSessionStatus status);
+
+    @Query("SELECT cs FROM ClassSession cs JOIN FETCH cs.classGroup cg JOIN FETCH cs.instructor i WHERE cg.studio.id = :studioId AND cs.sessionDate = :date AND cs.instructor.id = :instructorId ORDER BY cs.startTime")
+    List<ClassSession> findByStudioIdAndSessionDateAndInstructorId(@Param("studioId") UUID studioId, @Param("date") LocalDate date, @Param("instructorId") UUID instructorId);
+
+    @Query("SELECT cs FROM ClassSession cs JOIN FETCH cs.classGroup cg JOIN FETCH cs.instructor i WHERE cg.studio.id = :studioId AND cs.sessionDate = :date AND cs.instructor.id = :instructorId AND cs.status = :status ORDER BY cs.startTime")
+    List<ClassSession> findByStudioIdAndSessionDateAndInstructorIdAndStatus(@Param("studioId") UUID studioId, @Param("date") LocalDate date, @Param("instructorId") UUID instructorId, @Param("status") ClassSessionStatus status);
+
+    @Query("SELECT cs FROM ClassSession cs JOIN FETCH cs.classGroup cg JOIN FETCH cs.instructor i WHERE cg.studio.id = :studioId AND cs.sessionDate = :date AND cg.id = :classGroupId ORDER BY cs.startTime")
+    List<ClassSession> findByStudioIdAndSessionDateAndClassGroupId(@Param("studioId") UUID studioId, @Param("date") LocalDate date, @Param("classGroupId") UUID classGroupId);
 }

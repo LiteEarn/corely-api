@@ -3,6 +3,7 @@ package br.com.corely.classsession;
 import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
+import br.com.corely.classsession.dto.DailyScheduleResponse;
 import br.com.corely.user.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,19 @@ public class ClassSessionController {
             @RequestParam(required = false) ClassSessionStatus status,
             @RequestParam(required = false) LocalDate sessionDate) {
         List<ClassSessionResponse> response = classSessionService.findAll(classGroupId, instructorId, status, sessionDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/daily")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
+    public ResponseEntity<DailyScheduleResponse> getDailySchedule(
+            @RequestParam UUID studioId,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) UUID instructorId,
+            @RequestParam(required = false) ClassSessionStatus status,
+            @RequestParam(required = false) UUID classGroupId) {
+        LocalDate targetDate = date != null ? date : LocalDate.now();
+        DailyScheduleResponse response = classSessionService.getDailySchedule(studioId, targetDate, instructorId, status, classGroupId);
         return ResponseEntity.ok(response);
     }
 
