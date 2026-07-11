@@ -4,6 +4,7 @@ import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
+import br.com.corely.scheduler.ClassSessionScheduler;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +78,7 @@ class ClassSessionSchedulerTest {
     void generateSessions_createsSessionsForAllActiveDays() {
         classSessionScheduler.generateSessions();
 
-        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.MONDAY)
                 .count();
 
@@ -86,7 +87,7 @@ class ClassSessionSchedulerTest {
 
     @Test
     void generateSessions_skipsExistingSessions() {
-        LocalDate firstMonday = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        LocalDate firstMonday = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.MONDAY)
                 .findFirst().orElseThrow();
 
@@ -101,7 +102,7 @@ class ClassSessionSchedulerTest {
 
         classSessionScheduler.generateSessions();
 
-        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.MONDAY)
                 .count();
 
@@ -120,7 +121,7 @@ class ClassSessionSchedulerTest {
 
     @Test
     void generateSessions_doesNotAlterNonScheduledSessions() {
-        LocalDate firstMonday = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        LocalDate firstMonday = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.MONDAY)
                 .findFirst().orElseThrow();
 
@@ -135,7 +136,7 @@ class ClassSessionSchedulerTest {
 
         classSessionScheduler.generateSessions();
 
-        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.MONDAY)
                 .count();
 
@@ -159,10 +160,10 @@ class ClassSessionSchedulerTest {
 
         classSessionScheduler.generateSessions();
 
-        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        long expectedMondays = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.MONDAY)
                 .count();
-        long expectedWednesdays = LocalDate.now().datesUntil(LocalDate.now().plusDays(61))
+        long expectedWednesdays = LocalDate.now().datesUntil(LocalDate.now().plusDays(91))
                 .filter(d -> d.getDayOfWeek() == DayOfWeek.WEDNESDAY)
                 .count();
 
@@ -170,7 +171,7 @@ class ClassSessionSchedulerTest {
     }
 
     @Test
-    void generateSessions_respects60DayWindow() {
+    void generateSessions_respects90DayWindow() {
         classGroup.setMonday(true);
         classGroup.setTuesday(true);
         classGroup.setWednesday(true);
@@ -182,8 +183,24 @@ class ClassSessionSchedulerTest {
 
         classSessionScheduler.generateSessions();
 
-        assertThat(classSessionRepository.count()).isEqualTo(61);
+        assertThat(classSessionRepository.count()).isEqualTo(91);
     }
 
+    @Test
+    void generateSessions_usesDateRangeWhenPresent() {
+        classGroup.setStartDate(LocalDate.now().plusDays(10));
+        classGroup.setEndDate(LocalDate.now().plusDays(20));
+        classGroup.setMonday(true);
+        classGroup.setTuesday(true);
+        classGroup.setWednesday(true);
+        classGroup.setThursday(true);
+        classGroup.setFriday(true);
+        classGroup.setSaturday(true);
+        classGroup.setSunday(true);
+        classGroupRepository.save(classGroup);
 
+        classSessionScheduler.generateSessions();
+
+        assertThat(classSessionRepository.count()).isEqualTo(11);
+    }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -19,6 +20,8 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, UUID
     List<ClassSession> findByStatus(ClassSessionStatus status);
     List<ClassSession> findByInstructorId(UUID instructorId);
     List<ClassSession> findByClassGroupIdAndSessionDateGreaterThanEqualAndStatus(UUID classGroupId, LocalDate sessionDate, ClassSessionStatus status);
+
+    List<ClassSession> findByClassGroupIdAndSessionDateBetween(UUID classGroupId, LocalDate startDate, LocalDate endDate);
 
     Optional<ClassSession> findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTime(
             UUID classGroupId, LocalDate sessionDate, ClassSessionStatus status);

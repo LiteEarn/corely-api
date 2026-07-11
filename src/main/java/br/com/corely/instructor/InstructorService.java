@@ -183,6 +183,8 @@ public class InstructorService {
                 classGroup.getFriday(),
                 classGroup.getSaturday(),
                 classGroup.getSunday(),
+                classGroup.getStartDate(),
+                classGroup.getEndDate(),
                 classGroup.getActive(),
                 classGroup.getCreatedAt(),
                 classGroup.getUpdatedAt()

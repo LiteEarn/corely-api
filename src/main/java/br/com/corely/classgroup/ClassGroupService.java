@@ -9,6 +9,7 @@ import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
+import br.com.corely.scheduler.SessionGenerationService;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ConfirmationRequiredException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +34,7 @@ public class ClassGroupService {
     private final InstructorRepository instructorRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final ClassSessionService classSessionService;
+    private final SessionGenerationService sessionGenerationService;
 
     @Transactional
     public ClassGroupResponse create(ClassGroupRequest request) {
@@ -61,12 +64,14 @@ public class ClassGroupService {
         classGroup.setFriday(request.getFriday() != null ? request.getFriday() : false);
         classGroup.setSaturday(request.getSaturday() != null ? request.getSaturday() : false);
         classGroup.setSunday(request.getSunday() != null ? request.getSunday() : false);
+        classGroup.setStartDate(request.getStartDate());
+        classGroup.setEndDate(request.getEndDate());
         classGroup.setActive(request.getActive() != null ? request.getActive() : true);
 
         classGroup = classGroupRepository.save(classGroup);
 
         if (Boolean.TRUE.equals(classGroup.getActive())) {
-            classSessionService.generateSessionsForGroup(classGroup);
+            sessionGenerationService.generateForGroup(classGroup);
         }
 
         return toResponse(classGroup);
@@ -108,6 +113,8 @@ public class ClassGroupService {
         LocalTime beforeEnd = classGroup.getEndTime();
         UUID beforeInstructorId = classGroup.getInstructor().getId();
         Integer beforeCapacity = classGroup.getCapacity();
+        LocalDate beforeStartDate = classGroup.getStartDate();
+        LocalDate beforeEndDate = classGroup.getEndDate();
 
         // Business rule: if trying to inactivate, check for active enrollments
         if (request.getActive() != null && !request.getActive() && Boolean.TRUE.equals(classGroup.getActive())) {
@@ -157,6 +164,8 @@ public class ClassGroupService {
         if (request.getActive() != null) {
             classGroup.setActive(request.getActive());
         }
+        classGroup.setStartDate(request.getStartDate());
+        classGroup.setEndDate(request.getEndDate());
 
         classGroup = classGroupRepository.save(classGroup);
 
@@ -167,11 +176,10 @@ public class ClassGroupService {
             classSessionService.cancelFutureScheduledSessions(classGroup.getId());
         } else if (!wasActive && isActive) {
             classSessionService.deleteFutureCancelledSessions(classGroup.getId());
-            classSessionService.generateSessionsForGroup(classGroup);
+            sessionGenerationService.generateForGroup(classGroup);
         } else if (isActive && hasScheduleChanged(beforeDays, beforeStart, beforeEnd,
-                beforeInstructorId, beforeCapacity, classGroup)) {
-            classSessionService.deleteFutureScheduledSessions(classGroup.getId());
-            classSessionService.generateSessionsForGroup(classGroup);
+                beforeInstructorId, beforeCapacity, beforeStartDate, beforeEndDate, classGroup)) {
+            sessionGenerationService.regenerateForClassGroup(classGroup.getId());
         }
 
         return toResponse(classGroup);
@@ -190,7 +198,7 @@ public class ClassGroupService {
         classGroup = classGroupRepository.save(classGroup);
 
         classSessionService.deleteFutureCancelledSessions(classGroup.getId());
-        classSessionService.generateSessionsForGroup(classGroup);
+        sessionGenerationService.generateForGroup(classGroup);
 
         return toResponse(classGroup);
     }
@@ -254,6 +262,8 @@ public class ClassGroupService {
                 classGroup.getFriday(),
                 classGroup.getSaturday(),
                 classGroup.getSunday(),
+                classGroup.getStartDate(),
+                classGroup.getEndDate(),
                 classGroup.getActive(),
                 classGroup.getCreatedAt(),
                 classGroup.getUpdatedAt()
@@ -297,12 +307,16 @@ public class ClassGroupService {
     }
 
     private boolean hasScheduleChanged(String beforeDays, LocalTime beforeStart, LocalTime beforeEnd,
-                                        UUID beforeInstructorId, Integer beforeCapacity, ClassGroup classGroup) {
+                                        UUID beforeInstructorId, Integer beforeCapacity,
+                                        LocalDate beforeStartDate, LocalDate beforeEndDate,
+                                        ClassGroup classGroup) {
         if (!beforeDays.equals(daysAsString(classGroup))) return true;
         if (!beforeStart.equals(classGroup.getStartTime())) return true;
         if (!beforeEnd.equals(classGroup.getEndTime())) return true;
         if (!beforeInstructorId.equals(classGroup.getInstructor().getId())) return true;
         if (!beforeCapacity.equals(classGroup.getCapacity())) return true;
+        if (!java.util.Objects.equals(beforeStartDate, classGroup.getStartDate())) return true;
+        if (!java.util.Objects.equals(beforeEndDate, classGroup.getEndDate())) return true;
         return false;
     }
 }
