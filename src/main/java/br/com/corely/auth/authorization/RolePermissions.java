@@ -28,7 +28,8 @@ public final class RolePermissions {
                 Permission.MAKEUP_REQUEST_READ, Permission.MAKEUP_REQUEST_WRITE,
                 Permission.FINANCIAL_READ, Permission.FINANCIAL_WRITE,
                 Permission.USER_READ, Permission.USER_WRITE,
-                Permission.STUDIO_READ, Permission.STUDIO_WRITE
+                Permission.STUDIO_READ, Permission.STUDIO_WRITE,
+                Permission.PLAN_READ, Permission.PLAN_WRITE
         ));
 
         ROLE_PERMISSIONS.put(UserRole.RECEPTIONIST, EnumSet.of(
@@ -38,7 +39,8 @@ public final class RolePermissions {
                 Permission.ATTENDANCE_READ, Permission.ATTENDANCE_WRITE,
                 Permission.SESSION_READ, Permission.SESSION_WRITE,
                 Permission.CLASS_GROUP_READ,
-                Permission.MAKEUP_REQUEST_READ, Permission.MAKEUP_REQUEST_WRITE
+                Permission.MAKEUP_REQUEST_READ, Permission.MAKEUP_REQUEST_WRITE,
+                Permission.PLAN_READ
         ));
 
         ROLE_PERMISSIONS.put(UserRole.INSTRUCTOR, EnumSet.of(
@@ -56,7 +58,8 @@ public final class RolePermissions {
                 Permission.DASHBOARD_VIEW,
                 Permission.FINANCIAL_READ, Permission.FINANCIAL_WRITE,
                 Permission.STUDENT_READ,
-                Permission.ENROLLMENT_READ
+                Permission.ENROLLMENT_READ,
+                Permission.PLAN_READ
         ));
 
         ROLE_PERMISSIONS.put(UserRole.STUDENT, EnumSet.of(

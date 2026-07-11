@@ -27,5 +27,7 @@ public enum Permission {
     USER_READ,
     USER_WRITE,
     STUDIO_READ,
-    STUDIO_WRITE
+    STUDIO_WRITE,
+    PLAN_READ,
+    PLAN_WRITE
 }
