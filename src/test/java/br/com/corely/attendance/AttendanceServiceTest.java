@@ -2,6 +2,8 @@ package br.com.corely.attendance;
 
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.BulkAttendanceRequest;
+import br.com.corely.attendance.dto.SessionAttendanceResponse;
+import br.com.corely.attendance.dto.SessionBulkAttendanceRequest;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
@@ -412,6 +414,121 @@ class AttendanceServiceTest {
     void findByClassGroupAndDate_emptyList() {
         var result = attendanceService.findByClassGroupAndDate(classGroup.getId(), LocalDate.now());
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void saveSessionAttendances_createNew() {
+        SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
+        var item = new SessionBulkAttendanceRequest.AttendanceItem();
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
+        request.setAttendances(List.of(item));
+
+        var responses = attendanceService.saveSessionAttendances(inProgressSession.getId(), request);
+
+        assertThat(responses).hasSize(1);
+        SessionAttendanceResponse response = responses.get(0);
+        assertThat(response.classSessionId()).isEqualTo(inProgressSession.getId());
+        assertThat(response.enrollmentId()).isEqualTo(enrollment.getId());
+        assertThat(response.studentId()).isEqualTo(student.getId());
+        assertThat(response.studentName()).isEqualTo(student.getFullName());
+        assertThat(response.status()).isEqualTo(AttendanceStatus.PRESENT);
+    }
+
+    @Test
+    void saveSessionAttendances_updateExisting() {
+        SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
+        var item = new SessionBulkAttendanceRequest.AttendanceItem();
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
+        request.setAttendances(List.of(item));
+        var first = attendanceService.saveSessionAttendances(inProgressSession.getId(), request);
+
+        item.setStatus(AttendanceStatus.ABSENT);
+        var second = attendanceService.saveSessionAttendances(inProgressSession.getId(), request);
+
+        assertThat(second).hasSize(1);
+        assertThat(second.get(0).id()).isEqualTo(first.get(0).id());
+        assertThat(second.get(0).status()).isEqualTo(AttendanceStatus.ABSENT);
+    }
+
+    @Test
+    void saveSessionAttendances_preventsDuplicate() {
+        SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
+        var item = new SessionBulkAttendanceRequest.AttendanceItem();
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.JUSTIFIED);
+        request.setAttendances(List.of(item));
+        attendanceService.saveSessionAttendances(inProgressSession.getId(), request);
+
+        item.setStatus(AttendanceStatus.PRESENT);
+        var result = attendanceService.saveSessionAttendances(inProgressSession.getId(), request);
+
+        assertThat(result).hasSize(1);
+        var allForSession = attendanceService.findBySessionId(inProgressSession.getId());
+        assertThat(allForSession).hasSize(1);
+    }
+
+    @Test
+    void saveSessionAttendances_multipleStudents() {
+        Student student2 = new Student();
+        student2.setStudio(studio);
+        student2.setFullName("Second Student");
+        student2.setEmail("second@test.com");
+        student2.setActive(true);
+        student2 = studentRepository.save(student2);
+
+        Enrollment enrollment2 = new Enrollment();
+        enrollment2.setStudio(studio);
+        enrollment2.setStudent(student2);
+        enrollment2.setClassGroup(classGroup);
+        enrollment2.setEnrollmentDate(LocalDate.now());
+        enrollment2.setActive(true);
+        enrollment2 = enrollmentRepository.save(enrollment2);
+
+        SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
+        var item1 = new SessionBulkAttendanceRequest.AttendanceItem();
+        item1.setEnrollmentId(enrollment.getId());
+        item1.setStatus(AttendanceStatus.PRESENT);
+        var item2 = new SessionBulkAttendanceRequest.AttendanceItem();
+        item2.setEnrollmentId(enrollment2.getId());
+        item2.setStatus(AttendanceStatus.ABSENT);
+        request.setAttendances(List.of(item1, item2));
+
+        var responses = attendanceService.saveSessionAttendances(inProgressSession.getId(), request);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses.get(0).status()).isEqualTo(AttendanceStatus.PRESENT);
+        assertThat(responses.get(1).status()).isEqualTo(AttendanceStatus.ABSENT);
+    }
+
+    @Test
+    void saveSessionAttendances_inactiveEnrollment_throwsConflictException() {
+        enrollment.setActive(false);
+        enrollmentRepository.save(enrollment);
+
+        SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
+        var item = new SessionBulkAttendanceRequest.AttendanceItem();
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
+        request.setAttendances(List.of(item));
+
+        assertThatThrownBy(() -> attendanceService.saveSessionAttendances(inProgressSession.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Matrícula inativa.");
+    }
+
+    @Test
+    void saveSessionAttendances_completedSession_throwsConflictException() {
+        SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
+        var item = new SessionBulkAttendanceRequest.AttendanceItem();
+        item.setEnrollmentId(enrollment.getId());
+        item.setStatus(AttendanceStatus.PRESENT);
+        request.setAttendances(List.of(item));
+
+        assertThatThrownBy(() -> attendanceService.saveSessionAttendances(completedSession.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A presença não pode ser registrada após a conclusão da aula.");
     }
 
     private BulkAttendanceRequest.AttendanceItem attendanceItem(UUID studentId, boolean present, String observation) {
