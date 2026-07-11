@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -62,6 +63,12 @@ public class ClassGroup extends BaseEntity {
 
     @Column(name = "sunday", nullable = false)
     private Boolean sunday = false;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;

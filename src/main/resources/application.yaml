@@ -18,6 +18,10 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
+corely:
+  scheduler:
+    session-generation-days: 90
+
 jwt:
   secret: my-secret-key-for-corely-application-2024
   access-token-expiration: 900000
