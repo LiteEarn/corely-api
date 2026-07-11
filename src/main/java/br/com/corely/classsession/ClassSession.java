@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "class_sessions")
@@ -43,4 +45,17 @@ public class ClassSession extends BaseEntity {
 
     @Column(name = "notes", length = 500)
     private String notes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_reason", length = 30)
+    private CancelReason cancelReason;
+
+    @Column(name = "cancel_description", length = 500)
+    private String cancelDescription;
+
+    @Column(name = "cancelled_by")
+    private UUID cancelledBy;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
 }

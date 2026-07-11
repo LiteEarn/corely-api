@@ -2,9 +2,14 @@ package br.com.corely.classsession;
 
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.classsession.dto.CancelSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
 import br.com.corely.classsession.dto.SessionGenerationResponse;
+import br.com.corely.enrollment.Enrollment;
+import br.com.corely.enrollment.EnrollmentRepository;
+import br.com.corely.makeup.MakeupEligibility;
+import br.com.corely.makeup.MakeupEligibilityRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -14,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -24,6 +30,8 @@ public class ClassSessionService {
 
     private final ClassSessionRepository classSessionRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final MakeupEligibilityRepository makeupEligibilityRepository;
 
     @Transactional
     public ClassSessionResponse create(ClassSessionRequest request) {
@@ -84,11 +92,9 @@ public class ClassSessionService {
         if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
             throw new ConflictException("A aula está cancelada.");
         }
-
         if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
             throw new ConflictException("A aula já foi concluída.");
         }
-
         if (classSession.getStatus() == ClassSessionStatus.IN_PROGRESS) {
             throw new ConflictException("A aula já está em andamento.");
         }
@@ -104,11 +110,9 @@ public class ClassSessionService {
         if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
             throw new ConflictException("A aula está cancelada.");
         }
-
         if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
             throw new ConflictException("A aula já foi concluída.");
         }
-
         if (classSession.getStatus() != ClassSessionStatus.IN_PROGRESS) {
             throw new ConflictException("A aula precisa ser iniciada antes de ser concluída.");
         }
@@ -117,19 +121,31 @@ public class ClassSessionService {
     }
 
     @Transactional
-    public void cancel(UUID id) {
+    public void cancel(UUID id, CancelSessionRequest request, UUID userId) {
         ClassSession classSession = classSessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
-        if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
-            throw new ConflictException("A sessão já está cancelada.");
+        if (classSession.getStatus() != ClassSessionStatus.SCHEDULED) {
+            throw new ConflictException("Apenas sessões agendadas podem ser canceladas.");
         }
 
-        if (classSession.getStatus() == ClassSessionStatus.COMPLETED) {
-            throw new ConflictException("A sessão já foi concluída.");
-        }
-
+        LocalDateTime now = LocalDateTime.now();
         classSession.setStatus(ClassSessionStatus.CANCELLED);
+        classSession.setCancelReason(request.getCancelReason());
+        classSession.setCancelDescription(request.getCancelDescription());
+        classSession.setCancelledBy(userId);
+        classSession.setCancelledAt(now);
+
+        List<Enrollment> activeEnrollments = enrollmentRepository
+                .findByClassGroupIdAndActiveTrue(classSession.getClassGroup().getId());
+        for (Enrollment enrollment : activeEnrollments) {
+            MakeupEligibility eligibility = new MakeupEligibility();
+            eligibility.setSessionId(classSession.getId());
+            eligibility.setStudentId(enrollment.getStudent().getId());
+            eligibility.setEnrollmentId(enrollment.getId());
+            eligibility.setClassGroupId(classSession.getClassGroup().getId());
+            makeupEligibilityRepository.save(eligibility);
+        }
     }
 
     @Transactional
@@ -140,7 +156,6 @@ public class ClassSessionService {
         if (!Boolean.TRUE.equals(classGroup.getActive())) {
             throw new ConflictException("Não é possível gerar sessões para uma turma inativa.");
         }
-
         if (!Boolean.TRUE.equals(classGroup.getInstructor().getActive())) {
             throw new ConflictException("Instrutor inativo");
         }
@@ -170,7 +185,6 @@ public class ClassSessionService {
             if (!Boolean.TRUE.equals(active)) {
                 continue;
             }
-
             if (classSessionRepository.existsByClassGroupIdAndSessionDate(classGroupId, date)) {
                 ignored++;
                 continue;
@@ -228,6 +242,10 @@ public class ClassSessionService {
                 classSession.getEndTime(),
                 classSession.getStatus(),
                 classSession.getNotes(),
+                classSession.getCancelReason(),
+                classSession.getCancelDescription(),
+                classSession.getCancelledBy(),
+                classSession.getCancelledAt(),
                 classSession.getClassGroup().getStudio().getId(),
                 classSession.getCreatedAt(),
                 classSession.getUpdatedAt()

@@ -1,5 +1,6 @@
 package br.com.corely.classsession.dto;
 
+import br.com.corely.classsession.CancelReason;
 import br.com.corely.classsession.ClassSessionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,10 @@ public class ClassSessionResponse {
     private LocalTime endTime;
     private ClassSessionStatus status;
     private String notes;
+    private CancelReason cancelReason;
+    private String cancelDescription;
+    private UUID cancelledBy;
+    private LocalDateTime cancelledAt;
     private UUID studioId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
