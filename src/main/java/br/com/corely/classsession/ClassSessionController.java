@@ -1,13 +1,16 @@
 package br.com.corely.classsession;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.classsession.dto.CancelSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
+import br.com.corely.user.User;
 import br.com.corely.user.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -62,8 +65,10 @@ public class ClassSessionController {
 
     @PatchMapping("/{id}/cancel")
     @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
-    public ResponseEntity<Void> cancel(@PathVariable UUID id) {
-        classSessionService.cancel(id);
+    public ResponseEntity<Void> cancel(@PathVariable UUID id,
+                                       @Valid @RequestBody CancelSessionRequest request,
+                                       @AuthenticationPrincipal User user) {
+        classSessionService.cancel(id, request, user.getId());
         return ResponseEntity.noContent().build();
     }
 }

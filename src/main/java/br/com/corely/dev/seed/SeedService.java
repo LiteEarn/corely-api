@@ -500,7 +500,7 @@ public class SeedService {
         int toCancel = (int) (futureSessions.size() * 0.1);
         for (int i = 0; i < toCancel && i < futureSessions.size(); i++) {
             try {
-                classSessionService.cancel(futureSessions.get(i).getId());
+                classSessionService.cancel(futureSessions.get(i).getId(), null, null);
             } catch (Exception ignored) {}
         }
     }

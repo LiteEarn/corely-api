@@ -2,6 +2,7 @@ package br.com.corely.classsession;
 
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.classsession.dto.CancelSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionRequest;
 import br.com.corely.classsession.dto.ClassSessionResponse;
 import br.com.corely.classsession.dto.SessionGenerationResponse;
@@ -50,6 +51,11 @@ class ClassSessionServiceTest {
     private Studio studio;
     private Instructor instructor;
     private ClassGroup classGroup;
+    private final UUID userId = UUID.randomUUID();
+
+    private CancelSessionRequest cancelRequest() {
+        return new CancelSessionRequest(CancelReason.OTHER, "Test cancel");
+    }
 
     @BeforeEach
     void setUp() {
@@ -182,15 +188,19 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
-        classSessionService.cancel(created.getId());
+        classSessionService.cancel(created.getId(), cancelRequest(), userId);
 
         ClassSession cancelled = classSessionRepository.findById(created.getId()).orElseThrow();
         assertThat(cancelled.getStatus()).isEqualTo(ClassSessionStatus.CANCELLED);
+        assertThat(cancelled.getCancelReason()).isEqualTo(CancelReason.OTHER);
+        assertThat(cancelled.getCancelDescription()).isEqualTo("Test cancel");
+        assertThat(cancelled.getCancelledBy()).isEqualTo(userId);
+        assertThat(cancelled.getCancelledAt()).isNotNull();
     }
 
     @Test
     void cancel_whenSessionNotFound_throwsResourceNotFoundException() {
-        assertThatThrownBy(() -> classSessionService.cancel(UUID.randomUUID()))
+        assertThatThrownBy(() -> classSessionService.cancel(UUID.randomUUID(), cancelRequest(), userId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Sessão inexistente");
     }
@@ -202,11 +212,11 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
-        classSessionService.cancel(created.getId());
+        classSessionService.cancel(created.getId(), cancelRequest(), userId);
 
-        assertThatThrownBy(() -> classSessionService.cancel(created.getId()))
+        assertThatThrownBy(() -> classSessionService.cancel(created.getId(), cancelRequest(), userId))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("A sessão já está cancelada.");
+                .hasMessage("Apenas sessões agendadas podem ser canceladas.");
     }
 
     @Test
@@ -219,9 +229,9 @@ class ClassSessionServiceTest {
         classSessionService.start(created.getId());
         classSessionService.complete(created.getId());
 
-        assertThatThrownBy(() -> classSessionService.cancel(created.getId()))
+        assertThatThrownBy(() -> classSessionService.cancel(created.getId(), cancelRequest(), userId))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("A sessão já foi concluída.");
+                .hasMessage("Apenas sessões agendadas podem ser canceladas.");
     }
 
     @Test
@@ -275,7 +285,7 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
-        classSessionService.cancel(created.getId());
+        classSessionService.cancel(created.getId(), cancelRequest(), userId);
 
         assertThatThrownBy(() -> classSessionService.start(created.getId()))
                 .isInstanceOf(ConflictException.class)
@@ -351,7 +361,7 @@ class ClassSessionServiceTest {
         request.setSessionDate(LocalDate.now());
         ClassSessionResponse created = classSessionService.create(request);
 
-        classSessionService.cancel(created.getId());
+        classSessionService.cancel(created.getId(), cancelRequest(), userId);
 
         assertThatThrownBy(() -> classSessionService.complete(created.getId()))
                 .isInstanceOf(ConflictException.class)
