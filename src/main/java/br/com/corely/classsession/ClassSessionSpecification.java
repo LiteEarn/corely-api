@@ -29,6 +29,8 @@ public class ClassSessionSpecification {
                 predicate = cb.and(predicate, cb.equal(root.get("sessionDate"), sessionDate));
             }
 
+            query.orderBy(cb.asc(root.get("startTime")));
+
             return predicate;
         };
     }
