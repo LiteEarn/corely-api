@@ -4,6 +4,8 @@ import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
 import br.com.corely.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.attendance.dto.BulkAttendanceResponse;
+import br.com.corely.attendance.dto.SessionAttendanceResponse;
+import br.com.corely.attendance.dto.SessionBulkAttendanceRequest;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classsession.ClassSession;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -141,6 +144,63 @@ public class AttendanceService {
         }
 
         return new BulkAttendanceResponse(savedCount + " presença(s) salva(s) com sucesso.", savedCount);
+    }
+
+    @Transactional
+    public List<SessionAttendanceResponse> saveSessionAttendances(
+            UUID sessionId, SessionBulkAttendanceRequest request) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
+
+        if (session.getStatus() == ClassSessionStatus.COMPLETED) {
+            throw new ConflictException("A presença não pode ser registrada após a conclusão da aula.");
+        }
+
+        List<SessionAttendanceResponse> responses = new ArrayList<>();
+
+        for (var item : request.getAttendances()) {
+            Enrollment enrollment = enrollmentRepository.findById(item.getEnrollmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+
+            if (!Boolean.TRUE.equals(enrollment.getActive())) {
+                throw new ConflictException("Matrícula inativa.");
+            }
+
+            if (!enrollment.getClassGroup().getId().equals(session.getClassGroup().getId())) {
+                throw new ConflictException("Matrícula não pertence à turma da sessão.");
+            }
+
+            Attendance attendance = attendanceRepository
+                    .findByClassSessionIdAndEnrollmentId(sessionId, enrollment.getId())
+                    .orElse(null);
+
+            if (attendance == null) {
+                attendance = new Attendance();
+                attendance.setClassSession(session);
+                attendance.setEnrollment(enrollment);
+            }
+
+            attendance.setStatus(item.getStatus());
+            attendance.setNotes(null);
+
+            attendance = attendanceRepository.save(attendance);
+            responses.add(toSessionAttendanceResponse(attendance));
+        }
+
+        return responses;
+    }
+
+    private SessionAttendanceResponse toSessionAttendanceResponse(Attendance attendance) {
+        return new SessionAttendanceResponse(
+                attendance.getId(),
+                attendance.getClassSession().getId(),
+                attendance.getEnrollment().getId(),
+                attendance.getEnrollment().getStudent().getId(),
+                attendance.getEnrollment().getStudent().getFullName(),
+                attendance.getStatus(),
+                attendance.getCreatedAt(),
+                attendance.getUpdatedAt()
+        );
     }
 
     private AttendanceResponse toResponse(Attendance attendance) {

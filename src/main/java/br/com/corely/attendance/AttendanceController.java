@@ -4,6 +4,8 @@ import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.attendance.dto.AttendanceResponse;
 import br.com.corely.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.attendance.dto.BulkAttendanceResponse;
+import br.com.corely.attendance.dto.SessionAttendanceResponse;
+import br.com.corely.attendance.dto.SessionBulkAttendanceRequest;
 import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.user.User;
 import br.com.corely.user.UserRole;
@@ -48,6 +50,15 @@ public class AttendanceController {
     public ResponseEntity<List<AttendanceResponse>> findBySession(@PathVariable UUID sessionId) {
         List<AttendanceResponse> response = attendanceService.findBySessionId(sessionId);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/class-sessions/{sessionId}/attendance")
+    @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
+    public ResponseEntity<List<SessionAttendanceResponse>> saveSessionAttendances(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody SessionBulkAttendanceRequest request) {
+        List<SessionAttendanceResponse> responses = attendanceService.saveSessionAttendances(sessionId, request);
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/enrollments/{enrollmentId}/attendance")
