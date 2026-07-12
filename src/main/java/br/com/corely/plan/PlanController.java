@@ -29,7 +29,7 @@ public class PlanController {
     }
 
     @GetMapping
-    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.INSTRUCTOR, UserRole.FINANCIAL})
     public ResponseEntity<List<PlanResponse>> findAll(
             @RequestParam("active") Optional<Boolean> active) {
         List<PlanResponse> response = active.isPresent() && active.get()
