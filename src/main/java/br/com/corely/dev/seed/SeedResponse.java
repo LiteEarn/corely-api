@@ -3,15 +3,17 @@ package br.com.corely.dev.seed;
 public class SeedResponse {
     private int students;
     private int classGroups;
+    private int plans;
     private int sessions;
     private int attendances;
     private int makeupRequests;
 
     public SeedResponse() {}
 
-    public SeedResponse(int students, int classGroups, int sessions, int attendances, int makeupRequests) {
+    public SeedResponse(int students, int classGroups, int plans, int sessions, int attendances, int makeupRequests) {
         this.students = students;
         this.classGroups = classGroups;
+        this.plans = plans;
         this.sessions = sessions;
         this.attendances = attendances;
         this.makeupRequests = makeupRequests;
@@ -21,6 +23,8 @@ public class SeedResponse {
     public void setStudents(int students) { this.students = students; }
     public int getClassGroups() { return classGroups; }
     public void setClassGroups(int classGroups) { this.classGroups = classGroups; }
+    public int getPlans() { return plans; }
+    public void setPlans(int plans) { this.plans = plans; }
     public int getSessions() { return sessions; }
     public void setSessions(int sessions) { this.sessions = sessions; }
     public int getAttendances() { return attendances; }
