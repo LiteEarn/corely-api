@@ -1,12 +1,11 @@
 package br.com.corely.comercial.studentplan;
 
 import br.com.corely.comercial.ComercialBaseEntity;
-import br.com.corely.comercial.plan.Plan;
+import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
 import br.com.corely.student.Student;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -19,8 +18,8 @@ public class StudentPlan extends ComercialBaseEntity {
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "plan_id")
-    private Plan plan;
+    @JoinColumn(name = "contract_snapshot_id", nullable = false)
+    private ContractSnapshot contractSnapshot;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -32,36 +31,26 @@ public class StudentPlan extends ComercialBaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private StudentPlanStatus status = StudentPlanStatus.ACTIVE;
 
-    @Column(name = "snapshot_name", nullable = false)
-    private String snapshotName;
+    @Column(name = "cancellation_date")
+    private LocalDate cancellationDate;
 
-    @Column(name = "snapshot_value", nullable = false, precision = 10, scale = 2)
-    private BigDecimal snapshotValue;
+    @Column(name = "cancellation_reason", length = 500)
+    private String cancellationReason;
 
-    @Column(name = "snapshot_duration", nullable = false)
-    private Integer snapshotDuration;
-
-    @Column(name = "snapshot_rules", columnDefinition = "TEXT")
-    private String snapshotRules;
-
-    protected StudentPlan() {}
+    public StudentPlan() {}
 
     public Student getStudent() { return student; }
     public void setStudent(Student student) { this.student = student; }
-    public Plan getPlan() { return plan; }
-    public void setPlan(Plan plan) { this.plan = plan; }
+    public ContractSnapshot getContractSnapshot() { return contractSnapshot; }
+    public void setContractSnapshot(ContractSnapshot contractSnapshot) { this.contractSnapshot = contractSnapshot; }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
     public StudentPlanStatus getStatus() { return status; }
     public void setStatus(StudentPlanStatus status) { this.status = status; }
-    public String getSnapshotName() { return snapshotName; }
-    public void setSnapshotName(String snapshotName) { this.snapshotName = snapshotName; }
-    public BigDecimal getSnapshotValue() { return snapshotValue; }
-    public void setSnapshotValue(BigDecimal snapshotValue) { this.snapshotValue = snapshotValue; }
-    public Integer getSnapshotDuration() { return snapshotDuration; }
-    public void setSnapshotDuration(Integer snapshotDuration) { this.snapshotDuration = snapshotDuration; }
-    public String getSnapshotRules() { return snapshotRules; }
-    public void setSnapshotRules(String snapshotRules) { this.snapshotRules = snapshotRules; }
+    public LocalDate getCancellationDate() { return cancellationDate; }
+    public void setCancellationDate(LocalDate cancellationDate) { this.cancellationDate = cancellationDate; }
+    public String getCancellationReason() { return cancellationReason; }
+    public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
 }

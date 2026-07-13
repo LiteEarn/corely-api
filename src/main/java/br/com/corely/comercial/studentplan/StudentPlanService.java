@@ -1,6 +1,7 @@
 package br.com.corely.comercial.studentplan;
 
-import br.com.corely.comercial.plan.PlanRepository;
+import br.com.corely.comercial.billingschedule.BillingScheduleService;
+import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,9 +22,10 @@ import java.util.UUID;
 public class StudentPlanService {
 
     private final StudentPlanRepository studentPlanRepository;
-    private final PlanRepository planRepository;
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
+    private final ContractSnapshotService contractSnapshotService;
+    private final BillingScheduleService billingScheduleService;
     private final ComercialTenantContext tenantContext;
 
     @Transactional
@@ -32,42 +35,65 @@ public class StudentPlanService {
         var student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
-        var plan = planRepository.findById(request.getPlanId())
-                .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
-
-        if (!Boolean.TRUE.equals(plan.getActive())) {
-            throw new BusinessException("Cannot enroll in an inactive plan.");
-        }
-
         if (studentPlanRepository.existsByStudentIdAndStatus(request.getStudentId(), StudentPlanStatus.ACTIVE)) {
             throw new BusinessException("Student already has an active plan.");
         }
 
+        var snapshot = contractSnapshotService.create(request.getPlanId());
+
         var enrollment = new StudentPlan();
         enrollment.setStudio(studio);
         enrollment.setStudent(student);
-        enrollment.setPlan(plan);
+        enrollment.setContractSnapshot(snapshot);
         enrollment.setStartDate(request.getStartDate());
         enrollment.setEndDate(request.getEndDate());
         enrollment.setStatus(StudentPlanStatus.ACTIVE);
 
-        enrollment.setSnapshotName(plan.getName());
-        enrollment.setSnapshotValue(plan.getPrice());
-        enrollment.setSnapshotDuration(plan.getDuration());
-        enrollment.setSnapshotRules(null);
-
         enrollment = studentPlanRepository.save(enrollment);
+
+        billingScheduleService.create(enrollment, request.getStartDate().getDayOfMonth());
+
         return toResponse(enrollment);
     }
 
     @Transactional
     public StudentPlanResponse cancel(UUID id) {
+        return transitionStatus(id, StudentPlanStatus.ACTIVE, StudentPlanStatus.CANCELLED);
+    }
+
+    @Transactional
+    public StudentPlanResponse suspend(UUID id) {
+        return transitionStatus(id, StudentPlanStatus.ACTIVE, StudentPlanStatus.SUSPENDED);
+    }
+
+    @Transactional
+    public StudentPlanResponse reactivate(UUID id) {
+        return transitionStatus(id, StudentPlanStatus.SUSPENDED, StudentPlanStatus.ACTIVE);
+    }
+
+    private StudentPlanResponse transitionStatus(UUID id, StudentPlanStatus from, StudentPlanStatus to) {
         var enrollment = studentPlanRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Plan enrollment not found"));
-        if (enrollment.getStatus() != StudentPlanStatus.ACTIVE) {
-            throw new BusinessException("Only active enrollments can be cancelled.");
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan not found"));
+
+        if (enrollment.getStatus() != from) {
+            throw new BusinessException("StudentPlan must be " + from + " to transition to " + to);
         }
-        enrollment.setStatus(StudentPlanStatus.CANCELLED);
+
+        if ((to == StudentPlanStatus.CANCELLED || to == StudentPlanStatus.SUSPENDED)
+                && enrollment.getCancellationDate() == null) {
+            enrollment.setCancellationDate(LocalDate.now());
+        }
+
+        if (to == StudentPlanStatus.ACTIVE) {
+            enrollment.setCancellationDate(null);
+            enrollment.setCancellationReason(null);
+        }
+
+        if (studentPlanRepository.existsByStudentIdAndStatus(enrollment.getStudent().getId(), to)) {
+            throw new BusinessException("Student already has a plan with status " + to);
+        }
+
+        enrollment.setStatus(to);
         enrollment = studentPlanRepository.save(enrollment);
         return toResponse(enrollment);
     }
@@ -75,20 +101,13 @@ public class StudentPlanService {
     @Transactional(readOnly = true)
     public StudentPlanResponse findById(UUID id) {
         var enrollment = studentPlanRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Plan enrollment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan not found"));
         return toResponse(enrollment);
     }
 
     @Transactional(readOnly = true)
     public List<StudentPlanResponse> findAll() {
         return studentPlanRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<StudentPlanResponse> findByStudentId(UUID studentId) {
-        return studentPlanRepository.findByStudentIdOrderByCreatedAtDesc(studentId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -101,18 +120,18 @@ public class StudentPlanService {
     }
 
     private StudentPlanResponse toResponse(StudentPlan enrollment) {
+        var snapshot = enrollment.getContractSnapshot();
         return new StudentPlanResponse(
                 enrollment.getId(),
                 enrollment.getStudent().getId(),
                 enrollment.getStudent().getFullName(),
-                enrollment.getPlan() != null ? enrollment.getPlan().getId() : null,
-                enrollment.getPlan() != null ? enrollment.getPlan().getName() : null,
+                snapshot.getId(),
+                snapshot.getPlanName(),
                 enrollment.getStartDate(),
                 enrollment.getEndDate(),
                 enrollment.getStatus(),
-                enrollment.getSnapshotName(),
-                enrollment.getSnapshotValue(),
-                enrollment.getSnapshotDuration(),
+                enrollment.getCancellationDate(),
+                enrollment.getCancellationReason(),
                 enrollment.getCreatedAt(),
                 enrollment.getUpdatedAt()
         );
