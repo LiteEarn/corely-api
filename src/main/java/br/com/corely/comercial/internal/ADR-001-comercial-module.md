@@ -18,7 +18,8 @@ br.com.corely.comercial/
 │   ├── STORY-004-card.md                 # Card da STORY-004
 │   ├── STORY-006-card.md                 # Card da STORY-006
 │   ├── STORY-007-card.md                 # Card da STORY-007
-│   └── STORY-008-card.md                 # Card da STORY-008
+│   ├── STORY-008-card.md                 # Card da STORY-008
+│   └── STORY-009-card.md                 # Card da STORY-009
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -43,10 +44,20 @@ br.com.corely.comercial/
 │   └── dto/
 │       ├── StudentPlanRequest.java
 │       └── StudentPlanResponse.java
-└── tenant/
-    ├── ComercialTenantContext.java       # Resolução de studioId exclusivamente do JWT
-    ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
-    └── TenantResolutionException.java    # Exceção para falha de resolução de tenant
+├── tenant/
+│   ├── ComercialTenantContext.java       # Resolução de studioId exclusivamente do JWT
+│   ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
+│   ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
+│   └── TenantResolutionException.java    # Exceção para falha de resolução de tenant
+├── invoice/
+│   ├── InvoiceStatus.java                # Enum: PENDING, PAID, OVERDUE, CANCELLED
+│   ├── Invoice.java                      # Título financeiro vinculado a StudentPlan
+│   ├── InvoiceRepository.java
+│   ├── InvoiceService.java               # Valor copiado do ContractSnapshot
+│   ├── InvoiceController.java            # Endpoints em /comercial/invoices
+│   └── dto/
+│       ├── InvoiceRequest.java
+│       └── InvoiceResponse.java
 ```
 
 ## Convenções Adotadas
@@ -180,9 +191,21 @@ Grupo `comercial` no OpenAPI, visível em:
 - Endpoints: POST, GET (lista e por id), PUT cancel/suspend/reactivate
 - RBAC: OWNER/ADMIN (total), RECEPTIONIST (criar/consultar), FINANCIAL (consultar)
 
+### STORY-009 — Invoice (Faturamento) (Jul/2026)
+- Pacote `br.com.corely.comercial.invoice`
+- Entidade `Invoice` (estende `ComercialBaseEntity`) com FK para `StudentPlan`
+- Enum `InvoiceStatus`: PENDING, PAID, OVERDUE, CANCELLED
+- Valor copiado do `ContractSnapshot.getPlanPrice()` — nunca do Plan diretamente
+- Apenas StudentPlan ACTIVE pode gerar Invoice
+- UNIQUE(student_plan_id, reference_month) — uma invoice por mês por contrato
+- Não permite exclusão física
+- Migration V33 com FKs para student_plan, índices em student_plan_id, due_date, status, reference_month
+- Endpoints: POST, GET (lista e por id), PUT cancel
+- RBAC: OWNER/ADMIN/FINANCIAL (criar/consultar/cancelar), RECEPTIONIST (apenas consulta)
+- Sem recorrência automática ou pagamento
+
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
-2. Invoice — Faturamento
-5. Payment — Pagamentos
-6. Dashboard Financeiro
+2. Payment — Pagamentos
+3. Dashboard Financeiro
