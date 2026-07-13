@@ -1,7 +1,6 @@
 package br.com.corely.comercial.plan;
 
 import br.com.corely.comercial.plan.dto.PlanRequest;
-import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
@@ -9,9 +8,6 @@ import br.com.corely.studio.StudioRepository;
 import br.com.corely.user.User;
 import br.com.corely.user.UserRepository;
 import br.com.corely.user.UserRole;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.hibernate.Session;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +45,6 @@ class PlanServiceTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     private Studio studio;
     private Plan existingPlan;
 
@@ -59,12 +52,6 @@ class PlanServiceTest {
     void setUp() {
         studio = studioRepository.save(createStudio("Test Studio"));
         authenticateAs(studio, UserRole.ADMIN);
-
-        var session = entityManager.unwrap(Session.class);
-        if (session.getEnabledFilter("comercialTenantFilter") == null) {
-            session.enableFilter("comercialTenantFilter")
-                    .setParameter("studioId", studio.getId());
-        }
 
         existingPlan = planRepository.save(createPlan("Basic Plan", BigDecimal.valueOf(100), 30));
     }
@@ -89,7 +76,7 @@ class PlanServiceTest {
     }
 
     @Test
-    void create_shouldThrowException_whenNameAlreadyExists() {
+    void create_shouldThrowException_whenNameAlreadyExistsInSameStudio() {
         var request = new PlanRequest();
         request.setName("Basic Plan");
         request.setPrice(BigDecimal.valueOf(150));
@@ -98,6 +85,22 @@ class PlanServiceTest {
         assertThatThrownBy(() -> planService.create(request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Plan name already exists");
+    }
+
+    @Test
+    void create_shouldAllowSameNameInDifferentStudio() {
+        var otherStudio = studioRepository.save(createStudio("Other Studio"));
+        authenticateAs(otherStudio, UserRole.ADMIN);
+
+        var request = new PlanRequest();
+        request.setName("Basic Plan");
+        request.setPrice(BigDecimal.valueOf(100));
+        request.setDuration(30);
+
+        var response = planService.create(request);
+
+        assertThat(response.getId()).isNotNull();
+        assertThat(response.getName()).isEqualTo("Basic Plan");
     }
 
     @Test
@@ -173,7 +176,7 @@ class PlanServiceTest {
     }
 
     @Test
-    void update_shouldThrowException_whenNameAlreadyExists() {
+    void update_shouldThrowException_whenNameAlreadyExistsInSameStudio() {
         var another = planRepository.save(createPlan("Another Plan", BigDecimal.valueOf(80), 20));
 
         var request = new PlanRequest();
@@ -276,7 +279,7 @@ class PlanServiceTest {
     private void authenticateAs(Studio studio, UserRole role) {
         var user = new User();
         user.setName(role.name() + " User");
-        user.setEmail(role.name().toLowerCase() + "@test.com");
+        user.setEmail(role.name().toLowerCase() + "_" + studio.getId() + "@test.com");
         user.setPassword(passwordEncoder.encode("password"));
         user.setRole(role);
         user.setActive(true);

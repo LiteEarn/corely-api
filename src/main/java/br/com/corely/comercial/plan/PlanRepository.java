@@ -15,9 +15,11 @@ import java.util.UUID;
 public interface PlanRepository extends JpaRepository<Plan, UUID> {
     List<Plan> findByActiveTrueOrderByName();
 
-    boolean existsByName(String name);
+    @Query("SELECT COUNT(p) > 0 FROM Plan p WHERE p.studio.id = :studioId AND p.name = :name")
+    boolean existsByStudioIdAndName(@Param("studioId") UUID studioId, @Param("name") String name);
 
-    boolean existsByNameAndIdNot(String name, UUID id);
+    @Query("SELECT COUNT(p) > 0 FROM Plan p WHERE p.studio.id = :studioId AND p.name = :name AND p.id <> :id")
+    boolean existsByStudioIdAndNameAndIdNot(@Param("studioId") UUID studioId, @Param("name") String name, @Param("id") UUID id);
 
     Page<Plan> findByNameContainingIgnoreCase(String name, Pageable pageable);
 

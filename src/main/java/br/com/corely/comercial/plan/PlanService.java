@@ -110,9 +110,10 @@ public class PlanService {
     }
 
     private void validateUniqueName(UUID id, String name) {
+        var studioId = tenantContext.getCurrentStudioId();
         boolean exists = (id != null)
-                ? planRepository.existsByNameAndIdNot(name, id)
-                : planRepository.existsByName(name);
+                ? planRepository.existsByStudioIdAndNameAndIdNot(studioId, name, id)
+                : planRepository.existsByStudioIdAndName(studioId, name);
         if (exists) {
             throw new BusinessException("Plan name already exists: " + name);
         }
