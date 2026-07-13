@@ -1,15 +1,15 @@
-package br.com.corely.comercial.billingschedule;
+package br.com.corely.comercial.invoicegeneration;
 
-import br.com.corely.comercial.billingschedule.dto.BillingFrequencyDto;
-import br.com.corely.comercial.billingschedule.dto.BillingScheduleRequest;
+import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
 import br.com.corely.comercial.contract.ContractApplicationService;
+import br.com.corely.comercial.invoice.InvoiceRepository;
+import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.plan.Plan;
 import br.com.corely.comercial.plan.PlanRepository;
 import br.com.corely.comercial.planrule.PlanRule;
 import br.com.corely.comercial.planrule.PlanRuleRepository;
 import br.com.corely.comercial.ruledefinition.*;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
-import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
@@ -32,18 +32,20 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class BillingScheduleIntegrationTest {
+class InvoiceGenerationIntegrationTest {
 
     @Autowired
-    private BillingScheduleService billingScheduleService;
+    private InvoiceGenerationService invoiceGenerationService;
 
     @Autowired
     private BillingScheduleRepository billingScheduleRepository;
+
+    @Autowired
+    private InvoiceRepository invoiceRepository;
 
     @Autowired
     private ContractApplicationService contractApplicationService;
@@ -71,89 +73,109 @@ class BillingScheduleIntegrationTest {
 
     private Studio studio;
     private Student student;
-    private Plan plan;
     private UUID studentPlanId;
 
     @BeforeEach
     void setUp() {
-        studio = studioRepository.save(createStudio("Billing Studio"));
+        studio = studioRepository.save(createStudio("InvoiceGen Studio"));
         authenticateAs(studio, UserRole.OWNER);
 
         student = studentRepository.save(createStudent(studio, "John Doe"));
 
-        plan = planRepository.save(createPlan("Premium Plan", BigDecimal.valueOf(299), 30));
+        var plan = planRepository.save(createPlan("Premium Plan", BigDecimal.valueOf(299), 30));
         var validityDays = ruleDefinitionRepository.save(createRuleDef("VALIDITY_DAYS", ValueType.INTEGER));
         planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
 
         var spRequest = new StudentPlanRequest();
         spRequest.setStudentId(student.getId());
         spRequest.setPlanId(plan.getId());
-        spRequest.setStartDate(LocalDate.of(2026, 8, 15));
+        spRequest.setStartDate(LocalDate.of(2026, 1, 15));
         studentPlanId = contractApplicationService.enroll(spRequest).getId();
     }
 
     @Test
-    void create_shouldAutoCreateBillingSchedule() {
-        var schedules = billingScheduleService.findAll();
+    void process_shouldGenerateInvoiceAndUpdateSchedule() {
+        var result = invoiceGenerationService.process(LocalDate.of(2026, 1, 20));
 
-        assertThat(schedules).hasSize(1);
-        var schedule = schedules.get(0);
-        assertThat(schedule.getStudentPlanId()).isEqualTo(studentPlanId);
-        assertThat(schedule.getFrequency()).isEqualTo(BillingFrequencyDto.MONTHLY);
-        assertThat(schedule.getBillingDay()).isEqualTo(15);
-        assertThat(schedule.getActive()).isTrue();
-        assertThat(schedule.getStudentName()).isEqualTo("John Doe");
-        assertThat(schedule.getPlanName()).isEqualTo("Premium Plan");
+        assertThat(result.getProcessed()).isEqualTo(1);
+        assertThat(result.getGenerated()).isEqualTo(1);
+        assertThat(result.getSkipped()).isEqualTo(0);
+        assertThat(result.getErrors()).isEqualTo(0);
+
+        var invoices = invoiceRepository.findAllByOrderByCreatedAtDesc();
+        assertThat(invoices).hasSize(1);
+        var invoice = invoices.get(0);
+        assertThat(invoice.getStudentPlan().getId()).isEqualTo(studentPlanId);
+        assertThat(invoice.getReferenceMonth()).isEqualTo("2026-01");
+        assertThat(invoice.getAmount()).isEqualByComparingTo(new BigDecimal("299"));
+        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThat(invoice.getIssueDate()).isEqualTo(LocalDate.of(2026, 1, 20));
+
+        var schedule = billingScheduleRepository.findByStudentPlanId(studentPlanId).orElseThrow();
+        assertThat(schedule.getNextBillingDate()).isEqualTo(LocalDate.of(2026, 2, 15));
     }
 
     @Test
-    void shouldHaveOnlyOneBillingSchedulePerStudentPlan() {
-        var schedules = billingScheduleService.findAll();
-        assertThat(schedules).hasSize(1);
+    void process_shouldNotGenerateDuplicateInvoice() {
+        invoiceGenerationService.process(LocalDate.of(2026, 1, 20));
+        invoiceGenerationService.process(LocalDate.of(2026, 2, 20));
+
+        var invoices = invoiceRepository.findAllByOrderByCreatedAtDesc();
+        assertThat(invoices).hasSize(2);
+        assertThat(invoices.get(0).getReferenceMonth()).isEqualTo("2026-02");
+        assertThat(invoices.get(1).getReferenceMonth()).isEqualTo("2026-01");
+
+        var result = invoiceGenerationService.process(LocalDate.of(2026, 2, 20));
+
+        assertThat(result.getProcessed()).isEqualTo(0);
+        assertThat(result.getGenerated()).isEqualTo(0);
+
+        invoices = invoiceRepository.findAllByOrderByCreatedAtDesc();
+        assertThat(invoices).hasSize(2);
     }
 
     @Test
-    void update_shouldChangeFrequency() {
-        var schedule = billingScheduleService.findAll().get(0);
+    void process_shouldGenerateNextMonthInvoiceAfterAdvancing() {
+        invoiceGenerationService.process(LocalDate.of(2026, 1, 20));
 
-        var request = new BillingScheduleRequest();
-        request.setFrequency(BillingFrequencyDto.QUARTERLY);
-        request.setBillingDay(10);
+        var result = invoiceGenerationService.process(LocalDate.of(2026, 2, 20));
 
-        var response = billingScheduleService.update(schedule.getId(), request);
+        assertThat(result.getProcessed()).isEqualTo(1);
+        assertThat(result.getGenerated()).isEqualTo(1);
+        assertThat(result.getSkipped()).isEqualTo(0);
 
-        assertThat(response.getFrequency()).isEqualTo(BillingFrequencyDto.QUARTERLY);
-        assertThat(response.getBillingDay()).isEqualTo(10);
+        var invoices = invoiceRepository.findAllByOrderByCreatedAtDesc();
+        assertThat(invoices).hasSize(2);
+
+        var schedule = billingScheduleRepository.findByStudentPlanId(studentPlanId).orElseThrow();
+        assertThat(schedule.getNextBillingDate()).isEqualTo(LocalDate.of(2026, 3, 15));
     }
 
     @Test
-    void findById_shouldReturnBillingSchedule() {
-        var schedule = billingScheduleService.findAll().get(0);
+    void process_shouldNotGenerateWhenProcessingDateBeforeNextBilling() {
+        var result = invoiceGenerationService.process(LocalDate.of(2026, 1, 10));
 
-        var response = billingScheduleService.findById(schedule.getId());
+        assertThat(result.getProcessed()).isEqualTo(0);
+        assertThat(result.getGenerated()).isEqualTo(0);
 
-        assertThat(response.getId()).isEqualTo(schedule.getId());
-        assertThat(response.getStudentName()).isEqualTo("John Doe");
+        var invoices = invoiceRepository.findAllByOrderByCreatedAtDesc();
+        assertThat(invoices).isEmpty();
     }
 
     @Test
-    void findById_shouldThrowException_whenNotFound() {
-        assertThatThrownBy(() -> billingScheduleService.findById(UUID.randomUUID()))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("BillingSchedule not found");
-    }
+    void process_shouldGenerateForMultipleConsecutiveMonths() {
+        invoiceGenerationService.process(LocalDate.of(2026, 1, 20));
+        invoiceGenerationService.process(LocalDate.of(2026, 2, 20));
+        invoiceGenerationService.process(LocalDate.of(2026, 3, 20));
 
-    @Test
-    void findAll_shouldReturnAllSchedules() {
-        var all = billingScheduleService.findAll();
-        assertThat(all).hasSize(1);
-    }
+        var invoices = invoiceRepository.findAllByOrderByCreatedAtDesc();
+        assertThat(invoices).hasSize(3);
+        assertThat(invoices.get(0).getReferenceMonth()).isEqualTo("2026-03");
+        assertThat(invoices.get(1).getReferenceMonth()).isEqualTo("2026-02");
+        assertThat(invoices.get(2).getReferenceMonth()).isEqualTo("2026-01");
 
-    @Test
-    void nextBillingDate_shouldBeCalculated() {
-        var schedule = billingScheduleService.findAll().get(0);
-
-        assertThat(schedule.getNextBillingDate()).isEqualTo(LocalDate.of(2026, 8, 15));
+        var schedule = billingScheduleRepository.findByStudentPlanId(studentPlanId).orElseThrow();
+        assertThat(schedule.getNextBillingDate()).isEqualTo(LocalDate.of(2026, 4, 15));
     }
 
     private void authenticateAs(Studio studio, UserRole role) {

@@ -1,6 +1,5 @@
 package br.com.corely.comercial.studentplan;
 
-import br.com.corely.comercial.billingschedule.BillingScheduleService;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
@@ -25,11 +24,19 @@ public class StudentPlanService {
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
     private final ContractSnapshotService contractSnapshotService;
-    private final BillingScheduleService billingScheduleService;
     private final ComercialTenantContext tenantContext;
 
     @Transactional
     public StudentPlanResponse create(StudentPlanRequest request) {
+        return doCreate(request).response();
+    }
+
+    @Transactional
+    public StudentPlanData createWithEntity(StudentPlanRequest request) {
+        return doCreate(request);
+    }
+
+    private StudentPlanData doCreate(StudentPlanRequest request) {
         var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
 
         var student = studentRepository.findById(request.getStudentId())
@@ -51,9 +58,7 @@ public class StudentPlanService {
 
         enrollment = studentPlanRepository.save(enrollment);
 
-        billingScheduleService.create(enrollment, request.getStartDate().getDayOfMonth());
-
-        return toResponse(enrollment);
+        return new StudentPlanData(enrollment, toResponse(enrollment));
     }
 
     @Transactional
@@ -113,11 +118,19 @@ public class StudentPlanService {
     }
 
     @Transactional(readOnly = true)
+    public StudentPlan findEntityById(UUID id) {
+        return studentPlanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan not found"));
+    }
+
+    @Transactional(readOnly = true)
     public StudentPlanResponse findActiveByStudent(UUID studentId) {
         return studentPlanRepository.findByStudentIdAndStatus(studentId, StudentPlanStatus.ACTIVE)
                 .map(this::toResponse)
                 .orElse(null);
     }
+
+    public record StudentPlanData(StudentPlan entity, StudentPlanResponse response) {}
 
     private StudentPlanResponse toResponse(StudentPlan enrollment) {
         var snapshot = enrollment.getContractSnapshot();

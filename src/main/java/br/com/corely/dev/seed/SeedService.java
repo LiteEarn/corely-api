@@ -7,9 +7,6 @@ import br.com.corely.attendance.AttendanceStatus;
 import br.com.corely.attendance.dto.AttendanceRequest;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
-import br.com.corely.plan.Plan;
-import br.com.corely.plan.PlanRepository;
-import br.com.corely.plan.dto.PlanType;
 import br.com.corely.classgroup.ClassGroupService;
 import br.com.corely.classgroup.dto.ClassGroupRequest;
 import br.com.corely.classsession.ClassSession;
@@ -78,7 +75,6 @@ public class SeedService {
     private final ObjectiveRepository objectiveRepository;
     private final br.com.corely.evaluation.EvaluationRepository evaluationRepository;
     private final br.com.corely.evolution.EvolutionRepository evolutionRepository;
-    private final PlanRepository planRepository;
 
     private final InstructorService instructorService;
     private final ClassGroupService classGroupService;
@@ -110,7 +106,6 @@ public class SeedService {
         createUsers();
         createInstructors();
         createClassGroups();
-        createPlans();
         createStudents();
         createEnrollments();
 
@@ -126,7 +121,6 @@ public class SeedService {
 
         response.setStudents(studentIds.size());
         response.setClassGroups(classGroups.size());
-        response.setPlans((int) planRepository.count());
         response.setSessions((int) classSessionRepository.count());
         response.setAttendances((int) attendanceRepository.count());
         response.setMakeupRequests((int) makeupRequestRepository.count());
@@ -138,7 +132,6 @@ public class SeedService {
         makeupRequestRepository.deleteAll();
         attendanceRepository.deleteAll();
         classSessionRepository.deleteAll();
-        planRepository.deleteAll();
         enrollmentRepository.deleteAll();
         evolutionRepository.deleteAll();
         evaluationRepository.deleteAll();
@@ -254,42 +247,6 @@ public class SeedService {
                 LocalTime.of(19, 0), LocalTime.of(20, 0), 6, true, true, false, true, false, false));
         classGroups.add(createClassGroup("Pilates Sabado", "Pilates especial de sabado", instructors.get(4),
                 LocalTime.of(9, 0), LocalTime.of(10, 0), 10, false, false, false, false, false, true));
-    }
-
-    private void createPlans() {
-        createPlan("Plano Mensal", "Acesso ilimitado por 30 dias", PlanType.MONTHLY,
-                new BigDecimal("89.90"), null, 30);
-        createPlan("Plano Trimestral", "Acesso ilimitado por 3 meses com desconto", PlanType.MONTHLY,
-                new BigDecimal("239.70"), null, 90);
-        createPlan("Plano Semestral", "Acesso ilimitado por 6 meses", PlanType.MONTHLY,
-                new BigDecimal("449.40"), null, 180);
-        createPlan("Plano Anual", "Acesso ilimitado por 12 meses com super desconto", PlanType.MONTHLY,
-                new BigDecimal("799.00"), null, 365);
-        createPlan("Plano Personal", "Treino personalizado com instrutor dedicado", PlanType.MONTHLY,
-                new BigDecimal("199.90"), null, 30);
-        createPlan("Plano Pilates Clinico", "Pilates clinico para reabilitacao", PlanType.PACKAGE,
-                new BigDecimal("149.90"), 8, 30);
-        createPlan("Plano Gestante", "Pilates especializado para gestantes", PlanType.MONTHLY,
-                new BigDecimal("99.90"), null, 30);
-        createPlan("Plano Funcional", "Treino funcional em grupo", PlanType.WEEKLY,
-                new BigDecimal("49.90"), null, 30);
-        createPlan("Plano Kids", "Atividades para criancas e adolescentes", PlanType.MONTHLY,
-                new BigDecimal("79.90"), null, 30);
-        createPlan("Plano Premium", "Acesso total a todas as modalidades", PlanType.MONTHLY,
-                new BigDecimal("299.90"), null, 30);
-    }
-
-    private void createPlan(String name, String description, PlanType type, BigDecimal value, Integer quantityAulas, Integer duration) {
-        Plan plan = new Plan();
-        plan.setStudio(studio);
-        plan.setName(name);
-        plan.setDescription(description);
-        plan.setType(type);
-        plan.setValue(value);
-        plan.setQuantityAulas(quantityAulas);
-        plan.setDuration(duration);
-        plan.setActive(true);
-        planRepository.save(plan);
     }
 
     private ClassGroup createClassGroup(String name, String description, Instructor instructor,

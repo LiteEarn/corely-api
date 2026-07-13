@@ -16,8 +16,8 @@ public class SeedRunner implements CommandLineRunner {
         try {
             SeedResponse response = seedService.execute();
             log.info("=== SeedRunner: Carga concluida ===");
-            log.info("Estudantes: {}, Turmas: {}, Planos: {}, Sessoes: {}, Presencas: {}, Reposicoes: {}",
-                    response.getStudents(), response.getClassGroups(), response.getPlans(),
+            log.info("Estudantes: {}, Turmas: {}, Sessoes: {}, Presencas: {}, Reposicoes: {}",
+                    response.getStudents(), response.getClassGroups(),
                     response.getSessions(), response.getAttendances(), response.getMakeupRequests());
         } catch (Exception e) {
             log.error("SeedRunner: Erro durante a carga de dados", e);
