@@ -9,7 +9,8 @@ br.com.corely.comercial/
 │   ├── ComercialOpenApiGroupConfig.java  # Grupo Swagger para /comercial/**
 │   └── ComercialWebMvcConfig.java        # Registro do TenantInterceptor
 ├── internal/
-│   └── ADR-001-comercial-module.md       # Este documento
+│   ├── ADR-001-comercial-module.md       # Este documento
+│   └── STORY-005-card.md                 # Card da STORY-005
 ├── rbac/
 │   └── ComercialPermission.java          # Permissões RBAC reservadas ao módulo
 └── tenant/
@@ -87,6 +88,15 @@ Grupo `comercial` no OpenAPI, visível em:
 - Endpoint administrativo `/admin/all` para listar todas (inclusive inativas)
 - Sem exclusão física — apenas ativação/inativação
 - Migration V27 com índices e constraints CHECK
+
+### STORY-005 — Seed Oficial de RuleDefinitions (Jul/2026)
+- Migration V30 com carga inicial de 11 RuleDefinitions nativas
+- Categorias: VALIDITY, ATTENDANCE, BOOKING, CANCELLATION, BILLING, GENERAL
+- Todos os INSERTs são idempotentes (WHERE NOT EXISTS)
+- Todas as regras iniciam ativas com required=true
+- Studios não podem criar RuleDefinitions — apenas o Corely as disponibiliza
+- Nenhum endpoint novo ou alteração de API
+- Testes validam: total de regras, unicidade, idempotência, active e required
 
 ## Histórias Futuras (Roadmap)
 
