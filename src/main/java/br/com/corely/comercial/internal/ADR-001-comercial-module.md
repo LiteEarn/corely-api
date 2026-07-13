@@ -12,6 +12,16 @@ br.com.corely.comercial/
 ├── config/
 │   ├── ComercialOpenApiGroupConfig.java  # Grupo Swagger para /comercial/**
 │   └── ComercialWebMvcConfig.java        # Registro do TenantInterceptor
+├── delinquencypolicy/
+│   ├── DelinquencyAction.java           # Enum: NONE, BLOCK_NEW_BOOKINGS, SUSPEND_CONTRACT
+│   ├── DelinquencyPolicy.java           # Política de inadimplência vinculada ao Studio
+│   ├── DelinquencyPolicyRepository.java
+│   ├── DelinquencyPolicyService.java    # Criação automática + CRUD
+│   ├── DelinquencyPolicyController.java # Endpoints em /comercial/delinquency-policy
+│   └── dto/
+│       ├── DelinquencyActionDto.java
+│       ├── DelinquencyPolicyRequest.java
+│       └── DelinquencyPolicyResponse.java
 ├── contract/
 │   └── ContractApplicationService.java # Orquestrador de contratação (Snapshot → StudentPlan → BillingSchedule)
 ├── billingschedule/
@@ -41,7 +51,8 @@ br.com.corely.comercial/
 │   ├── STORY-010-card.md                 # Card da STORY-010
 │   ├── STORY-011-card.md                 # Card da STORY-011
 │   ├── STORY-012-card.md                 # Card da STORY-012
-│   └── STORY-013-card.md                 # Card da STORY-013
+│   ├── STORY-013-card.md                 # Card da STORY-013
+│   └── STORY-014-card.md                 # Card da STORY-014
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -272,6 +283,18 @@ Grupo `comercial` no OpenAPI, visível em:
 - Cada Invoice processada em transação própria (TransactionTemplate)
 - `InvoiceRepository.findByStatusAndDueDateBefore(InvoiceStatus, LocalDate)` adicionado
 - Testes unitários (7) e de integração (6)
+
+### STORY-014 — Política de Inadimplência do Studio (Jul/2026)
+- Pacote `br.com.corely.comercial.delinquencypolicy`
+- Entidade `DelinquencyPolicy` (estende `ComercialBaseEntity`) — uma por Studio (UNIQUE studio_id)
+- Enum `DelinquencyAction`: NONE, BLOCK_NEW_BOOKINGS, SUSPEND_CONTRACT
+- Criada automaticamente via `getOrCreate()` com gracePeriodDays=0, action=NONE
+- gracePeriodDays >= 0 (CHECK constraint)
+- Sem exclusão física
+- Migration V36 com FKs, UNIQUE e CHECK
+- Endpoints: GET (consulta/criação automática), PUT (atualização)
+- RBAC: OWNER/ADMIN (consultar/alterar), FINANCIAL (apenas consulta)
+- Testes unitários (4) e de integração (5)
 
 ### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
 - Pacote `br.com.corely.comercial.payment`
