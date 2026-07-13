@@ -36,6 +36,7 @@ public class ContractSnapshotService {
         }
 
         ContractSnapshot snapshot = new ContractSnapshot();
+        snapshot.setStudioId(plan.getStudio().getId());
         snapshot.setPlanId(plan.getId());
         snapshot.setPlanVersion(plan.getVersion());
         snapshot.setPlanName(plan.getName());

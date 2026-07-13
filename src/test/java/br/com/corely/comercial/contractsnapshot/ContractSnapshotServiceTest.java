@@ -5,6 +5,7 @@ import br.com.corely.comercial.plan.PlanRepository;
 import br.com.corely.comercial.ruleengine.RuleEngine;
 import br.com.corely.comercial.ruleengine.RuleResult;
 import br.com.corely.shared.exception.ResourceNotFoundException;
+import br.com.corely.studio.Studio;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,15 +42,24 @@ class ContractSnapshotServiceTest {
 
     private Plan plan;
     private UUID planId;
+    private UUID studioId;
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
         service = new ContractSnapshotService(repository, planRepository, ruleEngine, objectMapper);
 
+        studioId = UUID.randomUUID();
         planId = UUID.randomUUID();
+
+        Studio studio = new Studio();
+        studio.setId(studioId);
+        studio.setName("Studio");
+        studio.setActive(true);
+
         plan = new Plan();
         plan.setId(planId);
+        plan.setStudio(studio);
         plan.setName("Standard Plan");
         plan.setDescription("A standard plan");
         plan.setPrice(BigDecimal.valueOf(99.90));
@@ -59,15 +69,13 @@ class ContractSnapshotServiceTest {
 
     @Test
     void create_shouldPersistSnapshotWithPlanData() {
-        Map<String, Object> rulesMap = new LinkedHashMap<>();
+        when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
+        var rulesMap = new LinkedHashMap<String, Object>();
         rulesMap.put("VALIDITY_DAYS", 30);
         rulesMap.put("AUTO_RENEW", true);
         rulesMap.put("BILLING_CYCLE", "MONTHLY");
-
-        when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(ruleEngine.evaluate(plan)).thenReturn(new RuleResult(rulesMap));
 
-        ContractSnapshot saved = new ContractSnapshot();
         when(repository.save(any(ContractSnapshot.class))).thenAnswer(invocation -> {
             ContractSnapshot cs = invocation.getArgument(0);
             cs.setId(UUID.randomUUID());
@@ -76,6 +84,7 @@ class ContractSnapshotServiceTest {
 
         ContractSnapshot result = service.create(planId);
 
+        assertThat(result.getStudioId()).isEqualTo(studioId);
         assertThat(result.getPlanId()).isEqualTo(planId);
         assertThat(result.getPlanVersion()).isEqualTo(3);
         assertThat(result.getPlanName()).isEqualTo("Standard Plan");
@@ -90,7 +99,6 @@ class ContractSnapshotServiceTest {
         when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(ruleEngine.evaluate(plan)).thenReturn(new RuleResult(new LinkedHashMap<>()));
 
-        ContractSnapshot saved = new ContractSnapshot();
         when(repository.save(any(ContractSnapshot.class))).thenAnswer(invocation -> {
             ContractSnapshot cs = invocation.getArgument(0);
             cs.setId(UUID.randomUUID());
@@ -99,6 +107,7 @@ class ContractSnapshotServiceTest {
 
         ContractSnapshot result = service.create(planId);
 
+        assertThat(result.getStudioId()).isEqualTo(studioId);
         assertThat(result.getPlanName()).isEqualTo("Standard Plan");
         assertThat(result.getRules()).isEqualTo("{}");
     }
@@ -114,15 +123,11 @@ class ContractSnapshotServiceTest {
 
     @Test
     void create_shouldCapturePlanVersionAtMoment() {
-        Map<String, Object> rulesMap = new LinkedHashMap<>();
-        rulesMap.put("MAX_CLASSES", 10);
-
         when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
-        when(ruleEngine.evaluate(plan)).thenReturn(new RuleResult(rulesMap));
+        when(ruleEngine.evaluate(plan)).thenReturn(new RuleResult(new LinkedHashMap<>(Map.of("MAX_CLASSES", 10))));
 
         plan.setVersion(5);
 
-        ContractSnapshot saved = new ContractSnapshot();
         when(repository.save(any(ContractSnapshot.class))).thenAnswer(invocation -> {
             ContractSnapshot cs = invocation.getArgument(0);
             cs.setId(UUID.randomUUID());
@@ -132,6 +137,7 @@ class ContractSnapshotServiceTest {
         ContractSnapshot result = service.create(planId);
 
         assertThat(result.getPlanVersion()).isEqualTo(5);
+        assertThat(result.getStudioId()).isEqualTo(studioId);
     }
 
     @Test
@@ -141,7 +147,6 @@ class ContractSnapshotServiceTest {
         when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(ruleEngine.evaluate(plan)).thenReturn(new RuleResult(new LinkedHashMap<>()));
 
-        ContractSnapshot saved = new ContractSnapshot();
         when(repository.save(any(ContractSnapshot.class))).thenAnswer(invocation -> {
             ContractSnapshot cs = invocation.getArgument(0);
             cs.setId(UUID.randomUUID());
@@ -150,6 +155,7 @@ class ContractSnapshotServiceTest {
 
         ContractSnapshot result = service.create(planId);
 
+        assertThat(result.getStudioId()).isEqualTo(studioId);
         assertThat(result.getPlanDescription()).isNull();
         assertThat(result.getRules()).isEqualTo("{}");
     }

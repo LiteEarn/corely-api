@@ -12,6 +12,9 @@ import java.util.UUID;
 @Table(name = "comercial_contract_snapshots")
 public class ContractSnapshot extends BaseEntity {
 
+    @Column(name = "studio_id", nullable = false)
+    private UUID studioId;
+
     @Column(name = "plan_id", nullable = false)
     private UUID planId;
 
@@ -35,6 +38,8 @@ public class ContractSnapshot extends BaseEntity {
 
     public ContractSnapshot() {}
 
+    public UUID getStudioId() { return studioId; }
+    public void setStudioId(UUID studioId) { this.studioId = studioId; }
     public UUID getPlanId() { return planId; }
     public void setPlanId(UUID planId) { this.planId = planId; }
     public Integer getPlanVersion() { return planVersion; }

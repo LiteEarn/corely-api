@@ -93,6 +93,7 @@ class ContractSnapshotIntegrationTest {
         ContractSnapshot snapshot = contractSnapshotService.create(plan.getId());
 
         assertThat(snapshot.getId()).isNotNull();
+        assertThat(snapshot.getStudioId()).isEqualTo(studio.getId());
         assertThat(snapshot.getPlanId()).isEqualTo(plan.getId());
         assertThat(snapshot.getPlanVersion()).isEqualTo(1);
         assertThat(snapshot.getPlanName()).isEqualTo("Gold Plan");
@@ -135,6 +136,7 @@ class ContractSnapshotIntegrationTest {
     void create_shouldCreateSnapshotWithEmptyRules_whenNoPlanRules() {
         ContractSnapshot snapshot = contractSnapshotService.create(plan.getId());
 
+        assertThat(snapshot.getStudioId()).isEqualTo(studio.getId());
         assertThat(snapshot.getRules()).isEqualTo("{}");
     }
 
