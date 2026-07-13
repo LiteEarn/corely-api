@@ -28,6 +28,15 @@ public class StudentPlanService {
 
     @Transactional
     public StudentPlanResponse create(StudentPlanRequest request) {
+        return doCreate(request).response();
+    }
+
+    @Transactional
+    public StudentPlanData createWithEntity(StudentPlanRequest request) {
+        return doCreate(request);
+    }
+
+    private StudentPlanData doCreate(StudentPlanRequest request) {
         var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
 
         var student = studentRepository.findById(request.getStudentId())
@@ -49,7 +58,7 @@ public class StudentPlanService {
 
         enrollment = studentPlanRepository.save(enrollment);
 
-        return toResponse(enrollment);
+        return new StudentPlanData(enrollment, toResponse(enrollment));
     }
 
     @Transactional
@@ -120,6 +129,8 @@ public class StudentPlanService {
                 .map(this::toResponse)
                 .orElse(null);
     }
+
+    public record StudentPlanData(StudentPlan entity, StudentPlanResponse response) {}
 
     private StudentPlanResponse toResponse(StudentPlan enrollment) {
         var snapshot = enrollment.getContractSnapshot();

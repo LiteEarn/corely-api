@@ -17,11 +17,8 @@ public class ContractApplicationService {
 
     @Transactional
     public StudentPlanResponse enroll(StudentPlanRequest request) {
-        var response = studentPlanService.create(request);
-
-        var studentPlan = studentPlanService.findEntityById(response.getId());
-        billingScheduleService.createSchedule(studentPlan, request.getStartDate().getDayOfMonth());
-
-        return response;
+        var data = studentPlanService.createWithEntity(request);
+        billingScheduleService.createSchedule(data.entity(), request.getStartDate().getDayOfMonth());
+        return data.response();
     }
 }

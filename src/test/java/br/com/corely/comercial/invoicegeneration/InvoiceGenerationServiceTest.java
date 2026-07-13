@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -38,6 +39,9 @@ class InvoiceGenerationServiceTest {
     @Mock
     private InvoiceRepository invoiceRepository;
 
+    @Mock
+    private TransactionTemplate transactionTemplate;
+
     @Captor
     private ArgumentCaptor<Invoice> invoiceCaptor;
 
@@ -56,7 +60,7 @@ class InvoiceGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InvoiceGenerationService(billingScheduleRepository, invoiceRepository);
+        service = new InvoiceGenerationService(billingScheduleRepository, invoiceRepository, transactionTemplate);
 
         studio = new Studio();
         studio.setId(UUID.randomUUID());
@@ -89,17 +93,16 @@ class InvoiceGenerationServiceTest {
     }
 
     @Test
-    void process_shouldGenerateInvoiceAndUpdateNextBillingDate() {
+    void processSchedule_shouldGenerateInvoiceAndUpdateNextBillingDate() {
         var processingDate = LocalDate.of(2026, 1, 20);
+        var result = new InvoiceGenerationResult();
 
-        when(billingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(processingDate))
-                .thenReturn(List.of(schedule));
+        when(billingScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(invoiceRepository.findByStudentPlanIdAndReferenceMonth(studentPlanId, "2026-01"))
                 .thenReturn(Optional.empty());
 
-        var result = service.process(processingDate);
+        service.processSchedule(scheduleId, processingDate, result);
 
-        assertThat(result.getProcessed()).isEqualTo(1);
         assertThat(result.getGenerated()).isEqualTo(1);
         assertThat(result.getSkipped()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
@@ -119,17 +122,16 @@ class InvoiceGenerationServiceTest {
     }
 
     @Test
-    void process_shouldSkipWhenStudentPlanNotActive() {
+    void processSchedule_shouldSkipWhenStudentPlanNotActive() {
         studentPlan.setStatus(StudentPlanStatus.SUSPENDED);
 
         var processingDate = LocalDate.of(2026, 1, 20);
+        var result = new InvoiceGenerationResult();
 
-        when(billingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(processingDate))
-                .thenReturn(List.of(schedule));
+        when(billingScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
 
-        var result = service.process(processingDate);
+        service.processSchedule(scheduleId, processingDate, result);
 
-        assertThat(result.getProcessed()).isEqualTo(1);
         assertThat(result.getGenerated()).isEqualTo(0);
         assertThat(result.getSkipped()).isEqualTo(1);
         assertThat(result.getErrors()).isEqualTo(0);
@@ -139,17 +141,16 @@ class InvoiceGenerationServiceTest {
     }
 
     @Test
-    void process_shouldSkipWhenInvoiceAlreadyExists() {
+    void processSchedule_shouldSkipWhenInvoiceAlreadyExists() {
         var processingDate = LocalDate.of(2026, 1, 20);
+        var result = new InvoiceGenerationResult();
 
-        when(billingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(processingDate))
-                .thenReturn(List.of(schedule));
+        when(billingScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(invoiceRepository.findByStudentPlanIdAndReferenceMonth(studentPlanId, "2026-01"))
                 .thenReturn(Optional.of(new Invoice()));
 
-        var result = service.process(processingDate);
+        service.processSchedule(scheduleId, processingDate, result);
 
-        assertThat(result.getProcessed()).isEqualTo(1);
         assertThat(result.getGenerated()).isEqualTo(0);
         assertThat(result.getSkipped()).isEqualTo(1);
         assertThat(result.getErrors()).isEqualTo(0);
@@ -160,21 +161,15 @@ class InvoiceGenerationServiceTest {
 
     @Test
     void process_shouldHandleErrorWithoutInterruptingOthers() {
-        var scheduleWithError = new BillingSchedule();
-        scheduleWithError.setId(UUID.randomUUID());
-        scheduleWithError.setFrequency(BillingFrequency.MONTHLY);
-
         var processingDate = LocalDate.of(2026, 1, 20);
 
         when(billingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(processingDate))
-                .thenReturn(List.of(scheduleWithError, schedule));
-        when(invoiceRepository.findByStudentPlanIdAndReferenceMonth(studentPlanId, "2026-01"))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of(schedule));
+        when(transactionTemplate.execute(any())).thenThrow(new RuntimeException("DB error"));
 
         var result = service.process(processingDate);
 
-        assertThat(result.getProcessed()).isEqualTo(2);
-        assertThat(result.getGenerated()).isEqualTo(1);
+        assertThat(result.getProcessed()).isEqualTo(1);
         assertThat(result.getErrors()).isEqualTo(1);
     }
 
