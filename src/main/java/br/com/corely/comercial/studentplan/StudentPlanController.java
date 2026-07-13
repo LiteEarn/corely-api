@@ -28,40 +28,37 @@ public class StudentPlanController {
     }
 
     @GetMapping
-    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.FINANCIAL})
     public ResponseEntity<List<StudentPlanResponse>> findAll() {
         var response = studentPlanService.findAll();
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.FINANCIAL})
     public ResponseEntity<StudentPlanResponse> findById(@PathVariable UUID id) {
         var response = studentPlanService.findById(id);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{id}/cancel")
+    @PutMapping("/{id}/cancel")
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<StudentPlanResponse> cancel(@PathVariable UUID id) {
         var response = studentPlanService.cancel(id);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/student/{studentId}")
-    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
-    public ResponseEntity<List<StudentPlanResponse>> findByStudent(@PathVariable UUID studentId) {
-        var response = studentPlanService.findByStudentId(studentId);
+    @PutMapping("/{id}/suspend")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN})
+    public ResponseEntity<StudentPlanResponse> suspend(@PathVariable UUID id) {
+        var response = studentPlanService.suspend(id);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/student/{studentId}/active")
-    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
-    public ResponseEntity<StudentPlanResponse> findActiveByStudent(@PathVariable UUID studentId) {
-        var response = studentPlanService.findActiveByStudent(studentId);
-        if (response == null) {
-            return ResponseEntity.noContent().build();
-        }
+    @PutMapping("/{id}/reactivate")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN})
+    public ResponseEntity<StudentPlanResponse> reactivate(@PathVariable UUID id) {
+        var response = studentPlanService.reactivate(id);
         return ResponseEntity.ok(response);
     }
 }
