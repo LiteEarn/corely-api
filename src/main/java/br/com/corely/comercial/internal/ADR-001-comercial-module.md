@@ -22,6 +22,9 @@ br.com.corely.comercial/
 │       ├── BillingFrequencyDto.java
 │       ├── BillingScheduleRequest.java
 │       └── BillingScheduleResponse.java
+├── invoicegeneration/
+│   ├── InvoiceGenerationResult.java      # DTO com contadores processed/generated/skipped/errors
+│   └── InvoiceGenerationService.java     # Serviço interno de geração automática de Invoices
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -31,7 +34,8 @@ br.com.corely.comercial/
 │   ├── STORY-008-card.md                 # Card da STORY-008
 │   ├── STORY-009-card.md                 # Card da STORY-009
 │   ├── STORY-010-card.md                 # Card da STORY-010
-│   └── STORY-011-card.md                 # Card da STORY-011
+│   ├── STORY-011-card.md                 # Card da STORY-011
+│   └── STORY-012-card.md                 # Card da STORY-012
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -240,6 +244,17 @@ Grupo `comercial` no OpenAPI, visível em:
 - Migration V35 com FKs, UNIQUE, CHECK e índices em next_billing_date, active, frequency
 - Endpoints: GET (lista e por id), PUT
 - RBAC: OWNER/ADMIN/FINANCIAL (consultar/alterar), RECEPTIONIST (apenas consulta)
+
+### STORY-012 — Geração Automática de Invoices (Jul/2026)
+- Pacote `br.com.corely.comercial.invoicegeneration`
+- `InvoiceGenerationService` — serviço interno (sem endpoint público)
+- Recebe uma data de processamento, busca BillingSchedules ativos com nextBillingDate <= data
+- Para cada schedule: valida StudentPlan ACTIVE, verifica duplicidade (student_plan_id + reference_month), cria Invoice com valor do ContractSnapshot, avança nextBillingDate
+- `InvoiceGenerationResult` — contadores: processed, generated, skipped, errors
+- Erro em um contrato não interrompe os demais
+- Sem migration nova
+- `BillingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(LocalDate)` adicionado
+- Testes unitários (12) e de integração (5)
 
 ### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
 - Pacote `br.com.corely.comercial.payment`
