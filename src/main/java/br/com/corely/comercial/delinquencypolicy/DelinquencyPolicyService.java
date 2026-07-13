@@ -4,7 +4,6 @@ import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyActionDto;
 import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyPolicyRequest;
 import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyPolicyResponse;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
-import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,15 @@ public class DelinquencyPolicyService {
     public DelinquencyPolicyResponse update(DelinquencyPolicyRequest request) {
         var studioId = tenantContext.getCurrentStudioId();
         var policy = delinquencyPolicyRepository.findByStudioId(studioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Delinquency policy not found"));
+                .orElseGet(() -> {
+                    var studio = studioRepository.getReferenceById(studioId);
+                    var p = new DelinquencyPolicy();
+                    p.setStudio(studio);
+                    p.setGracePeriodDays(0);
+                    p.setAction(DelinquencyAction.NONE);
+                    p.setActive(true);
+                    return p;
+                });
 
         policy.setGracePeriodDays(request.getGracePeriodDays());
         policy.setAction(DelinquencyAction.valueOf(request.getAction().name()));

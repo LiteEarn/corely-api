@@ -3,7 +3,6 @@ package br.com.corely.comercial.delinquencypolicy;
 import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyActionDto;
 import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyPolicyRequest;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
-import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,16 +108,24 @@ class DelinquencyPolicyServiceTest {
     }
 
     @Test
-    void update_shouldThrowException_whenNotFound() {
+    void update_shouldCreateWhenNotFound() {
         when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
         when(delinquencyPolicyRepository.findByStudioId(studioId)).thenReturn(Optional.empty());
+        when(studioRepository.getReferenceById(studioId)).thenReturn(studio);
+        when(delinquencyPolicyRepository.save(any(DelinquencyPolicy.class))).thenAnswer(inv -> {
+            var p = inv.getArgument(0, DelinquencyPolicy.class);
+            p.setId(UUID.randomUUID());
+            return p;
+        });
 
         var request = new DelinquencyPolicyRequest();
-        request.setGracePeriodDays(5);
-        request.setAction(DelinquencyActionDto.NONE);
+        request.setGracePeriodDays(7);
+        request.setAction(DelinquencyActionDto.SUSPEND_CONTRACT);
 
-        assertThatThrownBy(() -> service.update(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Delinquency policy not found");
+        var response = service.update(request);
+
+        assertThat(response.getGracePeriodDays()).isEqualTo(7);
+        assertThat(response.getAction()).isEqualTo(DelinquencyActionDto.SUSPEND_CONTRACT);
+        assertThat(response.getActive()).isTrue();
     }
 }

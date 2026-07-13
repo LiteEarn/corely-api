@@ -2,7 +2,6 @@ package br.com.corely.comercial.delinquencypolicy;
 
 import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyActionDto;
 import br.com.corely.comercial.delinquencypolicy.dto.DelinquencyPolicyRequest;
-import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import br.com.corely.user.User;
@@ -86,14 +85,16 @@ class DelinquencyPolicyIntegrationTest {
     }
 
     @Test
-    void update_shouldThrowException_whenNoPolicyExists() {
+    void update_shouldCreateWhenNoPolicyExists() {
         var request = new DelinquencyPolicyRequest();
         request.setGracePeriodDays(5);
-        request.setAction(DelinquencyActionDto.NONE);
+        request.setAction(DelinquencyActionDto.BLOCK_NEW_BOOKINGS);
 
-        assertThatThrownBy(() -> delinquencyPolicyService.update(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Delinquency policy not found");
+        var response = delinquencyPolicyService.update(request);
+
+        assertThat(response.getGracePeriodDays()).isEqualTo(5);
+        assertThat(response.getAction()).isEqualTo(DelinquencyActionDto.BLOCK_NEW_BOOKINGS);
+        assertThat(response.getActive()).isTrue();
     }
 
     @Test
