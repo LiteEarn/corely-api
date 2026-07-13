@@ -3,7 +3,7 @@ CREATE TABLE comercial_plan_rules (
     studio_id UUID NOT NULL,
     plan_id UUID NOT NULL,
     rule_definition_id UUID NOT NULL,
-    rule_value VARCHAR(500),
+    rule_value VARCHAR(500) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_comercial_plan_rule_studio FOREIGN KEY (studio_id) REFERENCES studios(id) ON DELETE CASCADE,

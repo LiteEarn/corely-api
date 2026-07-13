@@ -1,5 +1,6 @@
 package br.com.corely.comercial.planrule.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -10,6 +11,7 @@ public class PlanRuleRequest {
     @NotNull
     private UUID ruleDefinitionId;
 
+    @NotBlank
     @Size(max = 500)
     private String value;
 

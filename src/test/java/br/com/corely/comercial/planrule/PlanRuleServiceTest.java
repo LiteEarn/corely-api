@@ -85,9 +85,31 @@ class PlanRuleServiceTest {
     }
 
     @Test
+    void create_shouldThrowException_whenValueIsNull() {
+        var request = new PlanRuleRequest();
+        request.setRuleDefinitionId(activeRuleDef.getId());
+
+        assertThatThrownBy(() -> planRuleService.create(plan.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Value is required");
+    }
+
+    @Test
+    void create_shouldThrowException_whenValueIsBlank() {
+        var request = new PlanRuleRequest();
+        request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("   ");
+
+        assertThatThrownBy(() -> planRuleService.create(plan.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Value is required");
+    }
+
+    @Test
     void create_shouldThrowException_whenRuleDefinitionInactive() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(inactiveRuleDef.getId());
+        request.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.create(plan.getId(), request))
                 .isInstanceOf(BusinessException.class)
@@ -98,10 +120,12 @@ class PlanRuleServiceTest {
     void create_shouldThrowException_whenDuplicateAssociation() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
         planRuleService.create(plan.getId(), request);
 
         var duplicate = new PlanRuleRequest();
         duplicate.setRuleDefinitionId(activeRuleDef.getId());
+        duplicate.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.create(plan.getId(), duplicate))
                 .isInstanceOf(BusinessException.class)
@@ -112,6 +136,7 @@ class PlanRuleServiceTest {
     void create_shouldThrowException_whenPlanNotFound() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.create(UUID.randomUUID(), request))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -122,6 +147,7 @@ class PlanRuleServiceTest {
     void create_shouldThrowException_whenRuleDefinitionNotFound() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(UUID.randomUUID());
+        request.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.create(plan.getId(), request))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -183,13 +209,30 @@ class PlanRuleServiceTest {
     }
 
     @Test
+    void update_shouldThrowException_whenValueIsNull() {
+        var createRequest = new PlanRuleRequest();
+        createRequest.setRuleDefinitionId(activeRuleDef.getId());
+        createRequest.setValue("30");
+        var created = planRuleService.create(plan.getId(), createRequest);
+
+        var updateRequest = new PlanRuleRequest();
+        updateRequest.setRuleDefinitionId(activeRuleDef.getId());
+
+        assertThatThrownBy(() -> planRuleService.update(plan.getId(), created.getId(), updateRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Value is required");
+    }
+
+    @Test
     void update_shouldThrowException_whenRuleDefinitionInactive() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
         var created = planRuleService.create(plan.getId(), request);
 
         var updateRequest = new PlanRuleRequest();
         updateRequest.setRuleDefinitionId(inactiveRuleDef.getId());
+        updateRequest.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.update(plan.getId(), created.getId(), updateRequest))
                 .isInstanceOf(BusinessException.class)
@@ -202,14 +245,17 @@ class PlanRuleServiceTest {
 
         var request1 = new PlanRuleRequest();
         request1.setRuleDefinitionId(activeRuleDef.getId());
+        request1.setValue("30");
         planRuleService.create(plan.getId(), request1);
 
         var request2 = new PlanRuleRequest();
         request2.setRuleDefinitionId(anotherRule.getId());
+        request2.setValue("10");
         var created2 = planRuleService.create(plan.getId(), request2);
 
         var updateRequest = new PlanRuleRequest();
         updateRequest.setRuleDefinitionId(activeRuleDef.getId());
+        updateRequest.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.update(plan.getId(), created2.getId(), updateRequest))
                 .isInstanceOf(BusinessException.class)
@@ -236,6 +282,7 @@ class PlanRuleServiceTest {
     void update_shouldThrowException_whenNotFound() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
 
         assertThatThrownBy(() -> planRuleService.update(plan.getId(), UUID.randomUUID(), request))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -246,6 +293,7 @@ class PlanRuleServiceTest {
     void delete_shouldRemovePlanRule() {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
         var created = planRuleService.create(plan.getId(), request);
 
         planRuleService.delete(plan.getId(), created.getId());
@@ -267,10 +315,12 @@ class PlanRuleServiceTest {
 
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
         planRuleService.create(plan.getId(), request);
 
         var otherRequest = new PlanRuleRequest();
         otherRequest.setRuleDefinitionId(activeRuleDef.getId());
+        otherRequest.setValue("30");
         var otherResponse = planRuleService.create(otherPlan.getId(), otherRequest);
 
         assertThat(otherResponse.getId()).isNotNull();

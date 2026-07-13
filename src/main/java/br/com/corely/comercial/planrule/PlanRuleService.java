@@ -27,6 +27,8 @@ public class PlanRuleService {
 
     @Transactional
     public PlanRuleResponse create(UUID planId, PlanRuleRequest request) {
+        validateValue(request.getValue());
+
         var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
@@ -65,6 +67,8 @@ public class PlanRuleService {
 
     @Transactional
     public PlanRuleResponse update(UUID planId, UUID ruleId, PlanRuleRequest request) {
+        validateValue(request.getValue());
+
         var planRule = planRuleRepository.findByPlanIdAndId(planId, ruleId)
                 .orElseThrow(() -> new ResourceNotFoundException("PlanRule not found"));
 
@@ -94,6 +98,12 @@ public class PlanRuleService {
                 .orElseThrow(() -> new ResourceNotFoundException("PlanRule not found"));
 
         planRuleRepository.delete(planRule);
+    }
+
+    private void validateValue(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BusinessException("Value is required");
+        }
     }
 
     private PlanRuleResponse toResponse(PlanRule planRule) {

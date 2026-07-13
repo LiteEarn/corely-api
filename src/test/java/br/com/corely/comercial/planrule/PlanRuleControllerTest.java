@@ -90,9 +90,33 @@ class PlanRuleControllerTest {
     }
 
     @Test
+    void create_shouldReturn400_whenValueIsNull() throws Exception {
+        var request = new PlanRuleRequest();
+        request.setRuleDefinitionId(activeRuleDef.getId());
+
+        mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_shouldReturn400_whenValueIsBlank() throws Exception {
+        var request = new PlanRuleRequest();
+        request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("   ");
+
+        mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void create_shouldReturn409_whenRuleDefinitionInactive() throws Exception {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(inactiveRuleDef.getId());
+        request.setValue("30");
 
         mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,6 +128,7 @@ class PlanRuleControllerTest {
     void create_shouldReturn409_whenDuplicate() throws Exception {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
         mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
@@ -118,6 +143,7 @@ class PlanRuleControllerTest {
     void create_shouldReturn404_whenPlanNotFound() throws Exception {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
 
         mockMvc.perform(post("/comercial/plans/{planId}/rules", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -141,12 +167,14 @@ class PlanRuleControllerTest {
 
         var request1 = new PlanRuleRequest();
         request1.setRuleDefinitionId(activeRuleDef.getId());
+        request1.setValue("30");
         mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request1)));
 
         var request2 = new PlanRuleRequest();
         request2.setRuleDefinitionId(anotherRule.getId());
+        request2.setValue("18");
         mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request2)));
@@ -200,6 +228,7 @@ class PlanRuleControllerTest {
     void update_shouldReturn409_whenRuleDefinitionInactive() throws Exception {
         var createRequest = new PlanRuleRequest();
         createRequest.setRuleDefinitionId(activeRuleDef.getId());
+        createRequest.setValue("30");
         var createdJson = mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
@@ -209,6 +238,7 @@ class PlanRuleControllerTest {
 
         var updateRequest = new PlanRuleRequest();
         updateRequest.setRuleDefinitionId(inactiveRuleDef.getId());
+        updateRequest.setValue("30");
 
         mockMvc.perform(put("/comercial/plans/{planId}/rules/{ruleId}", plan.getId(), createdId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -222,12 +252,14 @@ class PlanRuleControllerTest {
 
         var request1 = new PlanRuleRequest();
         request1.setRuleDefinitionId(activeRuleDef.getId());
+        request1.setValue("30");
         mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request1)));
 
         var request2 = new PlanRuleRequest();
         request2.setRuleDefinitionId(anotherRule.getId());
+        request2.setValue("10");
         var createdJson = mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request2)))
@@ -237,6 +269,7 @@ class PlanRuleControllerTest {
 
         var updateRequest = new PlanRuleRequest();
         updateRequest.setRuleDefinitionId(activeRuleDef.getId());
+        updateRequest.setValue("30");
 
         mockMvc.perform(put("/comercial/plans/{planId}/rules/{ruleId}", plan.getId(), createdId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -248,6 +281,7 @@ class PlanRuleControllerTest {
     void update_shouldReturn404_whenPlanRuleNotFound() throws Exception {
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(activeRuleDef.getId());
+        request.setValue("30");
 
         mockMvc.perform(put("/comercial/plans/{planId}/rules/{ruleId}", plan.getId(), UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -259,6 +293,7 @@ class PlanRuleControllerTest {
     void delete_shouldReturn204() throws Exception {
         var createRequest = new PlanRuleRequest();
         createRequest.setRuleDefinitionId(activeRuleDef.getId());
+        createRequest.setValue("30");
         var createdJson = mockMvc.perform(post("/comercial/plans/{planId}/rules", plan.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
@@ -297,6 +332,7 @@ class PlanRuleControllerTest {
 
         var request = new PlanRuleRequest();
         request.setRuleDefinitionId(receptionistRule.getId());
+        request.setValue("30");
 
         mockMvc.perform(post("/comercial/plans/{planId}/rules", receptionistPlan.getId())
                         .contentType(MediaType.APPLICATION_JSON)

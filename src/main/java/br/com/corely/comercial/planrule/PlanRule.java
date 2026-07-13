@@ -20,7 +20,7 @@ public class PlanRule extends ComercialBaseEntity {
     @JoinColumn(name = "rule_definition_id", nullable = false)
     private RuleDefinition ruleDefinition;
 
-    @Column(name = "rule_value", length = 500)
+    @Column(name = "rule_value", nullable = false, length = 500)
     private String value;
 
     protected PlanRule() {}
