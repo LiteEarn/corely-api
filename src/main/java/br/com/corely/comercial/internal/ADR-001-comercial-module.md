@@ -72,13 +72,28 @@ Grupo `comercial` no OpenAPI, visível em:
 - Swagger UI: `/swagger-ui/index.html` (selecionar "Módulo Comercial")
 - API docs: `/v3/api-docs/comercial`
 
+## Histórias Concluídas
+
+### STORY-001 — Infraestrutura Base
+- `ComercialBaseEntity`, `TenantInterceptor`, `ComercialTenantContext`, `ComercialPermission`, Swagger group
+
+### STORY-002 — Catálogo de Rule Definitions (Jul/2026)
+- Pacote `br.com.corely.comercial.ruledefinition`
+- Entidade `RuleDefinition` (NÃO estende `ComercialBaseEntity` — não possui `studio_id`)
+- Enums `ValueType` e `Category`
+- Repository, Service, Controller, DTOs
+- Endpoints em `/comercial/rule-definitions`
+- Apenas OWNER/ADMIN podem alterar; perfis de leitura consultam apenas regras ativas
+- Endpoint administrativo `/admin/all` para listar todas (inclusive inativas)
+- Sem exclusão física — apenas ativação/inativação
+- Migration V27 com índices e constraints CHECK
+
 ## Histórias Futuras (Roadmap)
 
 1. Rule Engine — Motor de regras configurável
-2. RuleDefinition — Definição e CRUD de regras
-3. CRUD de Planos — Entidade Plan
-4. Frontend — Telas do módulo
-5. StudentPlan — Contratos de alunos
-6. Invoice — Faturamento
-7. Payment — Pagamentos
-8. Dashboard Financeiro
+2. CRUD de Planos — Entidade Plan
+3. Frontend — Telas do módulo
+4. StudentPlan — Contratos de alunos
+5. Invoice — Faturamento
+6. Payment — Pagamentos
+7. Dashboard Financeiro
