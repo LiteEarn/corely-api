@@ -12,6 +12,8 @@ br.com.corely.comercial/
 ├── config/
 │   ├── ComercialOpenApiGroupConfig.java  # Grupo Swagger para /comercial/**
 │   └── ComercialWebMvcConfig.java        # Registro do TenantInterceptor
+├── contract/
+│   └── ContractApplicationService.java # Orquestrador de contratação (Snapshot → StudentPlan → BillingSchedule)
 ├── billingschedule/
 │   ├── BillingFrequency.java             # Enum: WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
 │   ├── BillingSchedule.java              # Agenda de cobrança vinculada a StudentPlan
