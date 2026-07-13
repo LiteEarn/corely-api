@@ -1,6 +1,7 @@
 package br.com.corely.comercial.studentplan;
 
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
+import br.com.corely.comercial.billingschedule.BillingScheduleService;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
@@ -43,6 +44,9 @@ class StudentPlanServiceTest {
     private ContractSnapshotService contractSnapshotService;
 
     @Mock
+    private BillingScheduleService billingScheduleService;
+
+    @Mock
     private ComercialTenantContext tenantContext;
 
     private StudentPlanService service;
@@ -57,7 +61,7 @@ class StudentPlanServiceTest {
     @BeforeEach
     void setUp() {
         service = new StudentPlanService(studentPlanRepository, studentRepository, studioRepository,
-                contractSnapshotService, tenantContext);
+                contractSnapshotService, billingScheduleService, tenantContext);
 
         studioId = UUID.randomUUID();
         snapshotId = UUID.randomUUID();
@@ -90,6 +94,7 @@ class StudentPlanServiceTest {
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(studentPlanRepository.existsByStudentIdAndStatus(studentId, StudentPlanStatus.ACTIVE)).thenReturn(false);
         when(contractSnapshotService.create(planId)).thenReturn(snapshot);
+        when(billingScheduleService.create(any(), any())).thenReturn(null);
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> {
             var sp = inv.getArgument(0, StudentPlan.class);
             sp.setId(UUID.randomUUID());

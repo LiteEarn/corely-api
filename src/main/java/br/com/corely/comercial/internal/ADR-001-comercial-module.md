@@ -12,6 +12,16 @@ br.com.corely.comercial/
 ├── config/
 │   ├── ComercialOpenApiGroupConfig.java  # Grupo Swagger para /comercial/**
 │   └── ComercialWebMvcConfig.java        # Registro do TenantInterceptor
+├── billingschedule/
+│   ├── BillingFrequency.java             # Enum: WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
+│   ├── BillingSchedule.java              # Agenda de cobrança vinculada a StudentPlan
+│   ├── BillingScheduleRepository.java
+│   ├── BillingScheduleService.java       # Criação automática com StudentPlan
+│   ├── BillingScheduleController.java    # Endpoints em /comercial/billing-schedules
+│   └── dto/
+│       ├── BillingFrequencyDto.java
+│       ├── BillingScheduleRequest.java
+│       └── BillingScheduleResponse.java
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -20,7 +30,8 @@ br.com.corely.comercial/
 │   ├── STORY-007-card.md                 # Card da STORY-007
 │   ├── STORY-008-card.md                 # Card da STORY-008
 │   ├── STORY-009-card.md                 # Card da STORY-009
-│   └── STORY-010-card.md                 # Card da STORY-010
+│   ├── STORY-010-card.md                 # Card da STORY-010
+│   └── STORY-011-card.md                 # Card da STORY-011
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -74,7 +85,7 @@ br.com.corely.comercial/
 ## Convenções Adotadas
 
 - **Pacote raiz**: `br.com.corely.comercial`
-- **Organização**: por feature (subpacotes tenant/, config/, rbac/)
+- **Organização**: por feature (subpacotes billingschedule/, tenant/, config/, rbac/)
 - **Persistência**: entidades devem estender `ComercialBaseEntity` para herdar:
   - Campos auditáveis (id, createdAt, updatedAt) de `BaseEntity`
   - Vínculo obrigatório com `Studio` (studio_id)
@@ -113,6 +124,8 @@ Permissões reservadas no enum `ComercialPermission`:
 | COMMERCIAL_INVOICE_WRITE | Criar/baixar faturas |
 | COMMERCIAL_PAYMENT_READ | Visualizar pagamentos |
 | COMMERCIAL_PAYMENT_WRITE | Registrar pagamentos |
+| COMMERCIAL_BILLING_SCHEDULE_READ | Visualizar agenda de cobrança |
+| COMMERCIAL_BILLING_SCHEDULE_WRITE | Alterar agenda de cobrança |
 | COMMERCIAL_DASHBOARD_VIEW | Visualizar dashboard financeiro |
 
 A integração destas permissões com o sistema RBAC existente
@@ -214,6 +227,19 @@ Grupo `comercial` no OpenAPI, visível em:
 - Endpoints: POST, GET (lista e por id), PUT cancel
 - RBAC: OWNER/ADMIN/FINANCIAL (criar/consultar/cancelar), RECEPTIONIST (apenas consulta)
 - Sem recorrência automática ou pagamento
+
+### STORY-011 — Billing Schedule (Agenda de Cobrança) (Jul/2026)
+- Pacote `br.com.corely.comercial.billingschedule`
+- Entidade `BillingSchedule` (estende `ComercialBaseEntity`) com FK para `StudentPlan`
+- Enum `BillingFrequency`: WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
+- Criado automaticamente junto com `StudentPlan` (billingDay = startDate.getDayOfMonth())
+- Apenas um BillingSchedule por StudentPlan (UNIQUE student_plan_id)
+- billingDay deve estar entre 1 e 31 (CHECK constraint)
+- nextBillingDate calculada automaticamente com base na frequency
+- Apenas StudentPlans ACTIVE podem possuir BillingSchedule ativo
+- Migration V35 com FKs, UNIQUE, CHECK e índices em next_billing_date, active, frequency
+- Endpoints: GET (lista e por id), PUT
+- RBAC: OWNER/ADMIN/FINANCIAL (consultar/alterar), RECEPTIONIST (apenas consulta)
 
 ### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
 - Pacote `br.com.corely.comercial.payment`
