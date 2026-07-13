@@ -27,6 +27,9 @@ br.com.corely.comercial/
 ├── invoicegeneration/
 │   ├── InvoiceGenerationResult.java      # DTO com contadores processed/generated/skipped/errors
 │   └── InvoiceGenerationService.java     # Serviço interno de geração automática de Invoices
+├── overdue/
+│   ├── OverdueProcessingResult.java      # DTO com contadores processed/overdue/skipped/errors
+│   └── OverdueProcessingService.java     # Serviço interno de processamento de inadimplência
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -37,7 +40,8 @@ br.com.corely.comercial/
 │   ├── STORY-009-card.md                 # Card da STORY-009
 │   ├── STORY-010-card.md                 # Card da STORY-010
 │   ├── STORY-011-card.md                 # Card da STORY-011
-│   └── STORY-012-card.md                 # Card da STORY-012
+│   ├── STORY-012-card.md                 # Card da STORY-012
+│   └── STORY-013-card.md                 # Card da STORY-013
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -257,6 +261,17 @@ Grupo `comercial` no OpenAPI, visível em:
 - Sem migration nova
 - `BillingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(LocalDate)` adicionado
 - Testes unitários (12) e de integração (5)
+
+### STORY-013 — Processamento de Inadimplência (Overdue Processing) (Jul/2026)
+- Pacote `br.com.corely.comercial.overdue`
+- `OverdueProcessingService` — serviço interno (sem endpoint público)
+- Recebe uma data, busca Invoices PENDING com dueDate < data
+- Altera status para OVERDUE
+- Nunca altera PAID, CANCELLED ou já OVERDUE
+- `OverdueProcessingResult` — contadores: processed, overdue, skipped, errors
+- Cada Invoice processada em transação própria (TransactionTemplate)
+- `InvoiceRepository.findByStatusAndDueDateBefore(InvoiceStatus, LocalDate)` adicionado
+- Testes unitários (7) e de integração (6)
 
 ### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
 - Pacote `br.com.corely.comercial.payment`
