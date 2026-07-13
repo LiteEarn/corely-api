@@ -17,7 +17,8 @@ br.com.corely.comercial/
 │   ├── STORY-003-card.md                 # Card da STORY-003
 │   ├── STORY-004-card.md                 # Card da STORY-004
 │   ├── STORY-006-card.md                 # Card da STORY-006
-│   └── STORY-007-card.md                 # Card da STORY-007
+│   ├── STORY-007-card.md                 # Card da STORY-007
+│   └── STORY-008-card.md                 # Card da STORY-008
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -33,6 +34,15 @@ br.com.corely.comercial/
 │   ├── RuleResult.java                   # Resultado tipado com getters por código
 │   ├── RuleResolver.java                 # Conversão String → Java type via ValueType
 │   └── RuleException.java                # Exceção para erros do motor
+├── studentplan/
+│   ├── StudentPlanStatus.java            # Enum: ACTIVE, SUSPENDED, CANCELLED, FINISHED
+│   ├── StudentPlan.java                  # Contrato do aluno vinculado a ContractSnapshot
+│   ├── StudentPlanRepository.java
+│   ├── StudentPlanService.java           # Cria snapshot automaticamente na contratação
+│   ├── StudentPlanController.java        # Endpoints em /comercial/student-plans
+│   └── dto/
+│       ├── StudentPlanRequest.java
+│       └── StudentPlanResponse.java
 └── tenant/
     ├── ComercialTenantContext.java       # Resolução de studioId exclusivamente do JWT
     ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
@@ -152,16 +162,27 @@ Grupo `comercial` no OpenAPI, visível em:
 
 ### STORY-007 — Snapshot Contratual dos Planos (Jul/2026)
 - Pacote `br.com.corely.comercial.contractsnapshot`
-- `ContractSnapshot` — entidade imutável com: planId, planVersion, planName, planDescription, planPrice, planDuration, rules (JSON)
+- `ContractSnapshot` — entidade imutável com: studioId, planId, planVersion, planName, planDescription, planPrice, planDuration, rules (JSON)
 - `ContractSnapshotService` — criação interna (sem endpoints públicos), usa `RuleEngine` para resolver regras e Jackson para serializar o JSON
-- Migration V31 — tabela `comercial_contract_snapshots` com índices em plan_id e created_at
+- Migration V31 — tabela `comercial_contract_snapshots` com índices em studio_id, plan_id e created_at
 - Snapshot nunca pode ser atualizado ou excluído (sem update/delete no service)
 - Regras armazenadas como `Map<String, Object>` → JSON
+
+### STORY-008 — StudentPlan (Contrato do Aluno) (Jul/2026)
+- Pacote `br.com.corely.comercial.studentplan`
+- Entidade `StudentPlan` (estende `ComercialBaseEntity`) com FK para `ContractSnapshot` (nunca referencia Plan diretamente)
+- Enum `StudentPlanStatus`: ACTIVE, SUSPENDED, CANCELLED, FINISHED
+- A contratação cria automaticamente um `ContractSnapshot` via `ContractSnapshotService.create(planId)`
+- Não permite dois contratos ACTIVE para o mesmo aluno (constraint UNIQUE + validação em serviço)
+- Cancelamento preserva histórico (não remove registros)
+- Suspend/Reactivate para pausar e retomar contratos
+- Migration V32 com FKs para student e contract_snapshot, índices em student_id, status, start_date
+- Endpoints: POST, GET (lista e por id), PUT cancel/suspend/reactivate
+- RBAC: OWNER/ADMIN (total), RECEPTIONIST (criar/consultar), FINANCIAL (consultar)
 
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
-3. StudentPlan — Contratos de alunos
-4. Invoice — Faturamento
+2. Invoice — Faturamento
 5. Payment — Pagamentos
 6. Dashboard Financeiro
