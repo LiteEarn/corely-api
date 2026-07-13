@@ -1,18 +1,17 @@
 package br.com.corely.comercial.plan;
 
-import br.com.corely.auth.authorization.Permission;
 import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.comercial.plan.dto.PlanRequest;
 import br.com.corely.comercial.plan.dto.PlanResponse;
 import br.com.corely.user.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -31,10 +30,11 @@ public class PlanController {
 
     @GetMapping
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.FINANCIAL})
-    public ResponseEntity<List<PlanResponse>> findAll(@RequestParam("active") Optional<Boolean> active) {
-        var response = active.isPresent() && active.get()
-                ? planService.findAllActive()
-                : planService.findAll();
+    public ResponseEntity<Page<PlanResponse>> findAll(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean active,
+            Pageable pageable) {
+        var response = planService.findAll(name, active, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -52,10 +52,10 @@ public class PlanController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
+    @PostMapping("/{id}/activate")
     @RequireRole({UserRole.OWNER, UserRole.ADMIN})
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        planService.delete(id);
+    public ResponseEntity<Void> activate(@PathVariable UUID id) {
+        planService.activate(id);
         return ResponseEntity.noContent().build();
     }
 

@@ -86,8 +86,8 @@ class TenantIsolationTest {
     void listPlans_shouldOnlyReturnPlansFromCurrentTenant() throws Exception {
         mockMvc.perform(get("/comercial/plans"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].name").value("Plan A"));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].name").value("Plan A"));
     }
 
     @Test
@@ -117,14 +117,14 @@ class TenantIsolationTest {
     }
 
     @Test
-    void deletePlan_shouldReturn404_whenPlanBelongsToOtherTenant() throws Exception {
-        mockMvc.perform(delete("/comercial/plans/{id}", planB.getId()))
+    void inactivatePlan_shouldReturn404_whenPlanBelongsToOtherTenant() throws Exception {
+        mockMvc.perform(post("/comercial/plans/{id}/inactivate", planB.getId()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void inactivatePlan_shouldReturn404_whenPlanBelongsToOtherTenant() throws Exception {
-        mockMvc.perform(post("/comercial/plans/{id}/inactivate", planB.getId()))
+    void activatePlan_shouldReturn404_whenPlanBelongsToOtherTenant() throws Exception {
+        mockMvc.perform(post("/comercial/plans/{id}/activate", planB.getId()))
                 .andExpect(status().isNotFound());
     }
 

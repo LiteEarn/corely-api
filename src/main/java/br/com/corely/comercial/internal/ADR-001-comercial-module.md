@@ -88,12 +88,28 @@ Grupo `comercial` no OpenAPI, visível em:
 - Sem exclusão física — apenas ativação/inativação
 - Migration V27 com índices e constraints CHECK
 
+### STORY-003 — CRUD de Planos (Jul/2026)
+- Pacote `br.com.corely.comercial.plan`
+- Entidade `Plan` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`PlanRequest`, `PlanResponse`)
+- Endpoints em `/comercial/plans`
+- Operações: Criar, Buscar por ID, Listar (paginado), Atualizar, Ativar, Inativar
+- Filtros na listagem: `name` (LIKE), `active`
+- Paginação via `Pageable` do Spring Data
+- Validações: nome obrigatório, preço > 0, duração > 0
+- Nome único por Studio (validação em serviço + constraint UNIQUE(studio_id, name) na migration V28)
+- Sem exclusão física — apenas ativação/inativação (com idempotência)
+- Version inicia em 1, incrementa a cada atualização
+- Apenas OWNER/ADMIN podem criar/alterar/ativar/inativar
+- RECEPTIONIST e FINANCIAL possuem apenas leitura
+- Migration V25 (criação da tabela) + V28 (unique constraint)
+- Índices em: studio_id, active, name
+
 ## Histórias Futuras (Roadmap)
 
 1. Rule Engine — Motor de regras configurável
-2. CRUD de Planos — Entidade Plan
-3. Frontend — Telas do módulo
-4. StudentPlan — Contratos de alunos
-5. Invoice — Faturamento
-6. Payment — Pagamentos
-7. Dashboard Financeiro
+2. Frontend — Telas do módulo
+3. StudentPlan — Contratos de alunos
+4. Invoice — Faturamento
+5. Payment — Pagamentos
+6. Dashboard Financeiro
