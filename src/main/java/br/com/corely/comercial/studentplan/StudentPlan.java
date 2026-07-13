@@ -4,12 +4,14 @@ import br.com.corely.comercial.ComercialBaseEntity;
 import br.com.corely.comercial.plan.Plan;
 import br.com.corely.student.Student;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "comercial_student_plans")
+@Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class StudentPlan extends ComercialBaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

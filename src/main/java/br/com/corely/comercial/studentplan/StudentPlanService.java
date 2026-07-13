@@ -27,8 +27,7 @@ public class StudentPlanService {
 
     @Transactional
     public StudentPlanResponse create(StudentPlanRequest request) {
-        var studioId = tenantContext.getCurrentStudioId();
-        var studio = studioRepository.getReferenceById(studioId);
+        var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
 
         var student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
@@ -53,7 +52,7 @@ public class StudentPlanService {
         enrollment.setStatus(StudentPlanStatus.ACTIVE);
 
         enrollment.setSnapshotName(plan.getName());
-        enrollment.setSnapshotValue(plan.getValue());
+        enrollment.setSnapshotValue(plan.getPrice());
         enrollment.setSnapshotDuration(plan.getDuration());
         enrollment.setSnapshotRules(null);
 
@@ -63,12 +62,8 @@ public class StudentPlanService {
 
     @Transactional
     public StudentPlanResponse cancel(UUID id) {
-        var studioId = tenantContext.getCurrentStudioId();
         var enrollment = studentPlanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan enrollment not found"));
-        if (!enrollment.getStudio().getId().equals(studioId)) {
-            throw new ResourceNotFoundException("Plan enrollment not found");
-        }
         if (enrollment.getStatus() != StudentPlanStatus.ACTIVE) {
             throw new BusinessException("Only active enrollments can be cancelled.");
         }
@@ -79,19 +74,14 @@ public class StudentPlanService {
 
     @Transactional(readOnly = true)
     public StudentPlanResponse findById(UUID id) {
-        var studioId = tenantContext.getCurrentStudioId();
         var enrollment = studentPlanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan enrollment not found"));
-        if (!enrollment.getStudio().getId().equals(studioId)) {
-            throw new ResourceNotFoundException("Plan enrollment not found");
-        }
         return toResponse(enrollment);
     }
 
     @Transactional(readOnly = true)
     public List<StudentPlanResponse> findAll() {
         return studentPlanRepository.findAll().stream()
-                .filter(sp -> sp.getStudio().getId().equals(tenantContext.getCurrentStudioId()))
                 .map(this::toResponse)
                 .toList();
     }

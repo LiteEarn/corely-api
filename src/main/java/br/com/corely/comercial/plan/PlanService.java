@@ -4,9 +4,9 @@ import br.com.corely.comercial.plan.dto.PlanRequest;
 import br.com.corely.comercial.plan.dto.PlanResponse;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.ResourceNotFoundException;
-import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,14 +23,13 @@ public class PlanService {
 
     @Transactional
     public PlanResponse create(PlanRequest request) {
-        var studioId = tenantContext.getCurrentStudioId();
-        var studio = studioRepository.getReferenceById(studioId);
+        var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
 
         var plan = new Plan();
         plan.setStudio(studio);
         plan.setName(request.getName());
         plan.setDescription(request.getDescription());
-        plan.setValue(request.getValue());
+        plan.setPrice(request.getPrice());
         plan.setDuration(request.getDuration());
         plan.setVersion(1);
         plan.setActive(request.getActive() != null ? request.getActive() : true);
@@ -41,43 +40,33 @@ public class PlanService {
 
     @Transactional(readOnly = true)
     public List<PlanResponse> findAll() {
-        var studioId = tenantContext.getCurrentStudioId();
-        return planRepository.findByStudioIdOrderByName(studioId).stream()
+        return planRepository.findAll(Sort.by("name")).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<PlanResponse> findAllActive() {
-        var studioId = tenantContext.getCurrentStudioId();
-        return planRepository.findByStudioIdAndActiveTrueOrderByName(studioId).stream()
+        return planRepository.findByActiveTrueOrderByName().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public PlanResponse findById(UUID id) {
-        var studioId = tenantContext.getCurrentStudioId();
         var plan = planRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
-        if (!plan.getStudio().getId().equals(studioId)) {
-            throw new ResourceNotFoundException("Plan not found");
-        }
         return toResponse(plan);
     }
 
     @Transactional
     public PlanResponse update(UUID id, PlanRequest request) {
-        var studioId = tenantContext.getCurrentStudioId();
         var plan = planRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
-        if (!plan.getStudio().getId().equals(studioId)) {
-            throw new ResourceNotFoundException("Plan not found");
-        }
 
         plan.setName(request.getName());
         plan.setDescription(request.getDescription());
-        plan.setValue(request.getValue());
+        plan.setPrice(request.getPrice());
         plan.setDuration(request.getDuration());
         plan.setVersion(plan.getVersion() + 1);
         if (request.getActive() != null) {
@@ -90,23 +79,15 @@ public class PlanService {
 
     @Transactional
     public void delete(UUID id) {
-        var studioId = tenantContext.getCurrentStudioId();
         var plan = planRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
-        if (!plan.getStudio().getId().equals(studioId)) {
-            throw new ResourceNotFoundException("Plan not found");
-        }
         planRepository.delete(plan);
     }
 
     @Transactional
     public void inactivate(UUID id) {
-        var studioId = tenantContext.getCurrentStudioId();
         var plan = planRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
-        if (!plan.getStudio().getId().equals(studioId)) {
-            throw new ResourceNotFoundException("Plan not found");
-        }
         plan.setActive(false);
         plan.setVersion(plan.getVersion() + 1);
         planRepository.save(plan);
@@ -117,7 +98,7 @@ public class PlanService {
                 plan.getId(),
                 plan.getName(),
                 plan.getDescription(),
-                plan.getValue(),
+                plan.getPrice(),
                 plan.getDuration(),
                 plan.getVersion(),
                 plan.getActive(),

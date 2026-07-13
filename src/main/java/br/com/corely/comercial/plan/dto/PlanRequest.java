@@ -18,7 +18,7 @@ public class PlanRequest {
 
     @NotNull
     @Positive
-    private BigDecimal value;
+    private BigDecimal price;
 
     @NotNull
     @Positive
@@ -32,8 +32,8 @@ public class PlanRequest {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    public BigDecimal getValue() { return value; }
-    public void setValue(BigDecimal value) { this.value = value; }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
     public Integer getDuration() { return duration; }
     public void setDuration(Integer duration) { this.duration = duration; }
     public Boolean getActive() { return active; }

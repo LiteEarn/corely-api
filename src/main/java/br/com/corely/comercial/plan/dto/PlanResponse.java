@@ -9,7 +9,7 @@ public class PlanResponse {
     private UUID id;
     private String name;
     private String description;
-    private BigDecimal value;
+    private BigDecimal price;
     private Integer duration;
     private Integer version;
     private Boolean active;
@@ -18,13 +18,13 @@ public class PlanResponse {
 
     public PlanResponse() {}
 
-    public PlanResponse(UUID id, String name, String description, BigDecimal value,
+    public PlanResponse(UUID id, String name, String description, BigDecimal price,
                         Integer duration, Integer version, Boolean active,
                         LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.value = value;
+        this.price = price;
         this.duration = duration;
         this.version = version;
         this.active = active;
@@ -35,7 +35,7 @@ public class PlanResponse {
     public UUID getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
-    public BigDecimal getValue() { return value; }
+    public BigDecimal getPrice() { return price; }
     public Integer getDuration() { return duration; }
     public Integer getVersion() { return version; }
     public Boolean getActive() { return active; }

@@ -4,11 +4,13 @@ import br.com.corely.comercial.ComercialBaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "comercial_plans")
+@Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class Plan extends ComercialBaseEntity {
 
     @Column(name = "name", nullable = false)
@@ -17,8 +19,8 @@ public class Plan extends ComercialBaseEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "value", nullable = false, precision = 10, scale = 2)
-    private BigDecimal value;
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
 
     @Column(name = "duration", nullable = false)
     private Integer duration;
@@ -35,8 +37,8 @@ public class Plan extends ComercialBaseEntity {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    public BigDecimal getValue() { return value; }
-    public void setValue(BigDecimal value) { this.value = value; }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
     public Integer getDuration() { return duration; }
     public void setDuration(Integer duration) { this.duration = duration; }
     public Integer getVersion() { return version; }
