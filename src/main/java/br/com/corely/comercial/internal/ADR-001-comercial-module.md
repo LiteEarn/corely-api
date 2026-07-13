@@ -5,6 +5,10 @@
 ```
 br.com.corely.comercial/
 ├── ComercialBaseEntity.java          # Base entity com studio_id + @Filter de tenant
+├── contractsnapshot/
+│   ├── ContractSnapshot.java             # Snapshot imutável de contratação de plano
+│   ├── ContractSnapshotRepository.java
+│   └── ContractSnapshotService.java      # Criação interna (sem endpoints públicos)
 ├── config/
 │   ├── ComercialOpenApiGroupConfig.java  # Grupo Swagger para /comercial/**
 │   └── ComercialWebMvcConfig.java        # Registro do TenantInterceptor
@@ -12,7 +16,8 @@ br.com.corely.comercial/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
 │   ├── STORY-004-card.md                 # Card da STORY-004
-│   └── STORY-006-card.md                 # Card da STORY-006
+│   ├── STORY-006-card.md                 # Card da STORY-006
+│   └── STORY-007-card.md                 # Card da STORY-007
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -141,11 +146,17 @@ Grupo `comercial` no OpenAPI, visível em:
 - `RuleResult` — getters tipados: `getInteger`, `getBoolean`, `getString`, `getDecimal`
 - `RuleResolver` — conversão automática String → Java type com base no `ValueType` (BOOLEAN, INTEGER, DECIMAL, STRING, ENUM)
 - `RuleException` — exceção para regras obrigatórias ausentes ou códigos inexistentes
-- Regra obrigatória não configurada → `RuleException`
-- Regra opcional não configurada → `defaultValue` da `RuleDefinition` (ou `null` se não houver)
-- Durante a mesma chamada as regras são carregadas uma única vez
+- Durante a mesma chamada as regras são carregadas uma única vez (apenas as associadas ao plano, sem scan global)
 - Nenhuma lógica de cobrança, presença, StudentPlan ou cache distribuído
 - Sem migrations ou alterações estruturais
+
+### STORY-007 — Snapshot Contratual dos Planos (Jul/2026)
+- Pacote `br.com.corely.comercial.contractsnapshot`
+- `ContractSnapshot` — entidade imutável com: planId, planVersion, planName, planDescription, planPrice, planDuration, rules (JSON)
+- `ContractSnapshotService` — criação interna (sem endpoints públicos), usa `RuleEngine` para resolver regras e Jackson para serializar o JSON
+- Migration V31 — tabela `comercial_contract_snapshots` com índices em plan_id e created_at
+- Snapshot nunca pode ser atualizado ou excluído (sem update/delete no service)
+- Regras armazenadas como `Map<String, Object>` → JSON
 
 ## Histórias Futuras (Roadmap)
 

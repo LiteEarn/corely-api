@@ -7,7 +7,7 @@ public class RuleResult {
 
     private final Map<String, Object> resolvedValues;
 
-    RuleResult(Map<String, Object> resolvedValues) {
+    public RuleResult(Map<String, Object> resolvedValues) {
         this.resolvedValues = Collections.unmodifiableMap(new LinkedHashMap<>(resolvedValues));
     }
 
@@ -46,6 +46,10 @@ public class RuleResult {
 
     public boolean hasCode(String code) {
         return resolvedValues.containsKey(code);
+    }
+
+    public Map<String, Object> toMap() {
+        return new LinkedHashMap<>(resolvedValues);
     }
 
     private Object getValueOrThrow(String code) {
