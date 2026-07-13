@@ -11,7 +11,8 @@ br.com.corely.comercial/
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
-│   └── STORY-004-card.md                 # Card da STORY-004
+│   ├── STORY-004-card.md                 # Card da STORY-004
+│   └── STORY-006-card.md                 # Card da STORY-006
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -22,6 +23,11 @@ br.com.corely.comercial/
 │       └── PlanRuleResponse.java
 ├── rbac/
 │   └── ComercialPermission.java          # Permissões RBAC reservadas ao módulo
+├── ruleengine/
+│   ├── RuleEngine.java                   # Motor de regras — orquestra carga e resolução
+│   ├── RuleResult.java                   # Resultado tipado com getters por código
+│   ├── RuleResolver.java                 # Conversão String → Java type via ValueType
+│   └── RuleException.java                # Exceção para erros do motor
 └── tenant/
     ├── ComercialTenantContext.java       # Resolução de studioId exclusivamente do JWT
     ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
@@ -129,10 +135,21 @@ Grupo `comercial` no OpenAPI, visível em:
 - Migration V29 com FKs, UNIQUE constraint e índices
 - Nenhuma lógica do Rule Engine implementada
 
+### STORY-006 — Rule Engine - Motor de Regras Comerciais (Jul/2026)
+- Pacote `br.com.corely.comercial.ruleengine`
+- `RuleEngine` — facade que recebe Plan/PlanId, carrega PlanRules + RuleDefinitions ativas e produz `RuleResult`
+- `RuleResult` — getters tipados: `getInteger`, `getBoolean`, `getString`, `getDecimal`
+- `RuleResolver` — conversão automática String → Java type com base no `ValueType` (BOOLEAN, INTEGER, DECIMAL, STRING, ENUM)
+- `RuleException` — exceção para regras obrigatórias ausentes ou códigos inexistentes
+- Regra obrigatória não configurada → `RuleException`
+- Regra opcional não configurada → `defaultValue` da `RuleDefinition` (ou `null` se não houver)
+- Durante a mesma chamada as regras são carregadas uma única vez
+- Nenhuma lógica de cobrança, presença, StudentPlan ou cache distribuído
+- Sem migrations ou alterações estruturais
+
 ## Histórias Futuras (Roadmap)
 
-1. Rule Engine — Motor de regras configurável
-2. Frontend — Telas do módulo
+1. Frontend — Telas do módulo
 3. StudentPlan — Contratos de alunos
 4. Invoice — Faturamento
 5. Payment — Pagamentos
