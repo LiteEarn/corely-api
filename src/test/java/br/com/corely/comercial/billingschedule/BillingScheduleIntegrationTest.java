@@ -2,12 +2,12 @@ package br.com.corely.comercial.billingschedule;
 
 import br.com.corely.comercial.billingschedule.dto.BillingFrequencyDto;
 import br.com.corely.comercial.billingschedule.dto.BillingScheduleRequest;
+import br.com.corely.comercial.contract.ContractApplicationService;
 import br.com.corely.comercial.plan.Plan;
 import br.com.corely.comercial.plan.PlanRepository;
 import br.com.corely.comercial.planrule.PlanRule;
 import br.com.corely.comercial.planrule.PlanRuleRepository;
 import br.com.corely.comercial.ruledefinition.*;
-import br.com.corely.comercial.studentplan.StudentPlanService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
@@ -46,7 +46,7 @@ class BillingScheduleIntegrationTest {
     private BillingScheduleRepository billingScheduleRepository;
 
     @Autowired
-    private StudentPlanService studentPlanService;
+    private ContractApplicationService contractApplicationService;
 
     @Autowired
     private PlanRepository planRepository;
@@ -89,7 +89,7 @@ class BillingScheduleIntegrationTest {
         spRequest.setStudentId(student.getId());
         spRequest.setPlanId(plan.getId());
         spRequest.setStartDate(LocalDate.of(2026, 8, 15));
-        studentPlanId = studentPlanService.create(spRequest).getId();
+        studentPlanId = contractApplicationService.enroll(spRequest).getId();
     }
 
     @Test

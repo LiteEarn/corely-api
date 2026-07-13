@@ -1,6 +1,7 @@
 package br.com.corely.comercial.studentplan;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.comercial.contract.ContractApplicationService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
 import br.com.corely.user.UserRole;
@@ -19,11 +20,12 @@ import java.util.UUID;
 public class StudentPlanController {
 
     private final StudentPlanService studentPlanService;
+    private final ContractApplicationService contractApplicationService;
 
     @PostMapping
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<StudentPlanResponse> create(@Valid @RequestBody StudentPlanRequest request) {
-        var response = studentPlanService.create(request);
+        var response = contractApplicationService.enroll(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

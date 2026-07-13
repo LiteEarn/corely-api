@@ -1,7 +1,7 @@
 package br.com.corely.comercial.invoicegeneration;
 
-import br.com.corely.comercial.billingschedule.BillingSchedule;
 import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
+import br.com.corely.comercial.contract.ContractApplicationService;
 import br.com.corely.comercial.invoice.InvoiceRepository;
 import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.plan.Plan;
@@ -9,7 +9,6 @@ import br.com.corely.comercial.plan.PlanRepository;
 import br.com.corely.comercial.planrule.PlanRule;
 import br.com.corely.comercial.planrule.PlanRuleRepository;
 import br.com.corely.comercial.ruledefinition.*;
-import br.com.corely.comercial.studentplan.StudentPlanService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
@@ -49,7 +48,7 @@ class InvoiceGenerationIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private StudentPlanService studentPlanService;
+    private ContractApplicationService contractApplicationService;
 
     @Autowired
     private PlanRepository planRepository;
@@ -91,7 +90,7 @@ class InvoiceGenerationIntegrationTest {
         spRequest.setStudentId(student.getId());
         spRequest.setPlanId(plan.getId());
         spRequest.setStartDate(LocalDate.of(2026, 1, 15));
-        studentPlanId = studentPlanService.create(spRequest).getId();
+        studentPlanId = contractApplicationService.enroll(spRequest).getId();
     }
 
     @Test

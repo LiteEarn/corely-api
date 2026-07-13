@@ -4,12 +4,9 @@ import br.com.corely.comercial.billingschedule.dto.BillingFrequencyDto;
 import br.com.corely.comercial.billingschedule.dto.BillingScheduleRequest;
 import br.com.corely.comercial.billingschedule.dto.BillingScheduleResponse;
 import br.com.corely.comercial.studentplan.StudentPlan;
-import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
-import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
-import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,24 +20,16 @@ import java.util.UUID;
 public class BillingScheduleService {
 
     private final BillingScheduleRepository billingScheduleRepository;
-    private final StudentPlanRepository studentPlanRepository;
-    private final StudioRepository studioRepository;
-    private final ComercialTenantContext tenantContext;
 
-    @Transactional
-    public BillingScheduleResponse create(StudentPlan studentPlan, Integer billingDay) {
-        var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
-
+    public BillingSchedule createSchedule(StudentPlan studentPlan, Integer billingDay) {
         var schedule = new BillingSchedule();
-        schedule.setStudio(studio);
+        schedule.setStudio(studentPlan.getStudio());
         schedule.setStudentPlan(studentPlan);
         schedule.setFrequency(BillingFrequency.MONTHLY);
         schedule.setBillingDay(billingDay);
         schedule.setNextBillingDate(calculateNextBillingDate(studentPlan.getStartDate(), BillingFrequency.MONTHLY, billingDay));
         schedule.setActive(true);
-
-        schedule = billingScheduleRepository.save(schedule);
-        return toResponse(schedule);
+        return billingScheduleRepository.save(schedule);
     }
 
     @Transactional

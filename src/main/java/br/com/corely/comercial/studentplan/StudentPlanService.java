@@ -1,6 +1,5 @@
 package br.com.corely.comercial.studentplan;
 
-import br.com.corely.comercial.billingschedule.BillingScheduleService;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
@@ -25,7 +24,6 @@ public class StudentPlanService {
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
     private final ContractSnapshotService contractSnapshotService;
-    private final BillingScheduleService billingScheduleService;
     private final ComercialTenantContext tenantContext;
 
     @Transactional
@@ -50,8 +48,6 @@ public class StudentPlanService {
         enrollment.setStatus(StudentPlanStatus.ACTIVE);
 
         enrollment = studentPlanRepository.save(enrollment);
-
-        billingScheduleService.create(enrollment, request.getStartDate().getDayOfMonth());
 
         return toResponse(enrollment);
     }
@@ -110,6 +106,12 @@ public class StudentPlanService {
         return studentPlanRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public StudentPlan findEntityById(UUID id) {
+        return studentPlanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan not found"));
     }
 
     @Transactional(readOnly = true)

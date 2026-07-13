@@ -4,14 +4,10 @@ import br.com.corely.comercial.billingschedule.dto.BillingFrequencyDto;
 import br.com.corely.comercial.billingschedule.dto.BillingScheduleRequest;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
 import br.com.corely.comercial.studentplan.StudentPlan;
-import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
-import br.com.corely.comercial.tenant.ComercialTenantContext;
-import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.studio.Studio;
-import br.com.corely.studio.StudioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,18 +30,8 @@ class BillingScheduleServiceTest {
     @Mock
     private BillingScheduleRepository billingScheduleRepository;
 
-    @Mock
-    private StudentPlanRepository studentPlanRepository;
-
-    @Mock
-    private StudioRepository studioRepository;
-
-    @Mock
-    private ComercialTenantContext tenantContext;
-
     private BillingScheduleService service;
 
-    private UUID studioId;
     private Studio studio;
     private Student student;
     private ContractSnapshot snapshot;
@@ -54,11 +40,10 @@ class BillingScheduleServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BillingScheduleService(billingScheduleRepository, studentPlanRepository, studioRepository, tenantContext);
+        service = new BillingScheduleService(billingScheduleRepository);
 
-        studioId = UUID.randomUUID();
         studio = new Studio();
-        studio.setId(studioId);
+        studio.setId(UUID.randomUUID());
 
         student = new Student();
         student.setId(UUID.randomUUID());
@@ -77,26 +62,24 @@ class BillingScheduleServiceTest {
         studentPlan.setContractSnapshot(snapshot);
         studentPlan.setStatus(StudentPlanStatus.ACTIVE);
         studentPlan.setStartDate(LocalDate.of(2026, 8, 15));
+        studentPlan.setStudio(studio);
     }
 
     @Test
-    void create_shouldCreateSchedule() {
-        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
-        when(studioRepository.getReferenceById(studioId)).thenReturn(studio);
+    void createSchedule_shouldCreateSchedule() {
         when(billingScheduleRepository.save(any(BillingSchedule.class))).thenAnswer(inv -> {
             var bs = inv.getArgument(0, BillingSchedule.class);
             bs.setId(UUID.randomUUID());
             return bs;
         });
 
-        var response = service.create(studentPlan, 15);
+        var schedule = service.createSchedule(studentPlan, 15);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getFrequency()).isEqualTo(BillingFrequencyDto.MONTHLY);
-        assertThat(response.getBillingDay()).isEqualTo(15);
-        assertThat(response.getActive()).isTrue();
-        assertThat(response.getStudentName()).isEqualTo("Jane Doe");
-        assertThat(response.getPlanName()).isEqualTo("Gold Plan");
+        assertThat(schedule).isNotNull();
+        assertThat(schedule.getFrequency()).isEqualTo(BillingFrequency.MONTHLY);
+        assertThat(schedule.getBillingDay()).isEqualTo(15);
+        assertThat(schedule.getActive()).isTrue();
+        assertThat(schedule.getNextBillingDate()).isEqualTo(LocalDate.of(2026, 8, 15));
     }
 
     @Test
