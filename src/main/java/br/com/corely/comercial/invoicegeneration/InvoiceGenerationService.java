@@ -7,26 +7,32 @@ import br.com.corely.comercial.invoice.Invoice;
 import br.com.corely.comercial.invoice.InvoiceRepository;
 import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class InvoiceGenerationService {
 
     private static final Logger log = LoggerFactory.getLogger(InvoiceGenerationService.class);
 
     private final BillingScheduleRepository billingScheduleRepository;
     private final InvoiceRepository invoiceRepository;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
+    public InvoiceGenerationService(BillingScheduleRepository billingScheduleRepository,
+                                    InvoiceRepository invoiceRepository,
+                                    TransactionTemplate transactionTemplate) {
+        this.billingScheduleRepository = billingScheduleRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.transactionTemplate = transactionTemplate;
+    }
+
     public InvoiceGenerationResult process(LocalDate processingDate) {
         var result = new InvoiceGenerationResult();
         var schedules = billingScheduleRepository.findByActiveTrueAndNextBillingDateLessThanEqual(processingDate);
@@ -34,7 +40,10 @@ public class InvoiceGenerationService {
         for (var schedule : schedules) {
             result.incrementProcessed();
             try {
-                processSchedule(schedule, processingDate, result);
+                transactionTemplate.execute(status -> {
+                    processSchedule(schedule.getId(), processingDate, result);
+                    return null;
+                });
             } catch (Exception e) {
                 log.error("Error processing billing schedule {}: {}", schedule.getId(), e.getMessage(), e);
                 result.incrementErrors();
@@ -44,7 +53,9 @@ public class InvoiceGenerationService {
         return result;
     }
 
-    private void processSchedule(BillingSchedule schedule, LocalDate processingDate, InvoiceGenerationResult result) {
+    public void processSchedule(UUID scheduleId, LocalDate processingDate, InvoiceGenerationResult result) {
+        var schedule = billingScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("BillingSchedule not found: " + scheduleId));
         var studentPlan = schedule.getStudentPlan();
 
         if (studentPlan.getStatus() != StudentPlanStatus.ACTIVE) {
@@ -55,9 +66,7 @@ public class InvoiceGenerationService {
 
         var referenceMonth = schedule.getNextBillingDate().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-        Optional<Invoice> existing = invoiceRepository.findByStudentPlanIdAndReferenceMonth(
-                studentPlan.getId(), referenceMonth);
-        if (existing.isPresent()) {
+        if (invoiceRepository.findByStudentPlanIdAndReferenceMonth(studentPlan.getId(), referenceMonth).isPresent()) {
             log.warn("BillingSchedule {} skipped: invoice already exists for {}", schedule.getId(), referenceMonth);
             result.incrementSkipped();
             return;
