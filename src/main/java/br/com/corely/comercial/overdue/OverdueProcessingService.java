@@ -2,6 +2,7 @@ package br.com.corely.comercial.overdue;
 
 import br.com.corely.comercial.invoice.InvoiceRepository;
 import br.com.corely.comercial.invoice.InvoiceStatus;
+import br.com.corely.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,10 +32,12 @@ public class OverdueProcessingService {
         for (var invoice : invoices) {
             result.incrementProcessed();
             try {
-                transactionTemplate.execute(status -> {
-                    markAsOverdue(invoice.getId(), result);
-                    return null;
-                });
+                var outcome = transactionTemplate.execute(status -> markAsOverdue(invoice.getId()));
+                if (outcome == OverdueResult.SUCCESS) {
+                    result.incrementOverdue();
+                } else {
+                    result.incrementSkipped();
+                }
             } catch (Exception e) {
                 log.error("Error marking invoice {} as overdue: {}", invoice.getId(), e.getMessage(), e);
                 result.incrementErrors();
@@ -44,18 +47,22 @@ public class OverdueProcessingService {
         return result;
     }
 
-    public void markAsOverdue(UUID invoiceId, OverdueProcessingResult result) {
+    public OverdueResult markAsOverdue(UUID invoiceId) {
         var invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new RuntimeException("Invoice not found: " + invoiceId));
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
 
         if (invoice.getStatus() != InvoiceStatus.PENDING) {
             log.warn("Invoice {} skipped: status is {} (expected PENDING)", invoiceId, invoice.getStatus());
-            result.incrementSkipped();
-            return;
+            return OverdueResult.SKIPPED;
         }
 
         invoice.setStatus(InvoiceStatus.OVERDUE);
         invoiceRepository.save(invoice);
-        result.incrementOverdue();
+        return OverdueResult.SUCCESS;
+    }
+
+    enum OverdueResult {
+        SUCCESS,
+        SKIPPED
     }
 }

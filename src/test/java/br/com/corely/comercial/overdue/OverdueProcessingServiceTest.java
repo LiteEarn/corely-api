@@ -3,6 +3,7 @@ package br.com.corely.comercial.overdue;
 import br.com.corely.comercial.invoice.Invoice;
 import br.com.corely.comercial.invoice.InvoiceRepository;
 import br.com.corely.comercial.invoice.InvoiceStatus;
+import br.com.corely.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -68,61 +70,53 @@ class OverdueProcessingServiceTest {
     }
 
     @Test
-    void markAsOverdue_shouldChangeStatus() {
-        var result = new OverdueProcessingResult();
-
+    void markAsOverdue_shouldReturnSuccessAndChangeStatus() {
         when(invoiceRepository.findById(pendingInvoiceId)).thenReturn(Optional.of(pendingInvoice));
 
-        service.markAsOverdue(pendingInvoiceId, result);
+        var result = service.markAsOverdue(pendingInvoiceId);
 
+        assertThat(result).isEqualTo(OverdueProcessingService.OverdueResult.SUCCESS);
         assertThat(pendingInvoice.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
-        assertThat(result.getOverdue()).isEqualTo(1);
-        assertThat(result.getSkipped()).isEqualTo(0);
-        assertThat(result.getErrors()).isEqualTo(0);
-
         verify(invoiceRepository).save(pendingInvoice);
     }
 
     @Test
-    void markAsOverdue_shouldSkipWhenAlreadyPaid() {
-        var result = new OverdueProcessingResult();
-
+    void markAsOverdue_shouldReturnSkippedWhenAlreadyPaid() {
         when(invoiceRepository.findById(paidInvoice.getId())).thenReturn(Optional.of(paidInvoice));
 
-        service.markAsOverdue(paidInvoice.getId(), result);
+        var result = service.markAsOverdue(paidInvoice.getId());
 
-        assertThat(result.getOverdue()).isEqualTo(0);
-        assertThat(result.getSkipped()).isEqualTo(1);
-
+        assertThat(result).isEqualTo(OverdueProcessingService.OverdueResult.SKIPPED);
         verify(invoiceRepository, never()).save(any());
     }
 
     @Test
-    void markAsOverdue_shouldSkipWhenAlreadyCancelled() {
-        var result = new OverdueProcessingResult();
-
+    void markAsOverdue_shouldReturnSkippedWhenAlreadyCancelled() {
         when(invoiceRepository.findById(cancelledInvoice.getId())).thenReturn(Optional.of(cancelledInvoice));
 
-        service.markAsOverdue(cancelledInvoice.getId(), result);
+        var result = service.markAsOverdue(cancelledInvoice.getId());
 
-        assertThat(result.getOverdue()).isEqualTo(0);
-        assertThat(result.getSkipped()).isEqualTo(1);
-
+        assertThat(result).isEqualTo(OverdueProcessingService.OverdueResult.SKIPPED);
         verify(invoiceRepository, never()).save(any());
     }
 
     @Test
-    void markAsOverdue_shouldSkipWhenAlreadyOverdue() {
-        var result = new OverdueProcessingResult();
-
+    void markAsOverdue_shouldReturnSkippedWhenAlreadyOverdue() {
         when(invoiceRepository.findById(overdueInvoice.getId())).thenReturn(Optional.of(overdueInvoice));
 
-        service.markAsOverdue(overdueInvoice.getId(), result);
+        var result = service.markAsOverdue(overdueInvoice.getId());
 
-        assertThat(result.getOverdue()).isEqualTo(0);
-        assertThat(result.getSkipped()).isEqualTo(1);
-
+        assertThat(result).isEqualTo(OverdueProcessingService.OverdueResult.SKIPPED);
         verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void markAsOverdue_shouldThrowResourceNotFoundException() {
+        when(invoiceRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markAsOverdue(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Invoice not found");
     }
 
     @Test
