@@ -5,7 +5,6 @@ import br.com.corely.comercial.plan.PlanRepository;
 import br.com.corely.comercial.planrule.PlanRule;
 import br.com.corely.comercial.planrule.PlanRuleRepository;
 import br.com.corely.comercial.ruledefinition.*;
-import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
@@ -54,17 +53,12 @@ class RuleEngineIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private ComercialTenantContext tenantContext;
-
     private Studio studio;
     private Plan plan;
     private RuleDefinition validityDays;
     private RuleDefinition autoRenew;
     private RuleDefinition billingCycle;
-    private RuleDefinition maxClasses;
-    private RuleDefinition allowMakeup;
-    private RuleDefinition activeOnPayment;
+    private RuleDefinition pricePerClass;
 
     @BeforeEach
     void setUp() {
@@ -73,12 +67,10 @@ class RuleEngineIntegrationTest {
 
         plan = planRepository.save(createPlan("Engine Plan", BigDecimal.valueOf(99), 30));
 
-        validityDays = ruleDefinitionRepository.save(createRuleDef("VALIDITY_DAYS", ValueType.INTEGER, Category.VALIDITY, true, "30"));
-        autoRenew = ruleDefinitionRepository.save(createRuleDef("AUTO_RENEW", ValueType.BOOLEAN, Category.BILLING, true, "true"));
-        billingCycle = ruleDefinitionRepository.save(createRuleDef("BILLING_CYCLE", ValueType.STRING, Category.BILLING, true, "MONTHLY"));
-        maxClasses = ruleDefinitionRepository.save(createRuleDef("MAX_CLASSES", ValueType.INTEGER, Category.ATTENDANCE, true, "0"));
-        allowMakeup = ruleDefinitionRepository.save(createRuleDef("ALLOW_MAKEUP", ValueType.BOOLEAN, Category.CANCELLATION, false, null));
-        activeOnPayment = ruleDefinitionRepository.save(createRuleDef("ACTIVE_ON_PAYMENT", ValueType.BOOLEAN, Category.GENERAL, true, "true"));
+        validityDays = ruleDefinitionRepository.save(createRuleDef("VALIDITY_DAYS", ValueType.INTEGER));
+        autoRenew = ruleDefinitionRepository.save(createRuleDef("AUTO_RENEW", ValueType.BOOLEAN));
+        billingCycle = ruleDefinitionRepository.save(createRuleDef("BILLING_CYCLE", ValueType.STRING));
+        pricePerClass = ruleDefinitionRepository.save(createRuleDef("PRICE_PER_CLASS", ValueType.DECIMAL));
     }
 
     @Test
@@ -93,59 +85,6 @@ class RuleEngineIntegrationTest {
     }
 
     @Test
-    void evaluate_shouldUseDefaultValue_whenNotConfigured() {
-        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
-
-        RuleResult result = ruleEngine.evaluate(plan.getId());
-
-        assertThat(result.getInteger("VALIDITY_DAYS")).isEqualTo(30);
-        assertThat(result.getBoolean("AUTO_RENEW")).isTrue();
-        assertThat(result.getString("BILLING_CYCLE")).isEqualTo("MONTHLY");
-        assertThat(result.getInteger("MAX_CLASSES")).isZero();
-    }
-
-    @Test
-    void evaluate_shouldThrowRuleException_whenRequiredRuleMissing() {
-        RuleDefinition gracePeriod = ruleDefinitionRepository.save(
-                createRuleDef("GRACE_PERIOD_DAYS", ValueType.INTEGER, Category.BILLING, true, null));
-
-        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
-
-        RuleResult result = ruleEngine.evaluate(plan.getId());
-
-        assertThatThrownBy(() -> result.getInteger("GRACE_PERIOD_DAYS"))
-                .isInstanceOf(RuleException.class)
-                .hasMessageContaining("Required rule");
-    }
-
-    @Test
-    void evaluate_shouldReturnNull_whenOptionalRuleNotConfigured() {
-        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
-
-        RuleResult result = ruleEngine.evaluate(plan.getId());
-
-        assertThat(result.getBoolean("ALLOW_MAKEUP")).isNull();
-    }
-
-    @Test
-    void evaluate_shouldThrowRuleException_whenCodeNotFound() {
-        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
-
-        RuleResult result = ruleEngine.evaluate(plan.getId());
-
-        assertThatThrownBy(() -> result.getInteger("NONEXISTENT"))
-                .isInstanceOf(RuleException.class)
-                .hasMessageContaining("not found");
-    }
-
-    @Test
-    void evaluate_shouldThrowResourceNotFoundException_whenPlanNotFound() {
-        assertThatThrownBy(() -> ruleEngine.evaluate(UUID.randomUUID()))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Plan not found");
-    }
-
-    @Test
     void evaluate_shouldResolveStringValue() {
         planRuleRepository.save(createPlanRule(plan, billingCycle, "YEARLY"));
 
@@ -156,9 +95,6 @@ class RuleEngineIntegrationTest {
 
     @Test
     void evaluate_shouldResolveDecimalValue() {
-        RuleDefinition pricePerClass = ruleDefinitionRepository.save(
-                createRuleDef("PRICE_PER_CLASS", ValueType.DECIMAL, Category.BILLING, false, "15.50"));
-
         planRuleRepository.save(createPlanRule(plan, pricePerClass, "25.00"));
 
         RuleResult result = ruleEngine.evaluate(plan.getId());
@@ -167,32 +103,77 @@ class RuleEngineIntegrationTest {
     }
 
     @Test
-    void evaluate_shouldUsePlanRuleValueOverDefault() {
-        planRuleRepository.save(createPlanRule(plan, validityDays, "60"));
-
-        RuleResult result = ruleEngine.evaluate(plan.getId());
-
-        assertThat(result.getInteger("VALIDITY_DAYS")).isEqualTo(60);
-    }
-
-    @Test
-    void evaluate_shouldReturnAllCodes() {
+    void evaluate_shouldThrowRuleException_whenCodeNotInPlan() {
         planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
 
         RuleResult result = ruleEngine.evaluate(plan.getId());
 
-        assertThat(result.getCodes()).contains(
-                "VALIDITY_DAYS", "AUTO_RENEW", "BILLING_CYCLE", "MAX_CLASSES", "ACTIVE_ON_PAYMENT");
+        assertThatThrownBy(() -> result.getInteger("NONEXISTENT"))
+                .isInstanceOf(RuleException.class)
+                .hasMessageContaining("not found");
     }
 
     @Test
-    void evaluate_shouldBeTenantIsolated() {
-        Studio otherStudio = studioRepository.save(createStudio("Other Studio"));
-        Plan otherPlan = planRepository.save(createPlan("Other Plan", BigDecimal.valueOf(50), 15));
-        planRuleRepository.save(createPlanRule(otherPlan, validityDays, "999"));
+    void evaluate_shouldReturnOnlyPlanRulesCodes() {
+        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
 
         RuleResult result = ruleEngine.evaluate(plan.getId());
+
+        assertThat(result.getCodes()).containsExactly("VALIDITY_DAYS");
+        assertThat(result.hasCode("AUTO_RENEW")).isFalse();
+    }
+
+    @Test
+    void evaluate_shouldReturnEmpty_whenNoPlanRules() {
+        RuleResult result = ruleEngine.evaluate(plan.getId());
+
+        assertThat(result.getCodes()).isEmpty();
+    }
+
+    @Test
+    void evaluate_shouldThrowResourceNotFoundException_whenPlanNotFound() {
+        assertThatThrownBy(() -> ruleEngine.evaluate(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Plan not found");
+    }
+
+    @Test
+    void evaluate_shouldResolveMultiplePlanRules() {
+        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
+        planRuleRepository.save(createPlanRule(plan, autoRenew, "true"));
+        planRuleRepository.save(createPlanRule(plan, billingCycle, "MONTHLY"));
+        planRuleRepository.save(createPlanRule(plan, pricePerClass, "15.50"));
+
+        RuleResult result = ruleEngine.evaluate(plan.getId());
+
         assertThat(result.getInteger("VALIDITY_DAYS")).isEqualTo(30);
+        assertThat(result.getBoolean("AUTO_RENEW")).isTrue();
+        assertThat(result.getString("BILLING_CYCLE")).isEqualTo("MONTHLY");
+        assertThat(result.getDecimal("PRICE_PER_CLASS")).isEqualByComparingTo(new BigDecimal("15.50"));
+        assertThat(result.getCodes()).hasSize(4);
+    }
+
+    @Test
+    void evaluate_shouldNotIncludeRulesFromOtherPlans() {
+        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
+
+        Plan otherPlan = planRepository.save(createPlan("Other Plan", BigDecimal.valueOf(50), 15));
+        planRuleRepository.save(createPlanRule(otherPlan, autoRenew, "true"));
+
+        RuleResult result = ruleEngine.evaluate(plan.getId());
+
+        assertThat(result.getCodes()).containsExactly("VALIDITY_DAYS");
+    }
+
+    @Test
+    void evaluate_shouldNotReturnRulesFromOtherPlans() {
+        planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
+
+        RuleResult result = ruleEngine.evaluate(plan.getId());
+
+        assertThat(result.getCodes()).containsExactly("VALIDITY_DAYS");
+        assertThatThrownBy(() -> result.getString("BILLING_CYCLE"))
+                .isInstanceOf(RuleException.class);
     }
 
     private void authenticateAs(Studio studio, UserRole role) {
@@ -227,14 +208,12 @@ class RuleEngineIntegrationTest {
         return plan;
     }
 
-    private RuleDefinition createRuleDef(String code, ValueType valueType, Category category, boolean required, String defaultValue) {
+    private RuleDefinition createRuleDef(String code, ValueType valueType) {
         var rule = new RuleDefinition();
         rule.setCode(code);
         rule.setName(code);
         rule.setValueType(valueType);
-        rule.setCategory(category);
-        rule.setRequired(required);
-        rule.setDefaultValue(defaultValue);
+        rule.setCategory(Category.GENERAL);
         rule.setActive(true);
         return rule;
     }
