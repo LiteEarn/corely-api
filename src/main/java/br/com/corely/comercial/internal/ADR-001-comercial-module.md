@@ -19,7 +19,8 @@ br.com.corely.comercial/
 │   ├── STORY-006-card.md                 # Card da STORY-006
 │   ├── STORY-007-card.md                 # Card da STORY-007
 │   ├── STORY-008-card.md                 # Card da STORY-008
-│   └── STORY-009-card.md                 # Card da STORY-009
+│   ├── STORY-009-card.md                 # Card da STORY-009
+│   └── STORY-010-card.md                 # Card da STORY-010
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -58,6 +59,16 @@ br.com.corely.comercial/
 │   └── dto/
 │       ├── InvoiceRequest.java
 │       └── InvoiceResponse.java
+├── payment/
+│   ├── PaymentMethod.java                # Enum: CASH, PIX, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, BOLETO, OTHER
+│   ├── Payment.java                      # Liquidação de Invoice
+│   ├── PaymentRepository.java
+│   ├── PaymentService.java               # Altera Invoice para PAID ao registrar
+│   ├── PaymentController.java            # Endpoints em /comercial/payments
+│   └── dto/
+│       ├── PaymentRequest.java
+│       ├── PaymentMethodDto.java
+│       └── PaymentResponse.java
 ```
 
 ## Convenções Adotadas
@@ -204,8 +215,19 @@ Grupo `comercial` no OpenAPI, visível em:
 - RBAC: OWNER/ADMIN/FINANCIAL (criar/consultar/cancelar), RECEPTIONIST (apenas consulta)
 - Sem recorrência automática ou pagamento
 
+### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
+- Pacote `br.com.corely.comercial.payment`
+- Entidade `Payment` (estende `ComercialBaseEntity`) com FK única para `Invoice`
+- Enum `PaymentMethod`: CASH, PIX, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, BOLETO, OTHER
+- Ao registrar: cria Payment + altera Invoice para PAID (mesma transação)
+- Apenas Invoices PENDING podem ser pagas — valida status antes do duplicado
+- Valor do pagamento deve ser exatamente igual ao valor da Invoice
+- UNIQUE(invoice_id) — uma Invoice pode possuir apenas um Payment
+- Migration V34 com FKs, UNIQUE e índices
+- Endpoints: POST, GET (lista e por id)
+- RBAC: OWNER/ADMIN/FINANCIAL (criar/consultar), RECEPTIONIST (apenas consulta)
+
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
-2. Payment — Pagamentos
-3. Dashboard Financeiro
+2. Dashboard Financeiro
