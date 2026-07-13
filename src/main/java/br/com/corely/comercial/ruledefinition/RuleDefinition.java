@@ -33,7 +33,7 @@ public class RuleDefinition extends BaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
-    protected RuleDefinition() {}
+    public RuleDefinition() {}
 
     public String getCode() { return code; }
     public void setCode(String code) { this.code = code; }

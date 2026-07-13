@@ -9,7 +9,17 @@ br.com.corely.comercial/
 │   ├── ComercialOpenApiGroupConfig.java  # Grupo Swagger para /comercial/**
 │   └── ComercialWebMvcConfig.java        # Registro do TenantInterceptor
 ├── internal/
-│   └── ADR-001-comercial-module.md       # Este documento
+│   ├── ADR-001-comercial-module.md       # Este documento
+│   ├── STORY-003-card.md                 # Card da STORY-003
+│   └── STORY-004-card.md                 # Card da STORY-004
+├── planrule/
+│   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
+│   ├── PlanRuleRepository.java
+│   ├── PlanRuleService.java
+│   ├── PlanRuleController.java
+│   └── dto/
+│       ├── PlanRuleRequest.java
+│       └── PlanRuleResponse.java
 ├── rbac/
 │   └── ComercialPermission.java          # Permissões RBAC reservadas ao módulo
 └── tenant/
@@ -104,6 +114,20 @@ Grupo `comercial` no OpenAPI, visível em:
 - RECEPTIONIST e FINANCIAL possuem apenas leitura
 - Migration V25 (criação da tabela) + V28 (unique constraint)
 - Índices em: studio_id, active, name
+
+### STORY-004 — Configuração de Regras dos Planos (PlanRule) (Jul/2026)
+- Pacote `br.com.corely.comercial.planrule`
+- Entidade `PlanRule` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`PlanRuleRequest`, `PlanRuleResponse`)
+- Endpoints em `/comercial/plans/{planId}/rules`
+- Operações: Criar, Listar, Atualizar, Remover
+- Combinação (plan_id, rule_definition_id) única (constraint UNIQUE na migration V29)
+- Não permite associação com RuleDefinition inativa
+- Não permite associação duplicada
+- Apenas OWNER/ADMIN podem criar/alterar/remover
+- RECEPTIONIST e FINANCIAL possuem apenas consulta
+- Migration V29 com FKs, UNIQUE constraint e índices
+- Nenhuma lógica do Rule Engine implementada
 
 ## Histórias Futuras (Roadmap)
 

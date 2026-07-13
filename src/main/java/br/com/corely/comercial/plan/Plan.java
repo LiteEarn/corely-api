@@ -31,7 +31,7 @@ public class Plan extends ComercialBaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
-    protected Plan() {}
+    public Plan() {}
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
