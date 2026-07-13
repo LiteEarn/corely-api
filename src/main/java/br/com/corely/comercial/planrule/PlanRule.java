@@ -23,7 +23,7 @@ public class PlanRule extends ComercialBaseEntity {
     @Column(name = "rule_value", nullable = false, length = 500)
     private String value;
 
-    protected PlanRule() {}
+    public PlanRule() {}
 
     public Plan getPlan() { return plan; }
     public void setPlan(Plan plan) { this.plan = plan; }
