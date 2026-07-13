@@ -164,51 +164,93 @@ class BillingScheduleServiceTest {
     }
 
     @Test
-    void calculateNextBillingDate_shouldReturnSameMonthForWeekly() {
-        var start = LocalDate.of(2026, 8, 15);
-        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.WEEKLY, 15);
-        assertThat(result).isEqualTo(LocalDate.of(2026, 8, 15));
+    void billingDayBeforeStartDate_shouldAdvanceToNextMonth() {
+        var start = LocalDate.of(2026, 1, 15);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.MONTHLY, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 2, 10));
     }
 
     @Test
-    void calculateNextBillingDate_shouldReturnTwoWeeksLaterForBiweekly() {
-        var start = LocalDate.of(2026, 8, 15);
-        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.BIWEEKLY, 15);
-        assertThat(result).isEqualTo(LocalDate.of(2026, 8, 29));
+    void billingDayAfterStartDate_shouldUseSameMonth() {
+        var start = LocalDate.of(2026, 1, 5);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.MONTHLY, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 1, 10));
     }
 
     @Test
-    void calculateNextBillingDate_shouldReturnSameMonthDayForMonthly() {
+    void billingDayEqualToStartDate_shouldUseSameMonth() {
         var start = LocalDate.of(2026, 8, 15);
         var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.MONTHLY, 15);
         assertThat(result).isEqualTo(LocalDate.of(2026, 8, 15));
     }
 
     @Test
-    void calculateNextBillingDate_shouldReturnThreeMonthsLaterForQuarterly() {
-        var start = LocalDate.of(2026, 8, 15);
-        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.QUARTERLY, 15);
-        assertThat(result).isEqualTo(LocalDate.of(2026, 11, 15));
-    }
-
-    @Test
-    void calculateNextBillingDate_shouldReturnSixMonthsLaterForSemiannual() {
-        var start = LocalDate.of(2026, 8, 15);
-        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.SEMIANNUAL, 15);
-        assertThat(result).isEqualTo(LocalDate.of(2027, 2, 15));
-    }
-
-    @Test
-    void calculateNextBillingDate_shouldReturnOneYearLaterForAnnual() {
-        var start = LocalDate.of(2026, 8, 15);
-        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.ANNUAL, 15);
-        assertThat(result).isEqualTo(LocalDate.of(2027, 8, 15));
-    }
-
-    @Test
-    void calculateNextBillingDate_shouldClampBillingDayToMonthLength() {
-        var start = LocalDate.of(2026, 1, 31);
+    void billingDay31InMonthWith30Days_shouldClampTo30() {
+        var start = LocalDate.of(2026, 4, 20);
         var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.MONTHLY, 31);
-        assertThat(result).isEqualTo(LocalDate.of(2026, 1, 31));
+        assertThat(result).isEqualTo(LocalDate.of(2026, 4, 30));
+    }
+
+    @Test
+    void billingDay31InFebruaryNonLeap_shouldClampTo28() {
+        var start = LocalDate.of(2026, 2, 1);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.MONTHLY, 31);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 2, 28));
+    }
+
+    @Test
+    void billingDay31InFebruaryLeap_shouldClampTo29() {
+        var start = LocalDate.of(2024, 2, 1);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.MONTHLY, 31);
+        assertThat(result).isEqualTo(LocalDate.of(2024, 2, 29));
+    }
+
+    @Test
+    void weekly_billingDayBeforeStart_shouldAdvanceToNextMonth() {
+        var start = LocalDate.of(2026, 1, 15);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.WEEKLY, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 2, 10));
+    }
+
+    @Test
+    void weekly_billingDayAfterStart_shouldUseSameMonth() {
+        var start = LocalDate.of(2026, 1, 5);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.WEEKLY, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 1, 10));
+    }
+
+    @Test
+    void biweekly_shouldAddTwoWeeksThenAdjust() {
+        var start = LocalDate.of(2026, 1, 15);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.BIWEEKLY, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 2, 10));
+    }
+
+    @Test
+    void quarterly_shouldAddThreeMonthsThenAdjust() {
+        var start = LocalDate.of(2026, 1, 15);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.QUARTERLY, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 4, 10));
+    }
+
+    @Test
+    void semiannual_shouldAddSixMonthsThenAdjust() {
+        var start = LocalDate.of(2026, 1, 15);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.SEMIANNUAL, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2026, 7, 10));
+    }
+
+    @Test
+    void annual_shouldAddOneYearThenAdjust() {
+        var start = LocalDate.of(2026, 1, 15);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.ANNUAL, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2027, 1, 10));
+    }
+
+    @Test
+    void annual_billingDayAfterStart_shouldUseSameMonth() {
+        var start = LocalDate.of(2026, 1, 5);
+        var result = BillingScheduleService.calculateNextBillingDate(start, BillingFrequency.ANNUAL, 10);
+        assertThat(result).isEqualTo(LocalDate.of(2027, 1, 10));
     }
 }
