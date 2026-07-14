@@ -1,6 +1,5 @@
 package br.com.corely.comercial.contractrenewal;
 
-import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
 import br.com.corely.comercial.billingschedule.BillingScheduleService;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.invoice.InvoiceRepository;
@@ -9,6 +8,7 @@ import br.com.corely.comercial.plan.PlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,6 @@ public class ContractRenewalService {
     private final PlanRepository planRepository;
     private final ContractSnapshotService contractSnapshotService;
     private final BillingScheduleService billingScheduleService;
-    private final BillingScheduleRepository billingScheduleRepository;
     private final TransactionTemplate transactionTemplate;
 
     public ContractRenewalService(StudentPlanRepository studentPlanRepository,
@@ -34,14 +33,12 @@ public class ContractRenewalService {
                                   PlanRepository planRepository,
                                   ContractSnapshotService contractSnapshotService,
                                   BillingScheduleService billingScheduleService,
-                                  BillingScheduleRepository billingScheduleRepository,
                                   TransactionTemplate transactionTemplate) {
         this.studentPlanRepository = studentPlanRepository;
         this.invoiceRepository = invoiceRepository;
         this.planRepository = planRepository;
         this.contractSnapshotService = contractSnapshotService;
         this.billingScheduleService = billingScheduleService;
-        this.billingScheduleRepository = billingScheduleRepository;
         this.transactionTemplate = transactionTemplate;
     }
 
@@ -69,7 +66,7 @@ public class ContractRenewalService {
     private void processRenewal(StudentPlan studentPlan, ContractRenewalResult result) {
         var snapshot = studentPlan.getContractSnapshot();
         var plan = planRepository.findById(snapshot.getPlanId())
-                .orElseThrow(() -> new RuntimeException("Plan not found: " + snapshot.getPlanId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
         if (!plan.getAutoRenew()) {
             log.info("StudentPlan {} skipped: plan {} does not allow auto-renewal",
@@ -93,16 +90,7 @@ public class ContractRenewalService {
         studentPlan.setContractSnapshot(newSnapshot);
         studentPlanRepository.save(studentPlan);
 
-        var existingSchedule = billingScheduleRepository.findByStudentPlanId(studentPlan.getId());
-        if (existingSchedule.isPresent()) {
-            var schedule = existingSchedule.get();
-            if (!schedule.getActive()) {
-                schedule.setActive(true);
-                billingScheduleRepository.save(schedule);
-            }
-        } else {
-            billingScheduleService.createSchedule(studentPlan, studentPlan.getStartDate().getDayOfMonth());
-        }
+        billingScheduleService.renewSchedule(studentPlan);
 
         log.info("StudentPlan {} renewed: new endDate {}, new snapshot {}",
                 studentPlan.getId(), newEndDate, newSnapshot.getId());

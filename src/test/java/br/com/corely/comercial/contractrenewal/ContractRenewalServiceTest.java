@@ -1,7 +1,5 @@
 package br.com.corely.comercial.contractrenewal;
 
-import br.com.corely.comercial.billingschedule.BillingSchedule;
-import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
 import br.com.corely.comercial.billingschedule.BillingScheduleService;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
@@ -49,9 +47,6 @@ class ContractRenewalServiceTest {
     private BillingScheduleService billingScheduleService;
 
     @Mock
-    private BillingScheduleRepository billingScheduleRepository;
-
-    @Mock
     private TransactionTemplate transactionTemplate;
 
     private ContractRenewalService service;
@@ -69,7 +64,7 @@ class ContractRenewalServiceTest {
         service = new ContractRenewalService(
                 studentPlanRepository, invoiceRepository, planRepository,
                 contractSnapshotService, billingScheduleService,
-                billingScheduleRepository, transactionTemplate);
+                transactionTemplate);
 
         plan = new Plan();
         plan.setId(UUID.randomUUID());
@@ -129,8 +124,6 @@ class ContractRenewalServiceTest {
                 .thenReturn(List.of());
         when(contractSnapshotService.create(plan.getId()))
                 .thenReturn(newSnapshot);
-        when(billingScheduleRepository.findByStudentPlanId(activePlan.getId()))
-                .thenReturn(Optional.empty());
         when(transactionTemplate.execute(any())).thenAnswer(inv -> {
             var callback = inv.getArgument(0, org.springframework.transaction.support.TransactionCallback.class);
             return callback.doInTransaction(null);
@@ -145,7 +138,7 @@ class ContractRenewalServiceTest {
         assertThat(activePlan.getEndDate()).isEqualTo(LocalDate.of(2026, 7, 31));
         assertThat(activePlan.getContractSnapshot()).isEqualTo(newSnapshot);
         verify(studentPlanRepository).save(activePlan);
-        verify(billingScheduleService).createSchedule(activePlan, 1);
+        verify(billingScheduleService).renewSchedule(activePlan);
     }
 
     @Test
@@ -225,8 +218,6 @@ class ContractRenewalServiceTest {
                 .thenReturn(List.of(overdueInvoice));
         when(contractSnapshotService.create(plan.getId()))
                 .thenReturn(newSnapshot);
-        when(billingScheduleRepository.findByStudentPlanId(activePlan.getId()))
-                .thenReturn(Optional.empty());
         when(transactionTemplate.execute(any())).thenAnswer(inv -> {
             var callback = inv.getArgument(0, org.springframework.transaction.support.TransactionCallback.class);
             return callback.doInTransaction(null);
@@ -240,38 +231,6 @@ class ContractRenewalServiceTest {
         assertThat(result.getErrors()).isEqualTo(0);
         verify(studentPlanRepository).save(activePlan);
         verify(studentPlanRepository, never()).save(activePlanWithOverdue);
-    }
-
-    @Test
-    void process_shouldReactivateInactiveBillingSchedule() {
-        var processingDate = LocalDate.of(2026, 7, 14);
-        var existingSchedule = new BillingSchedule();
-        existingSchedule.setActive(false);
-
-        when(studentPlanRepository.findByStatusAndEndDateLessThanEqual(
-                StudentPlanStatus.ACTIVE, processingDate))
-                .thenReturn(List.of(activePlan));
-        when(planRepository.findById(oldSnapshot.getPlanId()))
-                .thenReturn(Optional.of(plan));
-        when(invoiceRepository.findByStudentPlanIdAndStatusOrderByDueDateAsc(
-                activePlan.getId(), InvoiceStatus.OVERDUE))
-                .thenReturn(List.of());
-        when(contractSnapshotService.create(plan.getId()))
-                .thenReturn(newSnapshot);
-        when(billingScheduleRepository.findByStudentPlanId(activePlan.getId()))
-                .thenReturn(Optional.of(existingSchedule));
-        when(transactionTemplate.execute(any())).thenAnswer(inv -> {
-            var callback = inv.getArgument(0, org.springframework.transaction.support.TransactionCallback.class);
-            return callback.doInTransaction(null);
-        });
-
-        var result = service.process(processingDate);
-
-        assertThat(result.getProcessed()).isEqualTo(1);
-        assertThat(result.getRenewed()).isEqualTo(1);
-        assertThat(existingSchedule.getActive()).isTrue();
-        verify(billingScheduleRepository).save(existingSchedule);
-        verify(billingScheduleService, never()).createSchedule(any(), anyInt());
     }
 
     @Test
@@ -311,10 +270,8 @@ class ContractRenewalServiceTest {
     }
 
     @Test
-    void process_shouldKeepActiveBillingScheduleActive() {
+    void process_shouldDelegateBillingScheduleRenewal() {
         var processingDate = LocalDate.of(2026, 7, 14);
-        var existingSchedule = new BillingSchedule();
-        existingSchedule.setActive(true);
 
         when(studentPlanRepository.findByStatusAndEndDateLessThanEqual(
                 StudentPlanStatus.ACTIVE, processingDate))
@@ -326,19 +283,14 @@ class ContractRenewalServiceTest {
                 .thenReturn(List.of());
         when(contractSnapshotService.create(plan.getId()))
                 .thenReturn(newSnapshot);
-        when(billingScheduleRepository.findByStudentPlanId(activePlan.getId()))
-                .thenReturn(Optional.of(existingSchedule));
         when(transactionTemplate.execute(any())).thenAnswer(inv -> {
             var callback = inv.getArgument(0, org.springframework.transaction.support.TransactionCallback.class);
             return callback.doInTransaction(null);
         });
 
-        var result = service.process(processingDate);
+        service.process(processingDate);
 
-        assertThat(result.getProcessed()).isEqualTo(1);
-        assertThat(result.getRenewed()).isEqualTo(1);
-        assertThat(existingSchedule.getActive()).isTrue();
-        verify(billingScheduleRepository, never()).save(any());
+        verify(billingScheduleService).renewSchedule(activePlan);
         verify(billingScheduleService, never()).createSchedule(any(), anyInt());
     }
 }
