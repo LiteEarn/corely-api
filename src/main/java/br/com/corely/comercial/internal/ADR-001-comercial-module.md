@@ -49,6 +49,9 @@ br.com.corely.comercial/
 ├── contractrenewal/
 │   ├── ContractRenewalResult.java        # DTO com contadores processed/renewed/skipped/errors
 │   └── ContractRenewalService.java       # Serviço interno de renovação automática de contratos
+├── contractexpiration/
+│   ├── ContractExpirationResult.java     # DTO com contadores processed/finished/skipped/errors
+│   └── ContractExpirationService.java    # Serviço interno de encerramento automático de contratos
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -64,7 +67,8 @@ br.com.corely.comercial/
 │   ├── STORY-014-card.md                 # Card da STORY-014
 │   ├── STORY-015-card.md                 # Card da STORY-015
 │   ├── STORY-016-card.md                 # Card da STORY-016
-│   └── STORY-017-card.md                 # Card da STORY-017
+│   ├── STORY-017-card.md                 # Card da STORY-017
+│   └── STORY-018-card.md                 # Card da STORY-018
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -360,6 +364,20 @@ Grupo `comercial` no OpenAPI, visível em:
 - Migration V34 com FKs, UNIQUE e índices
 - Endpoints: POST, GET (lista e por id)
 - RBAC: OWNER/ADMIN/FINANCIAL (criar/consultar), RECEPTIONIST (apenas consulta)
+
+### STORY-018 — Encerramento Automático de Contratos (Jul/2026)
+- Pacote `br.com.corely.comercial.contractexpiration`
+- `ContractExpirationService` — serviço interno (sem endpoint público)
+- `ContractExpirationResult` — contadores: processed, finished, skipped, errors
+- Busca StudentPlans ACTIVE com endDate < processingDate
+- Para cada contrato: verifica autoRenew do plano; se false, finaliza contrato (FINISHED), desativa BillingSchedule, remove bookingBlocked
+- Se autoRenew = true, ignora (renovação automática tratará)
+- Cada contrato processado em transação independente (TransactionTemplate)
+- Erro em um contrato não interrompe os demais
+- Sem migration nova — reutiliza coluna auto_renew da V39
+- `StudentPlanRepository.findByStatusAndEndDateBefore(Status, LocalDate)` adicionado
+- `BillingScheduleService.deactivateSchedule(StudentPlan)` adicionado
+- Testes unitários (8) e de integração (8)
 
 ## Histórias Futuras (Roadmap)
 
