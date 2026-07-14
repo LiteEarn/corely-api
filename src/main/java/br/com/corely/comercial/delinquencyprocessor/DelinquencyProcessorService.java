@@ -88,14 +88,15 @@ public class DelinquencyProcessorService {
         switch (policy.getAction()) {
             case NONE -> result.incrementSkipped();
             case BLOCK_NEW_BOOKINGS -> {
-                // Ação de bloqueio de novos agendamentos
-                // Por enquanto apenas registramos, a implementação do bloqueio será em outra história
+                studentPlan.setBookingBlocked(true);
+                studentPlanRepository.save(studentPlan);
                 log.info("BLOCK_NEW_BOOKINGS action applied for StudentPlan {}", studentPlan.getId());
                 result.incrementBlocked();
             }
             case SUSPEND_CONTRACT -> {
                 if (studentPlan.getStatus() == StudentPlanStatus.ACTIVE) {
                     studentPlan.setStatus(StudentPlanStatus.SUSPENDED);
+                    studentPlanRepository.save(studentPlan);
                     log.info("StudentPlan {} suspended due to delinquency", studentPlan.getId());
                     result.incrementSuspended();
                 } else {

@@ -114,6 +114,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSkipped()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
         assertThat(activePlan.getStatus()).isEqualTo(StudentPlanStatus.SUSPENDED);
+        verify(studentPlanRepository).save(activePlan);
     }
 
     @Test
@@ -139,7 +140,9 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSuspended()).isEqualTo(0);
         assertThat(result.getSkipped()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
+        assertThat(activePlan.getBookingBlocked()).isTrue();
         assertThat(activePlan.getStatus()).isEqualTo(StudentPlanStatus.ACTIVE);
+        verify(studentPlanRepository).save(activePlan);
     }
 
     @Test
@@ -165,6 +168,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getBlocked()).isEqualTo(0);
         assertThat(result.getSkipped()).isEqualTo(1);
         assertThat(result.getErrors()).isEqualTo(0);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -190,6 +194,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSkipped()).isEqualTo(1);
         assertThat(result.getErrors()).isEqualTo(0);
         assertThat(activePlan.getStatus()).isEqualTo(StudentPlanStatus.ACTIVE);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -213,6 +218,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSuspended()).isEqualTo(0);
         assertThat(result.getBlocked()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -237,6 +243,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSkipped()).isEqualTo(1);
         assertThat(result.getSuspended()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -264,6 +271,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSkipped()).isEqualTo(1);
         assertThat(result.getSuspended()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -278,6 +286,7 @@ class DelinquencyProcessorServiceTest {
 
         assertThat(result.getProcessed()).isEqualTo(2);
         assertThat(result.getErrors()).isEqualTo(2);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -294,5 +303,6 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getBlocked()).isEqualTo(0);
         assertThat(result.getSkipped()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
+        verify(studentPlanRepository, never()).save(any());
     }
 }

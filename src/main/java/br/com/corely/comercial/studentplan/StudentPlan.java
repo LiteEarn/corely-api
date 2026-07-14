@@ -37,6 +37,9 @@ public class StudentPlan extends ComercialBaseEntity {
     @Column(name = "cancellation_reason", length = 500)
     private String cancellationReason;
 
+    @Column(name = "booking_blocked", nullable = false)
+    private Boolean bookingBlocked = false;
+
     public StudentPlan() {}
 
     public Student getStudent() { return student; }
@@ -53,4 +56,6 @@ public class StudentPlan extends ComercialBaseEntity {
     public void setCancellationDate(LocalDate cancellationDate) { this.cancellationDate = cancellationDate; }
     public String getCancellationReason() { return cancellationReason; }
     public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
+    public Boolean getBookingBlocked() { return bookingBlocked; }
+    public void setBookingBlocked(Boolean bookingBlocked) { this.bookingBlocked = bookingBlocked; }
 }

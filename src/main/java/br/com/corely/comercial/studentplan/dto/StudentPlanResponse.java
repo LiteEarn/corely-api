@@ -18,6 +18,7 @@ public class StudentPlanResponse {
     private StudentPlanStatus status;
     private LocalDate cancellationDate;
     private String cancellationReason;
+    private Boolean bookingBlocked;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -26,7 +27,8 @@ public class StudentPlanResponse {
     public StudentPlanResponse(UUID id, UUID studentId, String studentName, UUID contractSnapshotId,
                                String snapshotName, LocalDate startDate, LocalDate endDate,
                                StudentPlanStatus status, LocalDate cancellationDate,
-                               String cancellationReason, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                               String cancellationReason, Boolean bookingBlocked,
+                               LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.studentId = studentId;
         this.studentName = studentName;
@@ -37,6 +39,7 @@ public class StudentPlanResponse {
         this.status = status;
         this.cancellationDate = cancellationDate;
         this.cancellationReason = cancellationReason;
+        this.bookingBlocked = bookingBlocked;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -51,6 +54,7 @@ public class StudentPlanResponse {
     public StudentPlanStatus getStatus() { return status; }
     public LocalDate getCancellationDate() { return cancellationDate; }
     public String getCancellationReason() { return cancellationReason; }
+    public Boolean getBookingBlocked() { return bookingBlocked; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
