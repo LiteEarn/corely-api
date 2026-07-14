@@ -43,6 +43,9 @@ br.com.corely.comercial/
 ├── delinquencyprocessor/
 │   ├── DelinquencyProcessorResult.java   # DTO com contadores processed/suspended/blocked/skipped/errors
 │   └── DelinquencyProcessorService.java  # Serviço interno de aplicação de política de inadimplência
+├── contractreactivation/
+│   ├── ContractReactivationResult.java   # DTO com contadores processed/reactivated/skipped/errors
+│   └── ContractReactivationService.java  # Serviço interno de reativação automática de contratos
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -56,7 +59,8 @@ br.com.corely.comercial/
 │   ├── STORY-012-card.md                 # Card da STORY-012
 │   ├── STORY-013-card.md                 # Card da STORY-013
 │   ├── STORY-014-card.md                 # Card da STORY-014
-│   └── STORY-015-card.md                 # Card da STORY-015
+│   ├── STORY-015-card.md                 # Card da STORY-015
+│   └── STORY-016-card.md                 # Card da STORY-016
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -312,6 +316,18 @@ Grupo `comercial` no OpenAPI, visível em:
 - `InvoiceRepository.findByStudentPlanIdAndStatusOrderByDueDateAsc(UUID, InvoiceStatus)` adicionado
 - Erro em um contrato não interrompe os demais
 - Testes unitários (9) e de integração (6)
+
+### STORY-016 — Reativação Automática de Contratos (Jul/2026)
+- Pacote `br.com.corely.comercial.contractreactivation`
+- `ContractReactivationService` — serviço interno (sem endpoint público)
+- `ContractReactivationResult` — contadores: processed, reactivated, skipped, errors
+- Busca StudentPlans SUSPENDED, verifica existência de Invoices OVERDUE
+- Se não houver OVERDUE: reativa (ACTIVE) e remove bookingBlocked
+- Se ainda houver OVERDUE: skip
+- Cada contrato processado em transação independente (TransactionTemplate)
+- Erro em um contrato não interrompe os demais
+- Sem migration nova — reutiliza coluna booking_blocked da V37
+- Testes unitários (5) e de integração (3)
 
 ### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
 - Pacote `br.com.corely.comercial.payment`
