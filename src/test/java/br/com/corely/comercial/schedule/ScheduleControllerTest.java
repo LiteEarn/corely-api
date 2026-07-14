@@ -182,9 +182,9 @@ class ScheduleControllerTest {
     }
 
     @Test
-    void delete_shouldReturn409_whenAlreadyInactive() throws Exception {
+    void delete_shouldReturn204_whenAlreadyInactive() throws Exception {
         mockMvc.perform(delete("/comercial/schedules/{id}", inactiveSchedule.getId()))
-                .andExpect(status().isConflict());
+                .andExpect(status().isNoContent());
     }
 
     @Test

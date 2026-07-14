@@ -200,12 +200,13 @@ class ScheduleServiceTest {
     }
 
     @Test
-    void delete_shouldThrowException_whenAlreadyInactive() {
+    void delete_shouldBeIdempotent_whenAlreadyInactive() {
         scheduleService.delete(existingSchedule.getId());
 
-        assertThatThrownBy(() -> scheduleService.delete(existingSchedule.getId()))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("Schedule is already inactive");
+        scheduleService.delete(existingSchedule.getId());
+
+        var entity = scheduleRepository.findById(existingSchedule.getId()).orElseThrow();
+        assertThat(entity.getActive()).isFalse();
     }
 
     @Test

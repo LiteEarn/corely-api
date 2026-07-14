@@ -83,11 +83,10 @@ public class ScheduleService {
     public void delete(UUID id) {
         var schedule = scheduleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
-        if (!schedule.getActive()) {
-            throw new BusinessException("Schedule is already inactive");
+        if (schedule.getActive()) {
+            schedule.setActive(false);
+            scheduleRepository.save(schedule);
         }
-        schedule.setActive(false);
-        scheduleRepository.save(schedule);
     }
 
     private void validateUniqueName(UUID id, String name) {
