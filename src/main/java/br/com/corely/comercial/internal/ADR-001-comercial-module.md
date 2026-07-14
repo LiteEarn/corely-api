@@ -40,6 +40,9 @@ br.com.corely.comercial/
 ├── overdue/
 │   ├── OverdueProcessingResult.java      # DTO com contadores processed/overdue/skipped/errors
 │   └── OverdueProcessingService.java     # Serviço interno de processamento de inadimplência
+├── delinquencyprocessor/
+│   ├── DelinquencyProcessorResult.java   # DTO com contadores processed/suspended/blocked/skipped/errors
+│   └── DelinquencyProcessorService.java  # Serviço interno de aplicação de política de inadimplência
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -52,7 +55,8 @@ br.com.corely.comercial/
 │   ├── STORY-011-card.md                 # Card da STORY-011
 │   ├── STORY-012-card.md                 # Card da STORY-012
 │   ├── STORY-013-card.md                 # Card da STORY-013
-│   └── STORY-014-card.md                 # Card da STORY-014
+│   ├── STORY-014-card.md                 # Card da STORY-014
+│   └── STORY-015-card.md                 # Card da STORY-015
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -295,6 +299,19 @@ Grupo `comercial` no OpenAPI, visível em:
 - Endpoints: GET (consulta/criação automática), PUT (atualização)
 - RBAC: OWNER/ADMIN (consultar/alterar), FINANCIAL (apenas consulta)
 - Testes unitários (4) e de integração (5)
+
+### STORY-015 — Processador de Inadimplência (Delinquency Processor) (Jul/2026)
+- Pacote `br.com.corely.comercial.delinquencyprocessor`
+- `DelinquencyProcessorService` — serviço interno (sem endpoint público)
+- `DelinquencyProcessorResult` — contadores: processed, suspended, blocked, skipped, errors
+- Para StudentPlans ACTIVE com faturas OVERDUE, busca DelinquencyPolicy do Studio
+- Respeita gracePeriodDays antes de aplicar ação
+- Ações: SUSPEND_CONTRACT (suspende StudentPlan), BLOCK_NEW_BOOKINGS (apenas registro), NONE (skip)
+- Cada contrato processado em transação independente (TransactionTemplate)
+- `StudentPlanRepository.findByStatus(StudentPlanStatus)` adicionado
+- `InvoiceRepository.findByStudentPlanIdAndStatusOrderByDueDateAsc(UUID, InvoiceStatus)` adicionado
+- Erro em um contrato não interrompe os demais
+- Testes unitários (9) e de integração (6)
 
 ### STORY-010 — Payment (Liquidação de Invoice) (Jul/2026)
 - Pacote `br.com.corely.comercial.payment`
