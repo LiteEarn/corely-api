@@ -79,6 +79,14 @@ br.com.corely.comercial/
 │       └── PlanRuleResponse.java
 ├── rbac/
 │   └── ComercialPermission.java          # Permissões RBAC reservadas ao módulo
+├── schedule/
+│   ├── Schedule.java                     # Agenda base do Corely
+│   ├── ScheduleRepository.java
+│   ├── ScheduleService.java              # CRUD de agendas
+│   ├── ScheduleController.java           # Endpoints em /comercial/schedules
+│   └── dto/
+│       ├── ScheduleRequest.java
+│       └── ScheduleResponse.java
 ├── ruleengine/
 │   ├── RuleEngine.java                   # Motor de regras — orquestra carga e resolução
 │   ├── RuleResult.java                   # Resultado tipado com getters por código
@@ -163,6 +171,8 @@ Permissões reservadas no enum `ComercialPermission`:
 | COMMERCIAL_PAYMENT_WRITE | Registrar pagamentos |
 | COMMERCIAL_BILLING_SCHEDULE_READ | Visualizar agenda de cobrança |
 | COMMERCIAL_BILLING_SCHEDULE_WRITE | Alterar agenda de cobrança |
+| COMMERCIAL_SCHEDULE_READ | Visualizar agendas |
+| COMMERCIAL_SCHEDULE_WRITE | Criar/editar/excluir agendas |
 | COMMERCIAL_DASHBOARD_VIEW | Visualizar dashboard financeiro |
 
 A integração destas permissões com o sistema RBAC existente
@@ -378,6 +388,22 @@ Grupo `comercial` no OpenAPI, visível em:
 - `StudentPlanRepository.findByStatusAndEndDateBefore(Status, LocalDate)` adicionado
 - `BillingScheduleService.deactivateSchedule(StudentPlan)` adicionado
 - Testes unitários (8) e de integração (8)
+
+### STORY-019 — Estrutura Base da Agenda (Jul/2026)
+- Pacote `br.com.corely.comercial.schedule`
+- Entidade `Schedule` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`ScheduleRequest`, `ScheduleResponse`)
+- Endpoints em `/comercial/schedules`
+- Operações: Criar, Buscar por ID, Listar (paginado), Atualizar, Excluir (lógica)
+- Filtros na listagem: `name` (LIKE), `active`
+- Paginação via `Pageable` do Spring Data
+- Validações: nome obrigatório
+- Nome único por Studio (validação em serviço + constraint UNIQUE(studio_id, name) na migration V40)
+- Exclusão lógica (active=false) com idempotência
+- Migration V40 com UNIQUE constraint e índice em studio_id
+- OWNER/ADMIN/RECEPTIONIST: CRUD completo
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários (13), de controller (15) e de isolamento de tenant (5)
 
 ## Histórias Futuras (Roadmap)
 
