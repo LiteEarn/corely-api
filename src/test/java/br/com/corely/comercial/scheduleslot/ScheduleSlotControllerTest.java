@@ -108,6 +108,23 @@ class ScheduleSlotControllerTest {
     }
 
     @Test
+    void create_shouldReturn409_whenScheduleInactive() throws Exception {
+        schedule.setActive(false);
+        scheduleRepository.save(schedule);
+
+        var request = new ScheduleSlotRequest();
+        request.setDayOfWeek(DayOfWeek.MONDAY);
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(10, 0));
+        request.setCapacity(10);
+
+        mockMvc.perform(post("/comercial/schedules/{scheduleId}/slots", schedule.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void create_shouldReturn409_whenOverlapExists() throws Exception {
         var request = new ScheduleSlotRequest();
         request.setDayOfWeek(DayOfWeek.MONDAY);
@@ -212,6 +229,23 @@ class ScheduleSlotControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.startTime").value("07:00:00"))
                 .andExpect(jsonPath("$.capacity").value(20));
+    }
+
+    @Test
+    void update_shouldReturn409_whenScheduleInactive() throws Exception {
+        schedule.setActive(false);
+        scheduleRepository.save(schedule);
+
+        var request = new ScheduleSlotRequest();
+        request.setDayOfWeek(DayOfWeek.MONDAY);
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(9, 0));
+        request.setCapacity(10);
+
+        mockMvc.perform(put("/comercial/schedule-slots/{id}", slot1.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
     }
 
     @Test

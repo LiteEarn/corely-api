@@ -97,6 +97,22 @@ class ScheduleSlotServiceTest {
     }
 
     @Test
+    void create_shouldThrowException_whenScheduleInactive() {
+        schedule.setActive(false);
+        scheduleRepository.save(schedule);
+
+        var request = new ScheduleSlotRequest();
+        request.setDayOfWeek(DayOfWeek.MONDAY);
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(10, 0));
+        request.setCapacity(10);
+
+        assertThatThrownBy(() -> scheduleSlotService.create(schedule.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot modify slots on an inactive schedule");
+    }
+
+    @Test
     void create_shouldThrowException_whenEndTimeEqualsStartTime() {
         var request = new ScheduleSlotRequest();
         request.setDayOfWeek(DayOfWeek.MONDAY);
@@ -236,6 +252,22 @@ class ScheduleSlotServiceTest {
         assertThatThrownBy(() -> scheduleSlotService.update(existingSlot.getId(), request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("overlap");
+    }
+
+    @Test
+    void update_shouldThrowException_whenScheduleInactive() {
+        schedule.setActive(false);
+        scheduleRepository.save(schedule);
+
+        var request = new ScheduleSlotRequest();
+        request.setDayOfWeek(DayOfWeek.MONDAY);
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(9, 0));
+        request.setCapacity(10);
+
+        assertThatThrownBy(() -> scheduleSlotService.update(existingSlot.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot modify slots on an inactive schedule");
     }
 
     @Test

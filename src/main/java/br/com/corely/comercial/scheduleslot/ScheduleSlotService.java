@@ -28,6 +28,7 @@ public class ScheduleSlotService {
         var schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
 
+        validateScheduleActive(schedule);
         validateTimeRange(request);
         validateNoOverlap(scheduleId, request, null);
 
@@ -67,6 +68,7 @@ public class ScheduleSlotService {
         var slot = scheduleSlotRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ScheduleSlot not found"));
 
+        validateScheduleActive(slot.getSchedule());
         validateTimeRange(request);
         validateNoOverlap(slot.getSchedule().getId(), request, id);
 
@@ -89,6 +91,12 @@ public class ScheduleSlotService {
         if (slot.getActive()) {
             slot.setActive(false);
             scheduleSlotRepository.save(slot);
+        }
+    }
+
+    private void validateScheduleActive(br.com.corely.comercial.schedule.Schedule schedule) {
+        if (!schedule.getActive()) {
+            throw new BusinessException("Cannot modify slots on an inactive schedule");
         }
     }
 
