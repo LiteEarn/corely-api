@@ -68,7 +68,9 @@ br.com.corely.comercial/
 │   ├── STORY-015-card.md                 # Card da STORY-015
 │   ├── STORY-016-card.md                 # Card da STORY-016
 │   ├── STORY-017-card.md                 # Card da STORY-017
-│   └── STORY-018-card.md                 # Card da STORY-018
+│   ├── STORY-018-card.md                 # Card da STORY-018
+│   ├── STORY-019-card.md                 # Card da STORY-019
+│   └── STORY-020-card.md                 # Card da STORY-020
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -125,12 +127,28 @@ br.com.corely.comercial/
 │       ├── PaymentRequest.java
 │       ├── PaymentMethodDto.java
 │       └── PaymentResponse.java
+├── schedule/
+│   ├── Schedule.java                     # Agenda base do Corely
+│   ├── ScheduleRepository.java
+│   ├── ScheduleService.java              # CRUD de agendas
+│   ├── ScheduleController.java           # Endpoints em /comercial/schedules
+│   └── dto/
+│       ├── ScheduleRequest.java
+│       └── ScheduleResponse.java
+├── scheduleslot/
+│   ├── ScheduleSlot.java                 # Horário configurável da Agenda
+│   ├── ScheduleSlotRepository.java
+│   ├── ScheduleSlotService.java          # CRUD de horários
+│   ├── ScheduleSlotController.java       # Endpoints em /comercial/schedules/{scheduleId}/slots e /comercial/schedule-slots
+│   └── dto/
+│       ├── ScheduleSlotRequest.java
+│       └── ScheduleSlotResponse.java
 ```
 
 ## Convenções Adotadas
 
 - **Pacote raiz**: `br.com.corely.comercial`
-- **Organização**: por feature (subpacotes billingschedule/, tenant/, config/, rbac/)
+- **Organização**: por feature (subpacotes schedule/, scheduleslot/, billingschedule/, tenant/, config/, rbac/)
 - **Persistência**: entidades devem estender `ComercialBaseEntity` para herdar:
   - Campos auditáveis (id, createdAt, updatedAt) de `BaseEntity`
   - Vínculo obrigatório com `Studio` (studio_id)
@@ -405,6 +423,19 @@ Grupo `comercial` no OpenAPI, visível em:
 - FINANCIAL: apenas consulta (GET)
 - Testes unitários (13), de controller (15) e de isolamento de tenant (5)
 
+### STORY-020 — Horários da Agenda (Jul/2026)
+- Pacote `br.com.corely.comercial.scheduleslot`
+- Entidade `ScheduleSlot` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`ScheduleSlotRequest`, `ScheduleSlotResponse`)
+- Endpoints em `/comercial/schedules/{scheduleId}/slots` e `/comercial/schedule-slots/{id}`
+- Operações: Criar, Buscar por ID, Listar por agenda, Atualizar, Excluir (lógica)
+- Validações: endTime > startTime, capacity > 0
+- Não permite horários sobrepostos na mesma agenda e mesmo dia da semana
+- Exclusão lógica (active=false) com idempotência
+- Migration V41 com FK para comercial_schedules, CHECK constraints, índices em schedule_id e composto (schedule_id, day_of_week)
+- OWNER/ADMIN/RECEPTIONIST: CRUD completo
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários, de controller e de isolamento de tenant
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
