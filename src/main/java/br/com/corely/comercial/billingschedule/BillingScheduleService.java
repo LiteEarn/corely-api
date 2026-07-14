@@ -21,6 +21,20 @@ public class BillingScheduleService {
 
     private final BillingScheduleRepository billingScheduleRepository;
 
+    @Transactional
+    public void renewSchedule(StudentPlan studentPlan) {
+        var existing = billingScheduleRepository.findByStudentPlanId(studentPlan.getId());
+        if (existing.isPresent()) {
+            var schedule = existing.get();
+            schedule.setActive(true);
+            schedule.setNextBillingDate(calculateNextBillingDate(
+                    studentPlan.getEndDate(), schedule.getFrequency(), schedule.getBillingDay()));
+            billingScheduleRepository.save(schedule);
+        } else {
+            createSchedule(studentPlan, studentPlan.getStartDate().getDayOfMonth());
+        }
+    }
+
     public BillingSchedule createSchedule(StudentPlan studentPlan, Integer billingDay) {
         var schedule = new BillingSchedule();
         schedule.setStudio(studentPlan.getStudio());

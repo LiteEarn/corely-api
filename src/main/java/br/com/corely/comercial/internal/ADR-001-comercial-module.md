@@ -46,6 +46,9 @@ br.com.corely.comercial/
 ├── contractreactivation/
 │   ├── ContractReactivationResult.java   # DTO com contadores processed/reactivated/skipped/errors
 │   └── ContractReactivationService.java  # Serviço interno de reativação automática de contratos
+├── contractrenewal/
+│   ├── ContractRenewalResult.java        # DTO com contadores processed/renewed/skipped/errors
+│   └── ContractRenewalService.java       # Serviço interno de renovação automática de contratos
 ├── internal/
 │   ├── ADR-001-comercial-module.md       # Este documento
 │   ├── STORY-003-card.md                 # Card da STORY-003
@@ -60,7 +63,8 @@ br.com.corely.comercial/
 │   ├── STORY-013-card.md                 # Card da STORY-013
 │   ├── STORY-014-card.md                 # Card da STORY-014
 │   ├── STORY-015-card.md                 # Card da STORY-015
-│   └── STORY-016-card.md                 # Card da STORY-016
+│   ├── STORY-016-card.md                 # Card da STORY-016
+│   └── STORY-017-card.md                 # Card da STORY-017
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -317,6 +321,19 @@ Grupo `comercial` no OpenAPI, visível em:
 - `InvoiceRepository.findByStudentPlanIdAndStatusOrderByDueDateAsc(UUID, InvoiceStatus)` adicionado
 - Erro em um contrato não interrompe os demais
 - Testes unitários (9) e de integração (6)
+
+### STORY-017 — Renovação Automática de Contratos (Jul/2026)
+- Pacote `br.com.corely.comercial.contractrenewal`
+- `ContractRenewalService` — serviço interno (sem endpoint público)
+- `ContractRenewalResult` — contadores: processed, renewed, skipped, errors
+- Busca StudentPlans ACTIVE com endDate <= processingDate
+- Para cada contrato: verifica se o plano permite renovação (auto_renew), verifica se não há Invoices OVERDUE
+- Renova: recalcula endDate, gera novo ContractSnapshot, cria/reativa BillingSchedule quando necessário
+- Cada contrato processado em transação independente (TransactionTemplate)
+- Erro em um contrato não interrompe os demais
+- Migration V39 adiciona coluna auto_renew à tabela comercial_plans (BOOLEAN NOT NULL DEFAULT TRUE)
+- Campo auto_renew adicionado ao Plan entity, PlanRequest e PlanResponse
+- Testes unitários (8) e de integração (9)
 
 ### STORY-016 — Reativação Automática de Contratos (Jul/2026)
 - Pacote `br.com.corely.comercial.contractreactivation`

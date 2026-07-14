@@ -13,13 +13,14 @@ public class PlanResponse {
     private Integer duration;
     private Integer version;
     private Boolean active;
+    private Boolean autoRenew;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public PlanResponse() {}
 
     public PlanResponse(UUID id, String name, String description, BigDecimal price,
-                        Integer duration, Integer version, Boolean active,
+                        Integer duration, Integer version, Boolean active, Boolean autoRenew,
                         LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
@@ -28,6 +29,7 @@ public class PlanResponse {
         this.duration = duration;
         this.version = version;
         this.active = active;
+        this.autoRenew = autoRenew;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -39,6 +41,7 @@ public class PlanResponse {
     public Integer getDuration() { return duration; }
     public Integer getVersion() { return version; }
     public Boolean getActive() { return active; }
+    public Boolean getAutoRenew() { return autoRenew; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
