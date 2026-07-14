@@ -160,6 +160,16 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<configuration>
+					<url>jdbc:postgresql://localhost:5432/corely</url>
+					<user>corely</user>
+					<password>corely</password>
+					<locations>filesystem:src/main/resources/db/migration</locations>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	<repositories>
