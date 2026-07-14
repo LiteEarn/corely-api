@@ -145,6 +145,7 @@ public class StudentPlanService {
                 enrollment.getStatus(),
                 enrollment.getCancellationDate(),
                 enrollment.getCancellationReason(),
+                enrollment.getBookingBlocked(),
                 enrollment.getCreatedAt(),
                 enrollment.getUpdatedAt()
         );
