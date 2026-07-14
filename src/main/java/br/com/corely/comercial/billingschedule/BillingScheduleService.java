@@ -22,6 +22,15 @@ public class BillingScheduleService {
     private final BillingScheduleRepository billingScheduleRepository;
 
     @Transactional
+    public void deactivateSchedule(StudentPlan studentPlan) {
+        billingScheduleRepository.findByStudentPlanId(studentPlan.getId())
+                .ifPresent(schedule -> {
+                    schedule.setActive(false);
+                    billingScheduleRepository.save(schedule);
+                });
+    }
+
+    @Transactional
     public void renewSchedule(StudentPlan studentPlan) {
         var existing = billingScheduleRepository.findByStudentPlanId(studentPlan.getId());
         if (existing.isPresent()) {

@@ -26,4 +26,9 @@ public interface StudentPlanRepository extends JpaRepository<StudentPlan, UUID> 
     List<StudentPlan> findByStatusAndEndDateLessThanEqual(
             @Param("status") StudentPlanStatus status,
             @Param("date") LocalDate date);
+
+    @Query("SELECT sp FROM StudentPlan sp WHERE sp.status = :status AND sp.endDate < :date")
+    List<StudentPlan> findByStatusAndEndDateBefore(
+            @Param("status") StudentPlanStatus status,
+            @Param("date") LocalDate date);
 }
