@@ -31,6 +31,9 @@ public class Plan extends ComercialBaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
+    @Column(name = "auto_renew", nullable = false)
+    private Boolean autoRenew = true;
+
     public Plan() {}
 
     public String getName() { return name; }
@@ -45,4 +48,6 @@ public class Plan extends ComercialBaseEntity {
     public void setVersion(Integer version) { this.version = version; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public Boolean getAutoRenew() { return autoRenew; }
+    public void setAutoRenew(Boolean autoRenew) { this.autoRenew = autoRenew; }
 }

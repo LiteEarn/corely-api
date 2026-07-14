@@ -26,6 +26,8 @@ public class PlanRequest {
 
     private Boolean active;
 
+    private Boolean autoRenew;
+
     public PlanRequest() {}
 
     public String getName() { return name; }
@@ -38,4 +40,6 @@ public class PlanRequest {
     public void setDuration(Integer duration) { this.duration = duration; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public Boolean getAutoRenew() { return autoRenew; }
+    public void setAutoRenew(Boolean autoRenew) { this.autoRenew = autoRenew; }
 }

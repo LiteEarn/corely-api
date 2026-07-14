@@ -1,0 +1,2 @@
+ALTER TABLE comercial_plans
+ADD COLUMN auto_renew BOOLEAN NOT NULL DEFAULT TRUE;

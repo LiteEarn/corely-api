@@ -36,6 +36,7 @@ public class PlanService {
         plan.setDuration(request.getDuration());
         plan.setVersion(1);
         plan.setActive(request.getActive() != null ? request.getActive() : true);
+        plan.setAutoRenew(request.getAutoRenew() != null ? request.getAutoRenew() : true);
 
         plan = planRepository.save(plan);
         return toResponse(plan);
@@ -79,6 +80,9 @@ public class PlanService {
         plan.setVersion(plan.getVersion() + 1);
         if (request.getActive() != null) {
             plan.setActive(request.getActive());
+        }
+        if (request.getAutoRenew() != null) {
+            plan.setAutoRenew(request.getAutoRenew());
         }
 
         plan = planRepository.save(plan);
@@ -128,6 +132,7 @@ public class PlanService {
                 plan.getDuration(),
                 plan.getVersion(),
                 plan.getActive(),
+                plan.getAutoRenew(),
                 plan.getCreatedAt(),
                 plan.getUpdatedAt()
         );
