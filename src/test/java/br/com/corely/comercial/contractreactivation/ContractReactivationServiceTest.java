@@ -6,6 +6,7 @@ import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.studentplan.SuspensionReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,7 @@ class ContractReactivationServiceTest {
 
     private StudentPlan suspendedPlan;
     private StudentPlan suspendedPlanWithOverdue;
+    private StudentPlan manuallySuspendedPlan;
     private Invoice overdueInvoice;
 
     @BeforeEach
@@ -47,10 +49,17 @@ class ContractReactivationServiceTest {
         suspendedPlan.setId(UUID.randomUUID());
         suspendedPlan.setStatus(StudentPlanStatus.SUSPENDED);
         suspendedPlan.setBookingBlocked(true);
+        suspendedPlan.setSuspensionReason(SuspensionReason.DELINQUENCY);
 
         suspendedPlanWithOverdue = new StudentPlan();
         suspendedPlanWithOverdue.setId(UUID.randomUUID());
         suspendedPlanWithOverdue.setStatus(StudentPlanStatus.SUSPENDED);
+        suspendedPlanWithOverdue.setSuspensionReason(SuspensionReason.DELINQUENCY);
+
+        manuallySuspendedPlan = new StudentPlan();
+        manuallySuspendedPlan.setId(UUID.randomUUID());
+        manuallySuspendedPlan.setStatus(StudentPlanStatus.SUSPENDED);
+        manuallySuspendedPlan.setSuspensionReason(SuspensionReason.MANUAL);
 
         overdueInvoice = new Invoice();
         overdueInvoice.setId(UUID.randomUUID());
@@ -133,6 +142,27 @@ class ContractReactivationServiceTest {
         assertThat(suspendedPlanWithOverdue.getStatus()).isEqualTo(StudentPlanStatus.SUSPENDED);
         verify(studentPlanRepository).save(suspendedPlan);
         verify(studentPlanRepository, never()).save(suspendedPlanWithOverdue);
+    }
+
+    @Test
+    void process_shouldSkipWhenSuspensionReasonIsNotDelinquency() {
+        var processingDate = LocalDate.of(2026, 7, 14);
+
+        when(studentPlanRepository.findByStatus(StudentPlanStatus.SUSPENDED))
+                .thenReturn(List.of(manuallySuspendedPlan));
+        when(transactionTemplate.execute(any())).thenAnswer(inv -> {
+            var callback = inv.getArgument(0, org.springframework.transaction.support.TransactionCallback.class);
+            return callback.doInTransaction(null);
+        });
+
+        var result = service.process(processingDate);
+
+        assertThat(result.getProcessed()).isEqualTo(1);
+        assertThat(result.getReactivated()).isEqualTo(0);
+        assertThat(result.getSkipped()).isEqualTo(1);
+        assertThat(result.getErrors()).isEqualTo(0);
+        assertThat(manuallySuspendedPlan.getStatus()).isEqualTo(StudentPlanStatus.SUSPENDED);
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test

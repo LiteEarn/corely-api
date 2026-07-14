@@ -40,6 +40,10 @@ public class StudentPlan extends ComercialBaseEntity {
     @Column(name = "booking_blocked", nullable = false)
     private Boolean bookingBlocked = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "suspension_reason", length = 20)
+    private SuspensionReason suspensionReason;
+
     public StudentPlan() {}
 
     public Student getStudent() { return student; }
@@ -58,4 +62,6 @@ public class StudentPlan extends ComercialBaseEntity {
     public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
     public Boolean getBookingBlocked() { return bookingBlocked; }
     public void setBookingBlocked(Boolean bookingBlocked) { this.bookingBlocked = bookingBlocked; }
+    public SuspensionReason getSuspensionReason() { return suspensionReason; }
+    public void setSuspensionReason(SuspensionReason suspensionReason) { this.suspensionReason = suspensionReason; }
 }

@@ -9,6 +9,7 @@ import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.studentplan.SuspensionReason;
 import br.com.corely.studio.Studio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,6 +115,7 @@ class DelinquencyProcessorServiceTest {
         assertThat(result.getSkipped()).isEqualTo(0);
         assertThat(result.getErrors()).isEqualTo(0);
         assertThat(activePlan.getStatus()).isEqualTo(StudentPlanStatus.SUSPENDED);
+        assertThat(activePlan.getSuspensionReason()).isEqualTo(SuspensionReason.DELINQUENCY);
         verify(studentPlanRepository).save(activePlan);
     }
 

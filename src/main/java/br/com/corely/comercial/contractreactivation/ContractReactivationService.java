@@ -5,6 +5,7 @@ import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.studentplan.SuspensionReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,11 @@ public class ContractReactivationService {
     }
 
     private void processStudentPlan(StudentPlan studentPlan, ContractReactivationResult result) {
+        if (studentPlan.getSuspensionReason() != SuspensionReason.DELINQUENCY) {
+            result.incrementSkipped();
+            return;
+        }
+
         var overdueInvoices = invoiceRepository.findByStudentPlanIdAndStatusOrderByDueDateAsc(
                 studentPlan.getId(), InvoiceStatus.OVERDUE);
 
@@ -60,6 +66,7 @@ public class ContractReactivationService {
 
         studentPlan.setStatus(StudentPlanStatus.ACTIVE);
         studentPlan.setBookingBlocked(false);
+        studentPlan.setSuspensionReason(null);
         studentPlanRepository.save(studentPlan);
 
         log.info("StudentPlan {} reactivated from SUSPENDED to ACTIVE", studentPlan.getId());

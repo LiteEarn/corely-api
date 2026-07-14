@@ -14,6 +14,7 @@ import br.com.corely.comercial.ruledefinition.*;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.studentplan.SuspensionReason;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
@@ -105,6 +106,7 @@ class ContractReactivationIntegrationTest {
         var studentPlan = studentPlanRepository.findById(studentPlanId).orElseThrow();
         studentPlan.setStatus(StudentPlanStatus.SUSPENDED);
         studentPlan.setBookingBlocked(true);
+        studentPlan.setSuspensionReason(SuspensionReason.DELINQUENCY);
         studentPlanRepository.save(studentPlan);
     }
 
@@ -151,6 +153,25 @@ class ContractReactivationIntegrationTest {
         var studentPlan = studentPlanRepository.findById(studentPlanId).orElseThrow();
         assertThat(studentPlan.getStatus()).isEqualTo(StudentPlanStatus.SUSPENDED);
         assertThat(studentPlan.getBookingBlocked()).isTrue();
+    }
+
+    @Test
+    void process_shouldSkipWhenSuspensionReasonIsNotDelinquency() {
+        var studentPlan = studentPlanRepository.findById(studentPlanId).orElseThrow();
+        studentPlan.setStatus(StudentPlanStatus.SUSPENDED);
+        studentPlan.setBookingBlocked(true);
+        studentPlan.setSuspensionReason(SuspensionReason.MANUAL);
+        studentPlanRepository.save(studentPlan);
+
+        var result = contractReactivationService.process(LocalDate.of(2026, 7, 14));
+
+        assertThat(result.getProcessed()).isEqualTo(1);
+        assertThat(result.getReactivated()).isEqualTo(0);
+        assertThat(result.getSkipped()).isEqualTo(1);
+        assertThat(result.getErrors()).isEqualTo(0);
+
+        var reloaded = studentPlanRepository.findById(studentPlanId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(StudentPlanStatus.SUSPENDED);
     }
 
     @Test

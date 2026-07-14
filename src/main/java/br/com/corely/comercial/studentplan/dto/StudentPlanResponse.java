@@ -1,6 +1,7 @@
 package br.com.corely.comercial.studentplan.dto;
 
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.studentplan.SuspensionReason;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class StudentPlanResponse {
     private LocalDate cancellationDate;
     private String cancellationReason;
     private Boolean bookingBlocked;
+    private SuspensionReason suspensionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -28,6 +30,7 @@ public class StudentPlanResponse {
                                String snapshotName, LocalDate startDate, LocalDate endDate,
                                StudentPlanStatus status, LocalDate cancellationDate,
                                String cancellationReason, Boolean bookingBlocked,
+                               SuspensionReason suspensionReason,
                                LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.studentId = studentId;
@@ -40,6 +43,7 @@ public class StudentPlanResponse {
         this.cancellationDate = cancellationDate;
         this.cancellationReason = cancellationReason;
         this.bookingBlocked = bookingBlocked;
+        this.suspensionReason = suspensionReason;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -55,6 +59,7 @@ public class StudentPlanResponse {
     public LocalDate getCancellationDate() { return cancellationDate; }
     public String getCancellationReason() { return cancellationReason; }
     public Boolean getBookingBlocked() { return bookingBlocked; }
+    public SuspensionReason getSuspensionReason() { return suspensionReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
