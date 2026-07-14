@@ -9,6 +9,7 @@ import br.com.corely.comercial.invoice.InvoiceStatus;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.studentplan.SuspensionReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -96,6 +97,7 @@ public class DelinquencyProcessorService {
             case SUSPEND_CONTRACT -> {
                 if (studentPlan.getStatus() == StudentPlanStatus.ACTIVE) {
                     studentPlan.setStatus(StudentPlanStatus.SUSPENDED);
+                    studentPlan.setSuspensionReason(SuspensionReason.DELINQUENCY);
                     studentPlanRepository.save(studentPlan);
                     log.info("StudentPlan {} suspended due to delinquency", studentPlan.getId());
                     result.incrementSuspended();

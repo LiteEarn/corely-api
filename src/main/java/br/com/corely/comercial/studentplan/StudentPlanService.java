@@ -68,7 +68,25 @@ public class StudentPlanService {
 
     @Transactional
     public StudentPlanResponse suspend(UUID id) {
-        return transitionStatus(id, StudentPlanStatus.ACTIVE, StudentPlanStatus.SUSPENDED);
+        var enrollment = studentPlanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan not found"));
+
+        if (enrollment.getStatus() != StudentPlanStatus.ACTIVE) {
+            throw new BusinessException("StudentPlan must be ACTIVE to be suspended");
+        }
+
+        if (studentPlanRepository.existsByStudentIdAndStatus(enrollment.getStudent().getId(), StudentPlanStatus.SUSPENDED)) {
+            throw new BusinessException("Student already has a suspended plan.");
+        }
+
+        enrollment.setStatus(StudentPlanStatus.SUSPENDED);
+        enrollment.setSuspensionReason(SuspensionReason.MANUAL);
+        if (enrollment.getCancellationDate() == null) {
+            enrollment.setCancellationDate(LocalDate.now());
+        }
+
+        enrollment = studentPlanRepository.save(enrollment);
+        return toResponse(enrollment);
     }
 
     @Transactional
@@ -92,6 +110,7 @@ public class StudentPlanService {
         if (to == StudentPlanStatus.ACTIVE) {
             enrollment.setCancellationDate(null);
             enrollment.setCancellationReason(null);
+            enrollment.setSuspensionReason(null);
         }
 
         if (studentPlanRepository.existsByStudentIdAndStatus(enrollment.getStudent().getId(), to)) {
@@ -146,6 +165,7 @@ public class StudentPlanService {
                 enrollment.getCancellationDate(),
                 enrollment.getCancellationReason(),
                 enrollment.getBookingBlocked(),
+                enrollment.getSuspensionReason(),
                 enrollment.getCreatedAt(),
                 enrollment.getUpdatedAt()
         );
