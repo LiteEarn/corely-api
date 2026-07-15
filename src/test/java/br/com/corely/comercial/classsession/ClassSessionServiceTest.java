@@ -106,6 +106,22 @@ class ClassSessionServiceTest {
     }
 
     @Test
+    void create_shouldThrowException_whenScheduleSlotInactive() {
+        slot.setActive(false);
+        scheduleSlotRepository.save(slot);
+
+        var request = new ClassSessionRequest();
+        request.setScheduleSlotId(slot.getId());
+        request.setSessionDate(LocalDate.of(2026, 8, 1));
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(9, 0));
+
+        assertThatThrownBy(() -> classSessionService.create(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("inactive schedule slot");
+    }
+
+    @Test
     void create_shouldThrowException_whenDuplicate() {
         classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
                 LocalTime.of(8, 0), LocalTime.of(9, 0)));
@@ -238,6 +254,46 @@ class ClassSessionServiceTest {
 
         assertThatThrownBy(() -> classSessionService.update(UUID.randomUUID(), request))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void update_shouldThrowException_whenScheduleSlotInactive() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+
+        var anotherSlot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.WEDNESDAY,
+                LocalTime.of(10, 0), LocalTime.of(11, 0), 20));
+        anotherSlot.setActive(false);
+        scheduleSlotRepository.save(anotherSlot);
+
+        var request = new ClassSessionRequest();
+        request.setScheduleSlotId(anotherSlot.getId());
+        request.setSessionDate(LocalDate.of(2026, 8, 3));
+        request.setStartTime(LocalTime.of(10, 0));
+        request.setEndTime(LocalTime.of(11, 0));
+
+        assertThatThrownBy(() -> classSessionService.update(saved.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("inactive schedule slot");
+    }
+
+    @Test
+    void update_shouldPreserveOriginalCapacity() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+
+        var anotherSlot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.WEDNESDAY,
+                LocalTime.of(10, 0), LocalTime.of(11, 0), 20));
+
+        var request = new ClassSessionRequest();
+        request.setScheduleSlotId(anotherSlot.getId());
+        request.setSessionDate(LocalDate.of(2026, 8, 3));
+        request.setStartTime(LocalTime.of(10, 0));
+        request.setEndTime(LocalTime.of(11, 0));
+
+        var response = classSessionService.update(saved.getId(), request);
+
+        assertThat(response.getCapacity()).isEqualTo(10);
     }
 
     @Test

@@ -30,6 +30,7 @@ public class ClassSessionService {
         var slot = scheduleSlotRepository.findById(request.getScheduleSlotId())
                 .orElseThrow(() -> new ResourceNotFoundException("ScheduleSlot not found"));
 
+        validateSlotActive(slot);
         validateDuplicate(request.getScheduleSlotId(), request.getSessionDate(), null);
         validateTimeRange(request.getStartTime(), request.getEndTime());
 
@@ -86,11 +87,12 @@ public class ClassSessionService {
         var slot = scheduleSlotRepository.findById(request.getScheduleSlotId())
                 .orElseThrow(() -> new ResourceNotFoundException("ScheduleSlot not found"));
 
+        validateSlotActive(slot);
+
         session.setScheduleSlot(slot);
         session.setSessionDate(request.getSessionDate());
         session.setStartTime(request.getStartTime());
         session.setEndTime(request.getEndTime());
-        session.setCapacity(slot.getCapacity());
 
         if (request.getStatus() != null) {
             session.setStatus(SessionStatus.valueOf(request.getStatus().name()));
@@ -110,6 +112,12 @@ public class ClassSessionService {
         if (session.getActive()) {
             session.setActive(false);
             classSessionRepository.save(session);
+        }
+    }
+
+    private void validateSlotActive(br.com.corely.comercial.scheduleslot.ScheduleSlot slot) {
+        if (!slot.getActive()) {
+            throw new BusinessException("Cannot use an inactive schedule slot");
         }
     }
 

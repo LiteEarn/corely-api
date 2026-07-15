@@ -63,6 +63,7 @@ class ClassSessionControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private Studio studio;
     private Schedule schedule;
     private ScheduleSlot slot;
     private ClassSession session1;
@@ -70,7 +71,7 @@ class ClassSessionControllerTest {
 
     @BeforeEach
     void setUp() {
-        var studio = studioRepository.save(createStudio("Test Studio"));
+        studio = studioRepository.save(createStudio("Test Studio"));
         authenticateAs(studio, UserRole.ADMIN);
 
         schedule = scheduleRepository.save(createSchedule(studio, "Morning Class"));
@@ -116,6 +117,23 @@ class ClassSessionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void create_shouldReturn409_whenScheduleSlotInactive() throws Exception {
+        slot.setActive(false);
+        scheduleSlotRepository.save(slot);
+
+        var request = new ClassSessionRequest();
+        request.setScheduleSlotId(slot.getId());
+        request.setSessionDate(LocalDate.of(2026, 8, 3));
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(9, 0));
+
+        mockMvc.perform(post("/comercial/class-sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -224,6 +242,25 @@ class ClassSessionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void update_shouldReturn409_whenScheduleSlotInactive() throws Exception {
+        var inactiveSlot = scheduleSlotRepository.save(createSlot(studio, schedule, DayOfWeek.FRIDAY,
+                LocalTime.of(14, 0), LocalTime.of(15, 0), 5));
+        inactiveSlot.setActive(false);
+        scheduleSlotRepository.save(inactiveSlot);
+
+        var request = new ClassSessionRequest();
+        request.setScheduleSlotId(inactiveSlot.getId());
+        request.setSessionDate(LocalDate.of(2026, 8, 7));
+        request.setStartTime(LocalTime.of(14, 0));
+        request.setEndTime(LocalTime.of(15, 0));
+
+        mockMvc.perform(put("/comercial/class-sessions/{id}", session1.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
     }
 
     @Test
