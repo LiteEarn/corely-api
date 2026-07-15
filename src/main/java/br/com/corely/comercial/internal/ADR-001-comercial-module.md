@@ -143,6 +143,16 @@ br.com.corely.comercial/
 │   └── dto/
 │       ├── ScheduleSlotRequest.java
 │       └── ScheduleSlotResponse.java
+├── classsession/
+│   ├── SessionStatus.java                # Enum: SCHEDULED, FINISHED, CANCELLED
+│   ├── ClassSession.java                 # Sessão real de aula em uma data
+│   ├── ClassSessionRepository.java
+│   ├── ClassSessionService.java          # CRUD de sessões
+│   ├── ClassSessionController.java       # Endpoints em /comercial/class-sessions
+│   └── dto/
+│       ├── ClassSessionRequest.java
+│       ├── ClassSessionResponse.java
+│       └── SessionStatusDto.java
 ```
 
 ## Convenções Adotadas
@@ -436,6 +446,23 @@ Grupo `comercial` no OpenAPI, visível em:
 - OWNER/ADMIN/RECEPTIONIST: CRUD completo
 - FINANCIAL: apenas consulta (GET)
 - Testes unitários, de controller e de isolamento de tenant
+### STORY-021 — Sessões de Aula (ClassSession) (Jul/2026)
+- Pacote `br.com.corely.comercial.classsession`
+- Enum `SessionStatus`: SCHEDULED, FINISHED, CANCELLED
+- Entidade `ClassSession` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`ClassSessionRequest`, `ClassSessionResponse`, `SessionStatusDto`)
+- Endpoints em `/comercial/class-sessions`
+- Operações: Criar, Buscar por ID, Listar (paginado com filtros por scheduleSlotId e status), Atualizar, Excluir (lógica)
+- Capacidade inicial herdada do ScheduleSlot no momento da criação
+- bookedCount inicia em zero
+- Não permite sessões duplicadas para mesmo ScheduleSlot e mesma data (UNIQUE constraint na migration V42)
+- Permite alteração apenas enquanto status = SCHEDULED
+- Exclusão lógica (active=false) com idempotência
+- Migration V42 com UNIQUE constraint, índices em schedule_slot_id, session_date, status
+- OWNER/ADMIN/RECEPTIONIST: CRUD completo
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários, de controller e de isolamento de tenant
+
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
