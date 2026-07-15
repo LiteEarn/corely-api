@@ -212,7 +212,7 @@ class BookingServiceTest {
 
         assertThatThrownBy(() -> bookingService.create(request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Student does not have an active plan");
+                .hasMessageContaining("Student does not have an active plan for this session date");
     }
 
     @Test
@@ -319,6 +319,34 @@ class BookingServiceTest {
     }
 
     @Test
+    void create_shouldThrowException_whenPlanEndedBeforeSession() {
+        studentPlanRepository.deleteAll();
+        createActiveStudentPlan(student, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 6, 30));
+
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+
+        assertThatThrownBy(() -> bookingService.create(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Student does not have an active plan for this session date");
+    }
+
+    @Test
+    void create_shouldThrowException_whenPlanNotStartedYet() {
+        studentPlanRepository.deleteAll();
+        createActiveStudentPlan(student, LocalDate.of(2026, 9, 1), null);
+
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+
+        assertThatThrownBy(() -> bookingService.create(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Student does not have an active plan for this session date");
+    }
+
+    @Test
     void cancel_shouldFreeCapacity() {
         session.setCapacity(1);
         classSessionRepository.save(session);
@@ -408,6 +436,10 @@ class BookingServiceTest {
     }
 
     private void createActiveStudentPlan(Student student) {
+        createActiveStudentPlan(student, LocalDate.now().minusDays(30), null);
+    }
+
+    private void createActiveStudentPlan(Student student, LocalDate startDate, LocalDate endDate) {
         var snapshot = new ContractSnapshot();
         snapshot.setStudioId(studio.getId());
         snapshot.setPlanId(UUID.randomUUID());
@@ -422,7 +454,8 @@ class BookingServiceTest {
         plan.setStudio(studio);
         plan.setStudent(student);
         plan.setContractSnapshot(snapshot);
-        plan.setStartDate(LocalDate.now());
+        plan.setStartDate(startDate);
+        plan.setEndDate(endDate);
         plan.setStatus(StudentPlanStatus.ACTIVE);
         plan.setBookingBlocked(false);
         studentPlanRepository.save(plan);

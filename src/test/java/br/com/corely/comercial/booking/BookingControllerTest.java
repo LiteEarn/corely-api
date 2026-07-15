@@ -229,6 +229,36 @@ class BookingControllerTest {
     }
 
     @Test
+    void create_shouldReturn409_whenPlanEndedBeforeSession() throws Exception {
+        var newStudent = createAndSaveStudent("Plan Ended");
+        createActiveStudentPlan(newStudent, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 6, 30));
+
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(newStudent.getId());
+
+        mockMvc.perform(post("/comercial/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void create_shouldReturn409_whenPlanNotStartedYet() throws Exception {
+        var newStudent = createAndSaveStudent("Plan Future");
+        createActiveStudentPlan(newStudent, LocalDate.of(2026, 9, 1), null);
+
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(newStudent.getId());
+
+        mockMvc.perform(post("/comercial/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void findAll_shouldReturnPagedResults() throws Exception {
         mockMvc.perform(get("/comercial/bookings")
                         .param("size", "10")
@@ -341,6 +371,10 @@ class BookingControllerTest {
     }
 
     private void createActiveStudentPlan(Student student) {
+        createActiveStudentPlan(student, LocalDate.now().minusDays(30), null);
+    }
+
+    private void createActiveStudentPlan(Student student, LocalDate startDate, LocalDate endDate) {
         var snapshot = new ContractSnapshot();
         snapshot.setStudioId(studio.getId());
         snapshot.setPlanId(UUID.randomUUID());
@@ -355,7 +389,8 @@ class BookingControllerTest {
         plan.setStudio(studio);
         plan.setStudent(student);
         plan.setContractSnapshot(snapshot);
-        plan.setStartDate(LocalDate.now());
+        plan.setStartDate(startDate);
+        plan.setEndDate(endDate);
         plan.setStatus(StudentPlanStatus.ACTIVE);
         plan.setBookingBlocked(false);
         studentPlanRepository.save(plan);

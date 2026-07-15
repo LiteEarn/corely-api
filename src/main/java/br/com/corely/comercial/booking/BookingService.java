@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -35,7 +36,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponse create(BookingRequest request) {
-        var classSession = classSessionRepository.findById(request.getClassSessionId())
+        var classSession = classSessionRepository.findByIdWithLock(request.getClassSessionId())
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
 
         validateClassSessionAvailable(classSession);
@@ -45,8 +46,11 @@ public class BookingService {
 
         validateStudentActive(student);
 
-        var studentPlan = studentPlanRepository.findByStudentIdAndStatus(student.getId(), StudentPlanStatus.ACTIVE)
-                .orElseThrow(() -> new BusinessException("Student does not have an active plan"));
+        var sessionDate = classSession.getSessionDate();
+
+        var studentPlan = studentPlanRepository.findActiveByStudentIdAndDate(
+                        student.getId(), StudentPlanStatus.ACTIVE, sessionDate)
+                .orElseThrow(() -> new BusinessException("Student does not have an active plan for this session date"));
 
         if (studentPlan.getBookingBlocked()) {
             throw new BusinessException("Student has booking blocked");
