@@ -70,7 +70,9 @@ br.com.corely.comercial/
 │   ├── STORY-017-card.md                 # Card da STORY-017
 │   ├── STORY-018-card.md                 # Card da STORY-018
 │   ├── STORY-019-card.md                 # Card da STORY-019
-│   └── STORY-020-card.md                 # Card da STORY-020
+│   ├── STORY-020-card.md                 # Card da STORY-020
+│   ├── STORY-021-card.md                 # Card da STORY-021
+│   └── STORY-022-card.md                 # Card da STORY-022
 ├── planrule/
 │   ├── PlanRule.java                     # Associação entre Plan e RuleDefinition
 │   ├── PlanRuleRepository.java
@@ -153,6 +155,15 @@ br.com.corely.comercial/
 │       ├── ClassSessionRequest.java
 │       ├── ClassSessionResponse.java
 │       └── SessionStatusDto.java
+├── booking/
+│   ├── BookingStatus.java                  # Enum: CONFIRMED, CANCELLED
+│   ├── Booking.java                        # Reserva de aluno em ClassSession
+│   ├── BookingRepository.java
+│   ├── BookingService.java                 # CRUD com validações de negócio
+│   ├── BookingController.java              # Endpoints em /comercial/bookings
+│   └── dto/
+│       ├── BookingRequest.java
+│       └── BookingResponse.java
 ```
 
 ## Convenções Adotadas
@@ -462,6 +473,23 @@ Grupo `comercial` no OpenAPI, visível em:
 - OWNER/ADMIN/RECEPTIONIST: CRUD completo
 - FINANCIAL: apenas consulta (GET)
 - Testes unitários, de controller e de isolamento de tenant
+
+### STORY-022 — Reserva de Alunos (Booking) (Jul/2026)
+- Pacote `br.com.corely.comercial.booking`
+- Enum `BookingStatus`: CONFIRMED, CANCELLED
+- Entidade `Booking` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`BookingRequest`, `BookingResponse`)
+- Endpoints em `/comercial/bookings`
+- Operações: Criar, Buscar por ID, Listar (paginado com filtros por classSessionId, studentId e status), Cancelar (DELETE)
+- Cada aluno possui no máximo uma reserva por ClassSession (UNIQUE constraint na migration V43)
+- Ao criar: valida Student ativo, StudentPlan ACTIVE, bookingBlocked = false, ClassSession ACTIVE e SCHEDULED, bookedCount < capacity
+- Ao criar: incrementa bookedCount da ClassSession
+- Ao cancelar: status → CANCELLED, active → false, decrementa bookedCount (nunca negativo)
+- Exclusão lógica (active=false) com idempotência
+- Migration V43 com UNIQUE(class_session_id, student_id), índices em class_session_id, student_id, status
+- OWNER/ADMIN/RECEPTIONIST: CRUD completo
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários (17), de controller (13) e de isolamento de tenant (4)
 
 ## Histórias Futuras (Roadmap)
 
