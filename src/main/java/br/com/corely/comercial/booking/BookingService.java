@@ -14,6 +14,7 @@ import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class BookingService {
     private final StudentPlanRepository studentPlanRepository;
     private final StudioRepository studioRepository;
     private final ComercialTenantContext tenantContext;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public BookingResponse create(BookingRequest request) {
@@ -120,6 +122,8 @@ public class BookingService {
         }
 
         bookingRepository.save(booking);
+
+        eventPublisher.publishEvent(new BookingCancelledEvent(this, classSession.getId()));
     }
 
     private void validateClassSessionAvailable(ClassSession classSession) {
