@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
+
 @Repository("comercialWaitListRepository")
 public interface WaitListRepository extends JpaRepository<WaitList, UUID> {
 
@@ -32,4 +34,7 @@ public interface WaitListRepository extends JpaRepository<WaitList, UUID> {
 
     @Query("SELECT w FROM ComercialWaitList w WHERE w.classSession.id = :classSessionId AND w.active = true")
     Page<WaitList> findActiveByClassSessionId(@Param("classSessionId") UUID classSessionId, Pageable pageable);
+
+    @Query("SELECT w.classSession.id, COUNT(w) FROM ComercialWaitList w WHERE w.classSession.id IN :sessionIds AND w.status = 'WAITING' AND w.active = true GROUP BY w.classSession.id")
+    List<Object[]> countWaitingBySessionIds(@Param("sessionIds") List<UUID> sessionIds);
 }

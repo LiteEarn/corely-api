@@ -531,6 +531,19 @@ Grupo `comercial` no OpenAPI, visível em:
 - `ClassSessionFinishedEvent` criado no pacote `comercial.classsession` e publicado por `ClassSessionService.finishSession()`
 - Testes unitários, de controller e de isolamento de tenant
 
+### STORY-027 — Agenda Operacional do Dia (Jul/2026)
+- Pacote `br.com.corely.comercial.dashboard`
+- Endpoint `GET /comercial/dashboard/daily` — visão operacional completa do dia
+- DTOs: `DailyDashboardResponse`, `SessionDashboardResponse`
+- Service: `DailyDashboardService` — orquestração de consultas agregadas
+- Controller: `DailyDashboardController` — endpoint com parâmetro `date` opcional
+- Performance: JOIN FETCH para carregar sessões com schedule/slot, consultas agregadas em batch (COUNT + GROUP BY) para bookings, attendances, waitlist e makeup credits
+- Sem N+1 — todas as agregações em consultas únicas por repositório
+- Multi-tenant via `@Filter` do Hibernate
+- RBAC: OWNER, ADMIN, RECEPTIONIST, FINANCIAL (leitura)
+- Swagger: documentado via `@Tag(name = "Dashboard")`
+- Testes unitários, de controller e de isolamento de tenant
+
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
