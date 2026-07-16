@@ -2,7 +2,6 @@ package br.com.corely.comercial.attendance;
 
 import br.com.corely.comercial.ComercialBaseEntity;
 import br.com.corely.comercial.booking.Booking;
-import br.com.corely.comercial.classsession.ClassSession;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 
@@ -13,10 +12,6 @@ import java.time.LocalDateTime;
        uniqueConstraints = @UniqueConstraint(columnNames = {"booking_id"}))
 @Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class Attendance extends ComercialBaseEntity {
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_session_id", nullable = false)
-    private ClassSession classSession;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
@@ -37,8 +32,6 @@ public class Attendance extends ComercialBaseEntity {
 
     public Attendance() {}
 
-    public ClassSession getClassSession() { return classSession; }
-    public void setClassSession(ClassSession classSession) { this.classSession = classSession; }
     public Booking getBooking() { return booking; }
     public void setBooking(Booking booking) { this.booking = booking; }
     public AttendanceStatus getStatus() { return status; }

@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository("comercialAttendanceRepository")
 public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
 
-    @Query("SELECT a FROM ComercialAttendance a WHERE a.classSession.id = :classSessionId")
+    @Query("SELECT a FROM ComercialAttendance a WHERE a.booking.classSession.id = :classSessionId")
     Page<Attendance> findByClassSessionId(@Param("classSessionId") UUID classSessionId, Pageable pageable);
 
     @Query("SELECT a FROM ComercialAttendance a WHERE a.booking.id = :bookingId")
@@ -22,11 +22,11 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     @Query("SELECT a FROM ComercialAttendance a WHERE a.booking.student.id = :studentId")
     Page<Attendance> findByStudentId(@Param("studentId") UUID studentId, Pageable pageable);
 
-    @Query("SELECT a FROM ComercialAttendance a WHERE a.classSession.id = :classSessionId AND a.booking.id = :bookingId")
+    @Query("SELECT a FROM ComercialAttendance a WHERE a.booking.classSession.id = :classSessionId AND a.booking.id = :bookingId")
     Optional<Attendance> findByClassSessionIdAndBookingId(@Param("classSessionId") UUID classSessionId,
                                                            @Param("bookingId") UUID bookingId);
 
-    @Query("SELECT COUNT(a) FROM ComercialAttendance a WHERE a.classSession.id = :classSessionId AND a.status = 'PRESENT'")
+    @Query("SELECT COUNT(a) FROM ComercialAttendance a WHERE a.booking.classSession.id = :classSessionId AND a.status = 'PRESENT'")
     long countPresentByClassSessionId(@Param("classSessionId") UUID classSessionId);
 
     @Override

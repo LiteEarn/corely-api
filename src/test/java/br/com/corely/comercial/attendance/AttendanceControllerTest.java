@@ -304,7 +304,6 @@ class AttendanceControllerTest {
         var entity = bookingRepository.findById(booking.getId()).orElseThrow();
         var attendance = new Attendance();
         attendance.setStudio(studio);
-        attendance.setClassSession(session);
         attendance.setBooking(entity);
         attendance.setStatus(status);
         attendance.setActive(true);

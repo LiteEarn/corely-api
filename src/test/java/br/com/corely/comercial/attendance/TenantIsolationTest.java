@@ -286,7 +286,6 @@ class TenantIsolationTest {
     private void createAttendance(Studio studio, ClassSession session, Booking booking, AttendanceStatus status) {
         var attendance = new Attendance();
         attendance.setStudio(studio);
-        attendance.setClassSession(session);
         attendance.setBooking(booking);
         attendance.setStatus(status);
         attendance.setActive(true);

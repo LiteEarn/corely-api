@@ -1,7 +1,6 @@
 CREATE TABLE comercial_attendances (
     id UUID NOT NULL,
     studio_id UUID NOT NULL,
-    class_session_id UUID NOT NULL,
     booking_id UUID NOT NULL,
     status VARCHAR(20) NOT NULL,
     notes VARCHAR(500),
@@ -11,11 +10,9 @@ CREATE TABLE comercial_attendances (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_comercial_attendances PRIMARY KEY (id),
     CONSTRAINT fk_comercial_attendances_studio FOREIGN KEY (studio_id) REFERENCES studios(id),
-    CONSTRAINT fk_comercial_attendances_class_session FOREIGN KEY (class_session_id) REFERENCES comercial_class_sessions(id),
     CONSTRAINT fk_comercial_attendances_booking FOREIGN KEY (booking_id) REFERENCES comercial_bookings(id),
     CONSTRAINT uq_comercial_attendances_booking UNIQUE (booking_id)
 );
 
 CREATE INDEX idx_comercial_attendances_booking_id ON comercial_attendances(booking_id);
-CREATE INDEX idx_comercial_attendances_class_session_id ON comercial_attendances(class_session_id);
 CREATE INDEX idx_comercial_attendances_student_id ON comercial_attendances(studio_id);

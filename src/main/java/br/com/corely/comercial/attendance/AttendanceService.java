@@ -6,7 +6,6 @@ import br.com.corely.comercial.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.comercial.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.comercial.booking.Booking;
 import br.com.corely.comercial.booking.BookingRepository;
-import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
 import br.com.corely.comercial.classsession.SessionStatus;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
@@ -59,7 +58,6 @@ public class AttendanceService {
         if (attendance == null) {
             attendance = new Attendance();
             attendance.setStudio(studioRepository.getReferenceById(tenantContext.getCurrentStudioId()));
-            attendance.setClassSession(classSession);
             attendance.setBooking(booking);
             attendance.setActive(true);
         }
@@ -128,7 +126,6 @@ public class AttendanceService {
             if (attendance == null) {
                 attendance = new Attendance();
                 attendance.setStudio(studioRepository.getReferenceById(tenantContext.getCurrentStudioId()));
-                attendance.setClassSession(classSession);
                 attendance.setBooking(booking);
                 attendance.setActive(true);
             }
@@ -150,7 +147,7 @@ public class AttendanceService {
     private AttendanceResponse toResponse(Attendance attendance) {
         return new AttendanceResponse(
                 attendance.getId(),
-                attendance.getClassSession().getId(),
+                attendance.getBooking().getClassSession().getId(),
                 attendance.getBooking().getId(),
                 attendance.getBooking().getStudent().getId(),
                 attendance.getBooking().getStudent().getFullName(),
