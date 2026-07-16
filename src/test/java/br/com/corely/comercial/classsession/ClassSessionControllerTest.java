@@ -343,6 +343,95 @@ class ClassSessionControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void start_shouldReturn200AndChangeStatus() throws Exception {
+        mockMvc.perform(post("/comercial/class-sessions/{id}/start", session1.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    void start_shouldReturn409_whenAlreadyInProgress() throws Exception {
+        session1.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/start", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void start_shouldReturn409_whenFinished() throws Exception {
+        session1.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/start", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void start_shouldReturn409_whenCancelled() throws Exception {
+        session1.setStatus(SessionStatus.CANCELLED);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/start", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void start_shouldReturn409_whenInactive() throws Exception {
+        session1.setActive(false);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/start", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void finish_shouldReturn200AndChangeStatus() throws Exception {
+        session1.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/finish", session1.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FINISHED"));
+    }
+
+    @Test
+    void finish_shouldReturn409_whenStillScheduled() throws Exception {
+        mockMvc.perform(post("/comercial/class-sessions/{id}/finish", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void finish_shouldReturn409_whenAlreadyFinished() throws Exception {
+        session1.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/finish", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void finish_shouldReturn409_whenCancelled() throws Exception {
+        session1.setStatus(SessionStatus.CANCELLED);
+        classSessionRepository.save(session1);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/finish", session1.getId()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void start_shouldReturn404_whenNotFound() throws Exception {
+        mockMvc.perform(post("/comercial/class-sessions/{id}/start", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void finish_shouldReturn404_whenNotFound() throws Exception {
+        mockMvc.perform(post("/comercial/class-sessions/{id}/finish", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
+    }
+
     private void authenticateAs(Studio studio, UserRole role) {
         var user = new User();
         user.setName(role.name() + " User");

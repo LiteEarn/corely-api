@@ -9,7 +9,6 @@ import br.com.corely.comercial.booking.BookingRepository;
 import br.com.corely.comercial.booking.BookingStatus;
 import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
-import br.com.corely.comercial.classsession.SessionStatus;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -38,7 +37,7 @@ public class AttendanceService {
         var classSession = classSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
 
-        if (classSession.getStatus() == SessionStatus.FINISHED || classSession.getStatus() == SessionStatus.CANCELLED) {
+        if (classSession.isFinished() || classSession.isCancelled()) {
             throw new BusinessException("Attendance cannot be registered for a finished or cancelled session");
         }
 
@@ -103,7 +102,7 @@ public class AttendanceService {
         var classSession = classSessionRepository.findById(request.getClassSessionId())
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
 
-        if (classSession.getStatus() == SessionStatus.FINISHED || classSession.getStatus() == SessionStatus.CANCELLED) {
+        if (classSession.isFinished() || classSession.isCancelled()) {
             throw new BusinessException("Attendance cannot be registered for a finished or cancelled session");
         }
 

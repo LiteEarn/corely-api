@@ -27,6 +27,10 @@ public class WaitListPromotionService {
         var session = classSessionRepository.findByIdWithLock(classSessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
 
+        if (session.isFinished() || session.isCancelled()) {
+            return;
+        }
+
         var waitingEntries = waitListRepository.findWaitingByClassSessionIdWithLock(classSessionId);
 
         if (waitingEntries.isEmpty()) {

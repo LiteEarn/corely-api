@@ -73,11 +73,35 @@ public class ClassSessionService {
     }
 
     @Transactional
+    public ClassSessionResponse startSession(UUID id) {
+        var session = classSessionRepository.findByIdWithLock(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
+
+        if (!session.getActive()) {
+            throw new BusinessException("Cannot start an inactive session");
+        }
+
+        session.start();
+        session = classSessionRepository.save(session);
+        return toResponse(session);
+    }
+
+    @Transactional
+    public ClassSessionResponse finishSession(UUID id) {
+        var session = classSessionRepository.findByIdWithLock(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
+
+        session.finish();
+        session = classSessionRepository.save(session);
+        return toResponse(session);
+    }
+
+    @Transactional
     public ClassSessionResponse update(UUID id, ClassSessionRequest request) {
         var session = classSessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
 
-        if (session.getStatus() != SessionStatus.SCHEDULED) {
+        if (!session.isScheduled()) {
             throw new BusinessException("Cannot modify a session with status " + session.getStatus());
         }
 
