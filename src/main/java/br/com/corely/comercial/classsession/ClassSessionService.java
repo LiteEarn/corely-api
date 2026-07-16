@@ -9,6 +9,7 @@ import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class ClassSessionService {
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final StudioRepository studioRepository;
     private final ComercialTenantContext tenantContext;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ClassSessionResponse create(ClassSessionRequest request) {
@@ -93,6 +95,9 @@ public class ClassSessionService {
 
         session.finish();
         session = classSessionRepository.save(session);
+
+        eventPublisher.publishEvent(new ClassSessionFinishedEvent(this, session.getId()));
+
         return toResponse(session);
     }
 

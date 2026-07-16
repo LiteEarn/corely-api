@@ -22,6 +22,8 @@ spring:
 corely:
   scheduler:
     session-generation-days: 90
+  makeup:
+    expiration-days: 30
 
 jwt:
   secret: my-secret-key-for-corely-application-2024
