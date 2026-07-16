@@ -463,6 +463,43 @@ Grupo `comercial` no OpenAPI, visível em:
 - FINANCIAL: apenas consulta (GET)
 - Testes unitários, de controller e de isolamento de tenant
 
+### STORY-022 — Reserva de Alunos (Booking) (Jul/2026)
+- Pacote `br.com.corely.comercial.booking`
+- Enum `BookingStatus`: CONFIRMED, CANCELLED
+- Entidade `Booking` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`BookingRequest`, `BookingResponse`)
+- Endpoints em `/comercial/bookings`
+- Operações: Criar, Buscar por ID, Listar (paginado com filtros por classSessionId, studentId e status), Cancelar (DELETE)
+- Cada aluno possui no máximo uma reserva por ClassSession (UNIQUE constraint na migration V43)
+- Ao criar: valida Student ativo, StudentPlan ACTIVE, bookingBlocked = false, ClassSession ACTIVE e SCHEDULED, bookedCount < capacity
+- Ao criar: incrementa bookedCount da ClassSession
+- Ao cancelar: status → CANCELLED, active → false, decrementa bookedCount (nunca negativo)
+- Concorrência: create e delete utilizam findByIdWithLock na ClassSession (PESSIMISTIC_WRITE)
+- Exclusão lógica (active=false) com idempotência
+- Migration V43 com UNIQUE(class_session_id, student_id), índices em class_session_id, student_id, status
+- OWNER/ADMIN/RECEPTIONIST: CRUD completo
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários (17), de controller (13) e de isolamento de tenant (4)
+
+### STORY-023 — Controle de Presença (Attendance) (Jul/2026)
+- Pacote `br.com.corely.comercial.attendance`
+- Enum `AttendanceStatus`: PRESENT, ABSENT, EXCUSED
+- Entidade `Attendance` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Repository, Service, Controller, DTOs (`AttendanceRequest`, `AttendanceResponse`)
+- Endpoints em `/comercial/attendances`
+- Operações: Criar, Buscar por ID, Listar (paginado com filtros por bookingId e status), Atualizar, Excluir (lógica)
+- Cada Booking possui no máximo um Attendance (UNIQUE booking_id na migration V44)
+- Só permite registrar presença para Booking CONFIRMED (não permite CANCELLED)
+- Não permite registrar presença em ClassSession CANCELLED
+- Valida que a sessão já iniciou antes de registrar presença
+- Registra data/hora do check-in ao marcar PRESENT
+- Permite alteração apenas enquanto a sessão não estiver FINALIZADA
+- Exclusão lógica (active=false) com idempotência
+- Migration V44 com UNIQUE(booking_id), índices em booking_id, status
+- OWNER/ADMIN/RECEPTIONIST: CRUD completo
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários (21), de controller (12) e de isolamento de tenant (5)
+
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
