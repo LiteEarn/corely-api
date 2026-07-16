@@ -90,6 +90,7 @@ class TenantIsolationTest {
     private Student studentA;
     private Student studentB;
     private WaitList entryA;
+    private WaitList entryB;
 
     @BeforeEach
     void setUp() {
@@ -120,6 +121,7 @@ class TenantIsolationTest {
         studentB = createStudent(studioB, "Student B");
 
         entryA = waitListRepository.save(createWaitList(studioA, sessionA, studentA, 1));
+        entryB = waitListRepository.save(createWaitList(studioB, sessionB, studentB, 1));
 
         entityManager.flush();
         entityManager.clear();

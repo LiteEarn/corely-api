@@ -101,6 +101,9 @@ public class WaitListService {
 
     @Transactional
     public void promoteNext(UUID classSessionId) {
+        var session = classSessionRepository.findByIdWithLock(classSessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
+
         var waitingEntries = waitListRepository.findWaitingByClassSessionIdWithLock(classSessionId);
 
         if (waitingEntries.isEmpty()) {
