@@ -108,8 +108,9 @@ class AttendanceServiceTest {
         schedule = scheduleRepository.save(createSchedule("Morning Class"));
         slot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.MONDAY,
                 LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
-        session = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
-                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        var pastTime = LocalTime.now().minusHours(1);
+        session = classSessionRepository.save(createSession(slot, LocalDate.now(),
+                pastTime, pastTime.plusHours(1)));
         student = createAndSaveStudent("John Doe");
         createActiveStudentPlan(student);
         booking = createBooking(session, student);
@@ -188,8 +189,8 @@ class AttendanceServiceTest {
 
     @Test
     void register_shouldThrowException_whenBookingNotBelongToSession() {
-        var otherSession = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 2),
-                LocalTime.of(10, 0), LocalTime.of(11, 0)));
+        var otherSession = classSessionRepository.save(createSession(slot, LocalDate.now(),
+                LocalTime.now().minusHours(2), LocalTime.now().minusHours(1)));
 
         var request = new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null);
 
@@ -318,6 +319,65 @@ class AttendanceServiceTest {
 
         assertThatThrownBy(() -> attendanceService.bulkSave(request))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void register_shouldAllow_whenSessionStartedEarlier() {
+        var request = new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null);
+        var response = attendanceService.register(session.getId(), request);
+        assertThat(response.getStatus()).isEqualTo(AttendanceStatus.PRESENT);
+    }
+
+    @Test
+    void register_shouldAllow_whenSessionStartingNow() {
+        var now = LocalTime.now().minusSeconds(5);
+        var newSlot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.of(LocalDate.now().getDayOfWeek().getValue()),
+                now, now.plusHours(1), 10));
+        var newSession = classSessionRepository.save(createSession(newSlot, LocalDate.now(), now, now.plusHours(1)));
+        var newBooking = createBooking(newSession, student);
+
+        var response = attendanceService.register(newSession.getId(),
+                new AttendanceRequest(newBooking.getId(), AttendanceStatus.PRESENT, null));
+        assertThat(response.getStatus()).isEqualTo(AttendanceStatus.PRESENT);
+    }
+
+    @Test
+    void register_shouldThrowException_whenSessionStartsInOneMinute() {
+        var future = LocalTime.now().plusMinutes(1);
+        var newSlot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.of(LocalDate.now().getDayOfWeek().getValue()),
+                future, future.plusHours(1), 10));
+        var newSession = classSessionRepository.save(createSession(newSlot, LocalDate.now(), future, future.plusHours(1)));
+
+        assertThatThrownBy(() -> attendanceService.register(newSession.getId(),
+                new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Attendance cannot be registered before the class has started");
+    }
+
+    @Test
+    void register_shouldThrowException_whenSessionStartsIn30Minutes() {
+        var future = LocalTime.now().plusMinutes(30);
+        var newSlot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.of(LocalDate.now().getDayOfWeek().getValue()),
+                future, future.plusHours(1), 10));
+        var newSession = classSessionRepository.save(createSession(newSlot, LocalDate.now(), future, future.plusHours(1)));
+
+        assertThatThrownBy(() -> attendanceService.register(newSession.getId(),
+                new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Attendance cannot be registered before the class has started");
+    }
+
+    @Test
+    void register_shouldThrowException_whenSessionIsTomorrow() {
+        var newSlot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.of(LocalDate.now().plusDays(1).getDayOfWeek().getValue()),
+                LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
+        var newSession = classSessionRepository.save(createSession(newSlot, LocalDate.now().plusDays(1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+
+        assertThatThrownBy(() -> attendanceService.register(newSession.getId(),
+                new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Attendance cannot be registered before the class has started");
     }
 
     private Studio createStudio(String name) {

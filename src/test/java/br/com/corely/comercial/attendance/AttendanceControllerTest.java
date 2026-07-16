@@ -106,11 +106,13 @@ class AttendanceControllerTest {
         studio = studioRepository.save(createStudio("Test Studio"));
         authenticateAs(studio, UserRole.ADMIN);
 
+        var today = LocalDate.now();
+        var pastTime = LocalTime.now().minusHours(1);
         var schedule = scheduleRepository.save(createSchedule("Morning Class"));
-        var slot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.MONDAY,
-                LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
-        session = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
-                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        var slot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.of(today.getDayOfWeek().getValue()),
+                pastTime, pastTime.plusHours(1), 10));
+        session = classSessionRepository.save(createSession(slot, today,
+                pastTime, pastTime.plusHours(1)));
         student = createAndSaveStudent("John Doe");
         createActiveStudentPlan(student);
         booking = createBooking(session, student);

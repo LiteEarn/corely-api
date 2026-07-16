@@ -6,6 +6,7 @@ import br.com.corely.comercial.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.comercial.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.comercial.booking.Booking;
 import br.com.corely.comercial.booking.BookingRepository;
+import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
 import br.com.corely.comercial.classsession.SessionStatus;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
@@ -39,6 +40,8 @@ public class AttendanceService {
         if (classSession.getStatus() == SessionStatus.FINISHED || classSession.getStatus() == SessionStatus.CANCELLED) {
             throw new BusinessException("Attendance cannot be registered for a finished or cancelled session");
         }
+
+        validateSessionAlreadyStarted(classSession);
 
         var booking = bookingRepository.findById(request.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
@@ -105,6 +108,8 @@ public class AttendanceService {
             throw new BusinessException("Attendance cannot be registered for a finished or cancelled session");
         }
 
+        validateSessionAlreadyStarted(classSession);
+
         int savedCount = 0;
 
         for (var item : request.getAttendances()) {
@@ -142,6 +147,13 @@ public class AttendanceService {
         }
 
         return new BulkAttendanceResponse(savedCount + " attendance(s) saved successfully", savedCount);
+    }
+
+    private void validateSessionAlreadyStarted(ClassSession classSession) {
+        var sessionStart = LocalDateTime.of(classSession.getSessionDate(), classSession.getStartTime());
+        if (LocalDateTime.now().isBefore(sessionStart)) {
+            throw new BusinessException("Attendance cannot be registered before the class has started");
+        }
     }
 
     private AttendanceResponse toResponse(Attendance attendance) {

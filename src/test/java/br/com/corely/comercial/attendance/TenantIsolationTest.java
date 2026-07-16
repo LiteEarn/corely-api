@@ -108,6 +108,9 @@ class TenantIsolationTest {
 
     @BeforeEach
     void setUp() {
+        var today = LocalDate.now();
+        var pastTime = LocalTime.now().minusHours(1);
+
         studioA = studioRepository.save(createStudio("Studio A"));
         studioB = studioRepository.save(createStudio("Studio B"));
 
@@ -116,15 +119,15 @@ class TenantIsolationTest {
         var scheduleA = scheduleRepository.save(createSchedule(studioA, "Schedule A"));
         var scheduleB = scheduleRepository.save(createSchedule(studioB, "Schedule B"));
 
-        var slotA = scheduleSlotRepository.save(createSlot(studioA, scheduleA, DayOfWeek.MONDAY,
-                LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
-        var slotB = scheduleSlotRepository.save(createSlot(studioB, scheduleB, DayOfWeek.MONDAY,
-                LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
+        var slotA = scheduleSlotRepository.save(createSlot(studioA, scheduleA, DayOfWeek.of(today.getDayOfWeek().getValue()),
+                pastTime, pastTime.plusHours(1), 10));
+        var slotB = scheduleSlotRepository.save(createSlot(studioB, scheduleB, DayOfWeek.of(today.getDayOfWeek().getValue()),
+                pastTime, pastTime.plusHours(1), 10));
 
-        sessionA = classSessionRepository.save(createSession(studioA, slotA, LocalDate.of(2026, 8, 1),
-                LocalTime.of(8, 0), LocalTime.of(9, 0)));
-        sessionB = classSessionRepository.save(createSession(studioB, slotB, LocalDate.of(2026, 8, 1),
-                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        sessionA = classSessionRepository.save(createSession(studioA, slotA, today,
+                pastTime, pastTime.plusHours(1)));
+        sessionB = classSessionRepository.save(createSession(studioB, slotB, today,
+                pastTime, pastTime.plusHours(1)));
 
         studentA = createAndSaveStudent(studioA, "Student A");
         studentB = createAndSaveStudent(studioB, "Student B");
