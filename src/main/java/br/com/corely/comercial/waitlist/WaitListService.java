@@ -1,9 +1,6 @@
 package br.com.corely.comercial.waitlist;
 
-import br.com.corely.comercial.booking.BookingCancelledEvent;
-import br.com.corely.comercial.booking.BookingService;
 import br.com.corely.comercial.booking.BookingRepository;
-import br.com.corely.comercial.booking.dto.BookingRequest;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.comercial.waitlist.dto.WaitListRequest;
@@ -16,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.UUID;
 
@@ -31,7 +25,6 @@ public class WaitListService {
     private final ClassSessionRepository classSessionRepository;
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
-    private final BookingService bookingService;
     private final BookingRepository bookingRepository;
     private final ComercialTenantContext tenantContext;
 
@@ -97,35 +90,6 @@ public class WaitListService {
         entry.setStatus(WaitListStatus.CANCELLED);
         entry.setActive(false);
         waitListRepository.save(entry);
-    }
-
-    @Transactional
-    public void promoteNext(UUID classSessionId) {
-        var session = classSessionRepository.findByIdWithLock(classSessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
-
-        var waitingEntries = waitListRepository.findWaitingByClassSessionIdWithLock(classSessionId);
-
-        if (waitingEntries.isEmpty()) {
-            return;
-        }
-
-        var next = waitingEntries.get(0);
-
-        var bookingRequest = new BookingRequest();
-        bookingRequest.setClassSessionId(classSessionId);
-        bookingRequest.setStudentId(next.getStudent().getId());
-        bookingService.create(bookingRequest);
-
-        next.setStatus(WaitListStatus.PROMOTED);
-        next.setActive(false);
-        waitListRepository.save(next);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onBookingCancelled(BookingCancelledEvent event) {
-        promoteNext(event.classSessionId());
     }
 
     private WaitListResponse toResponse(WaitList entry) {

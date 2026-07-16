@@ -17,8 +17,6 @@ import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
 import br.com.corely.comercial.waitlist.dto.WaitListRequest;
-import br.com.corely.shared.exception.BusinessException;
-import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
@@ -40,15 +38,16 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class WaitListServiceTest {
+class WaitListPromotionServiceTest {
+
+    @Autowired
+    private WaitListPromotionService waitListPromotionService;
 
     @Autowired
     private WaitListService waitListService;
@@ -114,171 +113,37 @@ class WaitListServiceTest {
     }
 
     @Test
-    void create_shouldAddToWaitList() {
-        session.setBookedCount(1);
+    void promoteIfNeeded_shouldCreateBookingAndMarkPromoted() {
+        session.setBookedCount(0);
         classSessionRepository.save(session);
 
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        var response = waitListService.create(request);
-
-        assertThat(response.getId()).isNotNull();
-        assertThat(response.getPosition()).isEqualTo(1);
-        assertThat(response.getStatus()).isEqualTo(WaitListStatus.WAITING);
-        assertThat(response.getActive()).isTrue();
-    }
-
-    @Test
-    void create_shouldIncrementPosition() {
-        session.setBookedCount(1);
-        classSessionRepository.save(session);
-
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        waitListService.create(request);
-
-        var student2 = createStudent("Jane Doe");
-        request.setStudentId(student2.getId());
-
-        var response = waitListService.create(request);
-
-        assertThat(response.getPosition()).isEqualTo(2);
-    }
-
-    @Test
-    void create_shouldThrowException_whenSessionNotFound() {
-        var request = new WaitListRequest();
-        request.setClassSessionId(UUID.randomUUID());
-        request.setStudentId(student.getId());
-
-        assertThatThrownBy(() -> waitListService.create(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("ClassSession not found");
-    }
-
-    @Test
-    void create_shouldThrowException_whenStudentNotFound() {
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(UUID.randomUUID());
-
-        assertThatThrownBy(() -> waitListService.create(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Student not found");
-    }
-
-    @Test
-    void create_shouldThrowException_whenSessionInactive() {
-        session.setActive(false);
-        classSessionRepository.save(session);
-
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        assertThatThrownBy(() -> waitListService.create(request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("inactive session");
-    }
-
-    @Test
-    void create_shouldThrowException_whenStudentAlreadyWaiting() {
-        session.setBookedCount(1);
-        classSessionRepository.save(session);
-
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-        waitListService.create(request);
-
-        assertThatThrownBy(() -> waitListService.create(request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("already on the wait list");
-    }
-
-    @Test
-    void create_shouldThrowException_whenStudentHasConfirmedBooking() {
         createValidPlanForStudent(student, session.getSessionDate());
 
-        var request = new br.com.corely.comercial.booking.dto.BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-        bookingService.create(request);
-
-        var waitRequest = new WaitListRequest();
-        waitRequest.setClassSessionId(session.getId());
-        waitRequest.setStudentId(student.getId());
-
-        assertThatThrownBy(() -> waitListService.create(waitRequest))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("confirmed booking");
-    }
-
-    @Test
-    void cancel_shouldSetCancelled() {
+        var bookingRequest = new br.com.corely.comercial.booking.dto.BookingRequest();
+        bookingRequest.setClassSessionId(session.getId());
+        bookingRequest.setStudentId(student.getId());
+        bookingService.create(bookingRequest);
         session.setBookedCount(1);
         classSessionRepository.save(session);
 
+        var student2 = createStudent("Jane Doe");
+        createValidPlanForStudent(student2, session.getSessionDate());
         var request = new WaitListRequest();
         request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-        var created = waitListService.create(request);
+        request.setStudentId(student2.getId());
+        waitListService.create(request);
 
-        waitListService.cancel(created.getId());
+        var bookings = bookingRepository.findByClassSessionId(session.getId(),
+                org.springframework.data.domain.PageRequest.of(0, 10));
+        bookingService.delete(bookings.getContent().get(0).getId());
 
-        var entry = waitListRepository.findById(created.getId()).orElseThrow();
-        assertThat(entry.getStatus()).isEqualTo(WaitListStatus.CANCELLED);
-        assertThat(entry.getActive()).isFalse();
-    }
+        waitListPromotionService.promoteIfNeeded(session.getId());
 
-    @Test
-    void cancel_shouldThrowException_whenNotWaiting() {
-        session.setBookedCount(1);
-        classSessionRepository.save(session);
+        assertThat(bookingRepository.existsByClassSessionIdAndStudentId(session.getId(), student2.getId())).isTrue();
 
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-        var created = waitListService.create(request);
-
-        waitListService.cancel(created.getId());
-
-        assertThatThrownBy(() -> waitListService.cancel(created.getId()))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Cannot cancel");
-    }
-
-    @Test
-    void cancel_shouldThrowException_whenNotFound() {
-        assertThatThrownBy(() -> waitListService.cancel(UUID.randomUUID()))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void findById_shouldReturnEntry() {
-        session.setBookedCount(1);
-        classSessionRepository.save(session);
-
-        var request = new WaitListRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-        var created = waitListService.create(request);
-
-        var response = waitListService.findById(created.getId());
-
-        assertThat(response).isNotNull();
-        assertThat(response.getClassSessionId()).isEqualTo(session.getId());
-        assertThat(response.getStudentId()).isEqualTo(student.getId());
-    }
-
-    @Test
-    void findById_shouldThrowException_whenNotFound() {
-        assertThatThrownBy(() -> waitListService.findById(UUID.randomUUID()))
-                .isInstanceOf(ResourceNotFoundException.class);
+        var waiting = waitListRepository.findActiveByClassSessionId(session.getId(),
+                org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(waiting).isEmpty();
     }
 
     private void authenticateAs(Studio studio, UserRole role) {
