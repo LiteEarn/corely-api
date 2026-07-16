@@ -6,6 +6,7 @@ import br.com.corely.comercial.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.comercial.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.comercial.booking.Booking;
 import br.com.corely.comercial.booking.BookingRepository;
+import br.com.corely.comercial.booking.BookingStatus;
 import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
 import br.com.corely.comercial.classsession.SessionStatus;
@@ -46,9 +47,7 @@ public class AttendanceService {
         var booking = bookingRepository.findById(request.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        if (!booking.getActive()) {
-            throw new BusinessException("Booking is not active");
-        }
+        validateBookingForAttendance(booking);
 
         if (!booking.getClassSession().getId().equals(sessionId)) {
             throw new BusinessException("Booking does not belong to this class session");
@@ -116,9 +115,7 @@ public class AttendanceService {
             var booking = bookingRepository.findById(item.getBookingId())
                     .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + item.getBookingId()));
 
-            if (!booking.getActive()) {
-                throw new BusinessException("Booking is not active: " + item.getBookingId());
-            }
+            validateBookingForAttendance(booking);
 
             if (!booking.getClassSession().getId().equals(request.getClassSessionId())) {
                 throw new BusinessException("Booking does not belong to this class session: " + item.getBookingId());
@@ -147,6 +144,15 @@ public class AttendanceService {
         }
 
         return new BulkAttendanceResponse(savedCount + " attendance(s) saved successfully", savedCount);
+    }
+
+    private void validateBookingForAttendance(Booking booking) {
+        if (!booking.getActive()) {
+            throw new BusinessException("Booking is not active");
+        }
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new BusinessException("Booking must be CONFIRMED to register attendance");
+        }
     }
 
     private void validateSessionAlreadyStarted(ClassSession classSession) {

@@ -5,6 +5,7 @@ import br.com.corely.comercial.attendance.dto.AttendanceResponse;
 import br.com.corely.comercial.attendance.dto.BulkAttendanceRequest;
 import br.com.corely.comercial.booking.Booking;
 import br.com.corely.comercial.booking.BookingRepository;
+import br.com.corely.comercial.booking.BookingStatus;
 import br.com.corely.comercial.booking.BookingService;
 import br.com.corely.comercial.booking.dto.BookingRequest;
 import br.com.corely.comercial.booking.dto.BookingResponse;
@@ -378,6 +379,51 @@ class AttendanceServiceTest {
                 new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Attendance cannot be registered before the class has started");
+    }
+
+    @Test
+    void register_shouldThrowException_whenBookingCancelled() {
+        var entity = bookingRepository.findById(booking.getId()).orElseThrow();
+        entity.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(entity);
+
+        var request = new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null);
+
+        assertThatThrownBy(() -> attendanceService.register(session.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Booking must be CONFIRMED to register attendance");
+    }
+
+    @Test
+    void register_shouldThrowException_whenBookingInactiveAndConfirmed() {
+        var entity = bookingRepository.findById(booking.getId()).orElseThrow();
+        entity.setActive(false);
+        bookingRepository.save(entity);
+
+        var request = new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null);
+
+        assertThatThrownBy(() -> attendanceService.register(session.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Booking is not active");
+    }
+
+    @Test
+    void bulkSave_shouldThrowException_whenBookingCancelled() {
+        var otherStudent = createAndSaveStudent("Jane Doe");
+        createActiveStudentPlan(otherStudent);
+        var otherBooking = createBooking(session, otherStudent);
+
+        var entity = bookingRepository.findById(otherBooking.getId()).orElseThrow();
+        entity.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(entity);
+
+        var request = new BulkAttendanceRequest(session.getId(), List.of(
+                new BulkAttendanceRequest.AttendanceItem(otherBooking.getId(), true, null)
+        ));
+
+        assertThatThrownBy(() -> attendanceService.bulkSave(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Booking must be CONFIRMED to register attendance");
     }
 
     private Studio createStudio(String name) {
