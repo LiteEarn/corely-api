@@ -511,6 +511,25 @@ Grupo `comercial` no OpenAPI, visível em:
 - OWNER/ADMIN/RECEPTIONIST: podem iniciar/finalizar sessões
 - FINANCIAL: apenas consulta (GET)
 - Testes unitários e de controller adicionados
+- Publica `ClassSessionFinishedEvent` ao finalizar sessão (consumido por MakeUpService)
+
+### STORY-026 — Reposição de Aula (MakeUp Classes) (Jul/2026)
+- Pacote `br.com.corely.comercial.makeup`
+- Enum `MakeUpCreditStatus`: AVAILABLE, USED, EXPIRED, CANCELLED
+- Entidade `MakeUpCredit` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Atributos: student, originalAttendance, originalClassSession, makeUpBooking (nullable), expirationDate, status, reason, active
+- Repository, Service, Controller, DTOs (`MakeUpCreditRequest`, `MakeUpCreditResponse`)
+- `MakeUpProperties` — configuração de expiração via `corely.makeup.expiration-days` (default 30)
+- Endpoints em `/comercial/makeup-credits`
+- Operações: Listar (paginado com filtros por studentId e status), Buscar por ID, Utilizar crédito (POST /{id}/use)
+- Geração automática: ao receber `ClassSessionFinishedEvent`, cria MakeUpCredit para cada Attendance ABSENT
+- Utilização: reutiliza `BookingService.create()` (fluxo oficial de Booking), vincula Booking ao crédito, altera status para USED
+- Não permite utilizar: crédito expirado, cancelado, usado, inativo; aula já iniciada, finalizada ou cancelada
+- Migration V46 com FKs, índices em student_id, status, expiration_date
+- OWNER/ADMIN/RECEPTIONIST: CRUD operacional
+- FINANCIAL: apenas leitura (GET)
+- `ClassSessionFinishedEvent` criado no pacote `comercial.classsession` e publicado por `ClassSessionService.finishSession()`
+- Testes unitários, de controller e de isolamento de tenant
 
 ## Histórias Futuras (Roadmap)
 
