@@ -2,6 +2,7 @@ package br.com.corely.comercial.classsession;
 
 import br.com.corely.comercial.ComercialBaseEntity;
 import br.com.corely.comercial.scheduleslot.ScheduleSlot;
+import br.com.corely.shared.exception.BusinessException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 
@@ -40,6 +41,47 @@ public class ClassSession extends ComercialBaseEntity {
     private Boolean active = true;
 
     public ClassSession() {}
+
+    public void start() {
+        if (status != SessionStatus.SCHEDULED) {
+            throw new BusinessException("Cannot start a session with status " + status);
+        }
+        this.status = SessionStatus.IN_PROGRESS;
+    }
+
+    public void finish() {
+        if (status != SessionStatus.IN_PROGRESS) {
+            throw new BusinessException("Cannot finish a session with status " + status);
+        }
+        this.status = SessionStatus.FINISHED;
+    }
+
+    public void cancel() {
+        if (status != SessionStatus.SCHEDULED) {
+            throw new BusinessException("Cannot cancel a session with status " + status);
+        }
+        this.status = SessionStatus.CANCELLED;
+    }
+
+    public boolean isScheduled() {
+        return status == SessionStatus.SCHEDULED;
+    }
+
+    public boolean isInProgress() {
+        return status == SessionStatus.IN_PROGRESS;
+    }
+
+    public boolean isFinished() {
+        return status == SessionStatus.FINISHED;
+    }
+
+    public boolean isCancelled() {
+        return status == SessionStatus.CANCELLED;
+    }
+
+    public boolean isTerminal() {
+        return status == SessionStatus.FINISHED || status == SessionStatus.CANCELLED;
+    }
 
     public ScheduleSlot getScheduleSlot() { return scheduleSlot; }
     public void setScheduleSlot(ScheduleSlot scheduleSlot) { this.scheduleSlot = scheduleSlot; }

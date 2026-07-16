@@ -325,6 +325,110 @@ class ClassSessionServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    @Test
+    void startSession_shouldChangeStatusToInProgress() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+
+        var response = classSessionService.startSession(saved.getId());
+
+        assertThat(response.getStatus()).isEqualTo(SessionStatusDto.IN_PROGRESS);
+    }
+
+    @Test
+    void startSession_shouldThrowException_whenAlreadyInProgress() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(saved);
+
+        assertThatThrownBy(() -> classSessionService.startSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot start");
+    }
+
+    @Test
+    void startSession_shouldThrowException_whenFinished() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(saved);
+
+        assertThatThrownBy(() -> classSessionService.startSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot start");
+    }
+
+    @Test
+    void startSession_shouldThrowException_whenCancelled() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.CANCELLED);
+        classSessionRepository.save(saved);
+
+        assertThatThrownBy(() -> classSessionService.startSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot start");
+    }
+
+    @Test
+    void startSession_shouldThrowException_whenInactive() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setActive(false);
+        classSessionRepository.save(saved);
+
+        assertThatThrownBy(() -> classSessionService.startSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("inactive");
+    }
+
+    @Test
+    void finishSession_shouldChangeStatusToFinished() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(saved);
+
+        var response = classSessionService.finishSession(saved.getId());
+
+        assertThat(response.getStatus()).isEqualTo(SessionStatusDto.FINISHED);
+    }
+
+    @Test
+    void finishSession_shouldThrowException_whenStillScheduled() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+
+        assertThatThrownBy(() -> classSessionService.finishSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot finish");
+    }
+
+    @Test
+    void finishSession_shouldThrowException_whenAlreadyFinished() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(saved);
+
+        assertThatThrownBy(() -> classSessionService.finishSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot finish");
+    }
+
+    @Test
+    void finishSession_shouldThrowException_whenCancelled() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.CANCELLED);
+        classSessionRepository.save(saved);
+
+        assertThatThrownBy(() -> classSessionService.finishSession(saved.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot finish");
+    }
+
     private void authenticateAs(Studio studio, UserRole role) {
         var user = new User();
         user.setName(role.name() + " User");

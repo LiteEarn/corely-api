@@ -4,7 +4,6 @@ import br.com.corely.comercial.booking.dto.BookingRequest;
 import br.com.corely.comercial.booking.dto.BookingResponse;
 import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
-import br.com.corely.comercial.classsession.SessionStatus;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
@@ -113,6 +112,10 @@ public class BookingService {
         var classSession = classSessionRepository.findByIdWithLock(booking.getClassSession().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
 
+        if (classSession.isFinished()) {
+            throw new BusinessException("Cannot cancel a booking for a finished session");
+        }
+
         booking.setActive(false);
         booking.setStatus(BookingStatus.CANCELLED);
 
@@ -130,7 +133,7 @@ public class BookingService {
         if (!classSession.getActive()) {
             throw new BusinessException("ClassSession is not active");
         }
-        if (classSession.getStatus() != SessionStatus.SCHEDULED) {
+        if (!classSession.isScheduled()) {
             throw new BusinessException("ClassSession status must be SCHEDULED");
         }
         if (classSession.getBookedCount() >= classSession.getCapacity()) {

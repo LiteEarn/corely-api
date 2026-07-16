@@ -53,6 +53,20 @@ public class ClassSessionController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/comercial/class-sessions/{id}/start")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
+    public ResponseEntity<ClassSessionResponse> start(@PathVariable UUID id) {
+        var response = classSessionService.startSession(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/comercial/class-sessions/{id}/finish")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
+    public ResponseEntity<ClassSessionResponse> finish(@PathVariable UUID id) {
+        var response = classSessionService.finishSession(id);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/comercial/class-sessions/{id}")
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
     public ResponseEntity<Void> delete(@PathVariable UUID id) {

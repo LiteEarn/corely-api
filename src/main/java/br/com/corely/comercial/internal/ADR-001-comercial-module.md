@@ -144,7 +144,7 @@ br.com.corely.comercial/
 │       ├── ScheduleSlotRequest.java
 │       └── ScheduleSlotResponse.java
 ├── classsession/
-│   ├── SessionStatus.java                # Enum: SCHEDULED, FINISHED, CANCELLED
+│   ├── SessionStatus.java                # Enum: SCHEDULED, IN_PROGRESS, FINISHED, CANCELLED
 │   ├── ClassSession.java                 # Sessão real de aula em uma data
 │   ├── ClassSessionRepository.java
 │   ├── ClassSessionService.java          # CRUD de sessões
@@ -499,6 +499,18 @@ Grupo `comercial` no OpenAPI, visível em:
 - OWNER/ADMIN/RECEPTIONIST: CRUD completo
 - FINANCIAL: apenas consulta (GET)
 - Testes unitários (21), de controller (12) e de isolamento de tenant (5)
+
+### STORY-025 — Encerramento da Aula (Class Session Lifecycle) (Jul/2026)
+- Pacote `br.com.corely.comercial.classsession`
+- Status `IN_PROGRESS` adicionado ao enum `SessionStatus` e `SessionStatusDto`
+- Métodos de transição centralizados na entidade `ClassSession`: `start()`, `finish()`, `cancel()`
+- Métodos de consulta na entidade: `isScheduled()`, `isInProgress()`, `isFinished()`, `isCancelled()`, `isTerminal()`
+- Endpoints: `POST /comercial/class-sessions/{id}/start`, `POST /comercial/class-sessions/{id}/finish`
+- Regras: terminal states são irreversíveis; FINISHED bloqueia Attendance, Booking (create/cancel) e Wait List promotion
+- Serviços consultam a entidade (`isFinished()`, `isCancelled()`) — sem reimplementação de lógica de transição
+- OWNER/ADMIN/RECEPTIONIST: podem iniciar/finalizar sessões
+- FINANCIAL: apenas consulta (GET)
+- Testes unitários e de controller adicionados
 
 ## Histórias Futuras (Roadmap)
 
