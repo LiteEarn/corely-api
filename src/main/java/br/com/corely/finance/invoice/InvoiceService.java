@@ -104,6 +104,7 @@ public class InvoiceService {
                 invoice.getDescription(),
                 invoice.getStatus(),
                 invoice.getPaymentDate(),
+                invoice.getBillingMonth(),
                 invoice.getCreatedAt(),
                 invoice.getUpdatedAt()
         );

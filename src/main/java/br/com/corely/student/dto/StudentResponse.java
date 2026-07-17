@@ -19,4 +19,6 @@ public class StudentResponse {
     private String email;
     private LocalDate birthDate;
     private Boolean active;
+
+    private Boolean billingEnabled;
 }

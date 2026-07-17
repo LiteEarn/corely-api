@@ -1,6 +1,10 @@
 package br.com.corely.finance.invoice;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
+import br.com.corely.finance.invoice.dto.DashboardResponse;
+import br.com.corely.finance.invoice.dto.GenerateInvoiceRequest;
+import br.com.corely.finance.invoice.dto.GenerateInvoiceResponse;
 import br.com.corely.finance.invoice.dto.InvoiceRequest;
 import br.com.corely.finance.invoice.dto.InvoiceResponse;
 import br.com.corely.user.UserRole;
@@ -19,6 +23,8 @@ import java.util.UUID;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+    private final InvoiceGenerationService invoiceGenerationService;
+    private final ComercialTenantContext tenantContext;
 
     @PostMapping
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
@@ -52,6 +58,22 @@ public class InvoiceController {
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
     public ResponseEntity<InvoiceResponse> cancel(@PathVariable UUID id) {
         var response = invoiceService.cancel(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/generate")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
+    public ResponseEntity<GenerateInvoiceResponse> generate(@Valid @RequestBody GenerateInvoiceRequest request) {
+        var studioId = tenantContext.getCurrentStudioId();
+        var response = invoiceGenerationService.generate(request, studioId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/dashboard")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
+    public ResponseEntity<DashboardResponse> dashboard(@RequestParam String month) {
+        var studioId = tenantContext.getCurrentStudioId();
+        var response = invoiceGenerationService.dashboard(month, studioId);
         return ResponseEntity.ok(response);
     }
 }
