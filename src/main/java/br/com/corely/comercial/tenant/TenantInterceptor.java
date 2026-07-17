@@ -23,7 +23,7 @@ public class TenantInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String path = request.getRequestURI();
-        if (path.startsWith("/comercial")) {
+        if (path.startsWith("/comercial") || path.startsWith("/finance")) {
             try {
                 var studioId = tenantContext.getCurrentStudioId();
                 var session = entityManager.unwrap(Session.class);
