@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,4 +33,16 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     @Override
     @Query("SELECT a FROM ComercialAttendance a WHERE a.id = :id")
     Optional<Attendance> findById(@Param("id") UUID id);
+
+    @Query("SELECT a.booking.classSession.id, COUNT(a) FROM ComercialAttendance a WHERE a.booking.classSession.id IN :sessionIds AND a.status = 'PRESENT' GROUP BY a.booking.classSession.id")
+    List<Object[]> countPresentBySessionIds(@Param("sessionIds") List<UUID> sessionIds);
+
+    @Query("SELECT a.booking.classSession.id, COUNT(a) FROM ComercialAttendance a WHERE a.booking.classSession.id IN :sessionIds AND a.status = 'ABSENT' GROUP BY a.booking.classSession.id")
+    List<Object[]> countAbsentBySessionIds(@Param("sessionIds") List<UUID> sessionIds);
+
+    @Query("SELECT COUNT(a) FROM ComercialAttendance a WHERE a.booking.classSession.id IN :sessionIds AND a.status = 'PRESENT'")
+    long countPresentBySessionIdList(@Param("sessionIds") List<UUID> sessionIds);
+
+    @Query("SELECT COUNT(a) FROM ComercialAttendance a WHERE a.booking.classSession.id IN :sessionIds AND a.status = 'ABSENT'")
+    long countAbsentBySessionIdList(@Param("sessionIds") List<UUID> sessionIds);
 }

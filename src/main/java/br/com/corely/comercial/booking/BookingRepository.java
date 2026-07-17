@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,4 +33,10 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT COUNT(b) FROM ComercialBooking b WHERE b.classSession.id = :classSessionId AND b.status = 'CONFIRMED'")
     long countConfirmedByClassSessionId(@Param("classSessionId") UUID classSessionId);
+
+    @Query("SELECT b.classSession.id, COUNT(b) FROM ComercialBooking b WHERE b.classSession.id IN :sessionIds AND b.status = 'CONFIRMED' GROUP BY b.classSession.id")
+    List<Object[]> countConfirmedBySessionIds(@Param("sessionIds") List<UUID> sessionIds);
+
+    @Query("SELECT COUNT(b) FROM ComercialBooking b WHERE b.classSession.id IN :sessionIds AND b.status = 'CONFIRMED'")
+    long countConfirmedBySessionIdList(@Param("sessionIds") List<UUID> sessionIds);
 }

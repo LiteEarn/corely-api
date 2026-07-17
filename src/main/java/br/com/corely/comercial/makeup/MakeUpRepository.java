@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,4 +23,7 @@ public interface MakeUpRepository extends JpaRepository<MakeUpCredit, UUID> {
     @Override
     @Query("SELECT m FROM ComercialMakeUpCredit m WHERE m.id = :id")
     Optional<MakeUpCredit> findById(@Param("id") UUID id);
+
+    @Query("SELECT m.originalClassSession.id, COUNT(m) FROM ComercialMakeUpCredit m WHERE m.originalClassSession.id IN :sessionIds GROUP BY m.originalClassSession.id")
+    List<Object[]> countByOriginalSessionIds(@Param("sessionIds") List<UUID> sessionIds);
 }

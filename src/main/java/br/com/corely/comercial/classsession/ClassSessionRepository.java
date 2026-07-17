@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,4 +36,19 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, UUID
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM ComercialClassSession c WHERE c.id = :id")
     Optional<ClassSession> findByIdWithLock(@Param("id") UUID id);
+
+    @Query("SELECT c FROM ComercialClassSession c JOIN FETCH c.scheduleSlot ss JOIN FETCH ss.schedule s WHERE c.sessionDate = :date AND c.active = true")
+    List<ClassSession> findBySessionDateWithSlotAndSchedule(@Param("date") LocalDate date);
+
+    @Query("SELECT COUNT(c) FROM ComercialClassSession c WHERE c.sessionDate = :date AND c.active = true")
+    long countBySessionDate(@Param("date") LocalDate date);
+
+    @Query("SELECT COUNT(c) FROM ComercialClassSession c WHERE c.sessionDate = :date AND c.status = :status AND c.active = true")
+    long countBySessionDateAndStatus(@Param("date") LocalDate date, @Param("status") SessionStatus status);
+
+    @Query("SELECT COALESCE(SUM(c.capacity), 0) FROM ComercialClassSession c WHERE c.sessionDate = :date AND c.active = true")
+    int sumCapacityBySessionDate(@Param("date") LocalDate date);
+
+    @Query("SELECT COALESCE(SUM(c.bookedCount), 0) FROM ComercialClassSession c WHERE c.sessionDate = :date AND c.active = true")
+    int sumBookedCountBySessionDate(@Param("date") LocalDate date);
 }
