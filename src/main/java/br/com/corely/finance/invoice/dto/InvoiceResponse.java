@@ -17,6 +17,7 @@ public class InvoiceResponse {
     private String description;
     private InvoiceStatus status;
     private LocalDate paymentDate;
+    private String billingMonth;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -24,7 +25,8 @@ public class InvoiceResponse {
 
     public InvoiceResponse(UUID id, UUID studentId, String studentName, LocalDate dueDate,
                            BigDecimal amount, String description, InvoiceStatus status,
-                           LocalDate paymentDate, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                           LocalDate paymentDate, String billingMonth,
+                           LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.studentId = studentId;
         this.studentName = studentName;
@@ -33,6 +35,7 @@ public class InvoiceResponse {
         this.description = description;
         this.status = status;
         this.paymentDate = paymentDate;
+        this.billingMonth = billingMonth;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -45,6 +48,7 @@ public class InvoiceResponse {
     public String getDescription() { return description; }
     public InvoiceStatus getStatus() { return status; }
     public LocalDate getPaymentDate() { return paymentDate; }
+    public String getBillingMonth() { return billingMonth; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

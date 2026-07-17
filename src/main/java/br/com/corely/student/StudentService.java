@@ -35,6 +35,7 @@ public class StudentService {
         student.setEmail(request.getEmail());
         student.setBirthDate(request.getBirthDate());
         student.setActive(true);
+        student.setBillingEnabled(true);
 
         student = studentRepository.save(student);
         return toResponse(student);
@@ -74,6 +75,10 @@ public class StudentService {
             student.setActive(request.getActive());
         }
 
+        if (request.getBillingEnabled() != null) {
+            student.setBillingEnabled(request.getBillingEnabled());
+        }
+
         student = studentRepository.save(student);
         return toResponse(student);
     }
@@ -101,7 +106,8 @@ public class StudentService {
                 student.getPhone(),
                 student.getEmail(),
                 student.getBirthDate(),
-                student.getActive()
+                student.getActive(),
+                student.getBillingEnabled()
         );
     }
 }

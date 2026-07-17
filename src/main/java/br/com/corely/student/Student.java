@@ -40,6 +40,9 @@ public class Student extends BaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
+    @Column(name = "billing_enabled", nullable = false)
+    private Boolean billingEnabled = true;
+
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Objective> objectives = new ArrayList<>();
 }

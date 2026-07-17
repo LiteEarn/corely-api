@@ -29,4 +29,6 @@ public class StudentRequest {
     private LocalDate birthDate;
 
     private Boolean active;
+
+    private Boolean billingEnabled;
 }

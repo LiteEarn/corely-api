@@ -26,4 +26,32 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     @Override
     @Query("SELECT i FROM FinanceInvoice i")
     List<Invoice> findAll();
+
+    @Query("SELECT i FROM FinanceInvoice i WHERE i.student.id = :studentId AND i.billingMonth = :billingMonth AND i.studio.id = :studioId")
+    Optional<Invoice> findByStudentIdAndBillingMonthAndStudioId(
+            @Param("studentId") UUID studentId,
+            @Param("billingMonth") String billingMonth,
+            @Param("studioId") UUID studioId);
+
+    @Query("SELECT i FROM FinanceInvoice i WHERE i.studio.id = :studioId AND i.billingMonth = :billingMonth")
+    List<Invoice> findByStudioIdAndBillingMonth(
+            @Param("studioId") UUID studioId,
+            @Param("billingMonth") String billingMonth);
+
+    @Query("SELECT COUNT(i) FROM FinanceInvoice i WHERE i.studio.id = :studioId AND i.status = :status AND i.billingMonth = :billingMonth")
+    long countByStudioIdAndStatusAndBillingMonth(
+            @Param("studioId") UUID studioId,
+            @Param("status") InvoiceStatus status,
+            @Param("billingMonth") String billingMonth);
+
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM FinanceInvoice i WHERE i.studio.id = :studioId AND i.status = :status AND i.billingMonth = :billingMonth")
+    java.math.BigDecimal sumAmountByStudioIdAndStatusAndBillingMonth(
+            @Param("studioId") UUID studioId,
+            @Param("status") InvoiceStatus status,
+            @Param("billingMonth") String billingMonth);
+
+    @Query("SELECT COUNT(DISTINCT i.student.id) FROM FinanceInvoice i WHERE i.studio.id = :studioId AND i.billingMonth = :billingMonth")
+    long countDistinctStudentByStudioIdAndBillingMonth(
+            @Param("studioId") UUID studioId,
+            @Param("billingMonth") String billingMonth);
 }
