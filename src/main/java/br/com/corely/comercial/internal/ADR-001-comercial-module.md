@@ -544,6 +544,21 @@ Grupo `comercial` no OpenAPI, visível em:
 - Swagger: documentado via `@Tag(name = "Dashboard")`
 - Testes unitários, de controller e de isolamento de tenant
 
+### STORY-028 — Cobranças (Invoices) (Jul/2026)
+- Pacote `br.com.corely.finance.invoice` — módulo independente do comercial
+- Entidade `Invoice` (estende `ComercialBaseEntity` — isolamento automático por tenant)
+- Enum `InvoiceStatus`: PENDING, PAID, OVERDUE, CANCELLED
+- Repository, Service, Controller, DTOs (`InvoiceRequest`, `InvoiceResponse`)
+- Endpoints em `/finance/invoices`
+- Operações: Criar, Buscar por ID, Listar, Pagar (POST /{id}/pay), Cancelar (POST /{id}/cancel)
+- Regras: não permite cancelar cobrança paga; não permite pagar cobrança cancelada; não permite pagar duas vezes
+- Ao pagar: status → PAID, preenche paymentDate com LocalDate.now()
+- Migration V47 com índices em student_id, status, due_date
+- OWNER/ADMIN/FINANCIAL: criação, pagamento e cancelamento; RECEPTIONIST: apenas consulta
+- TenantInterceptor ativado também para /finance/**
+- Swagger: grupo "Módulo Financeiro" em `/finance/**`
+- Testes unitários, de controller e de isolamento de tenant
+
 ## Histórias Futuras (Roadmap)
 
 1. Frontend — Telas do módulo
