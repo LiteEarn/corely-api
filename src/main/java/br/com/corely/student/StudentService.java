@@ -1,5 +1,6 @@
 package br.com.corely.student;
 
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.finance.membershipplan.MembershipPlanRepository;
@@ -24,13 +25,16 @@ public class StudentService {
     private final StudioRepository studioRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final MembershipPlanRepository membershipPlanRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public StudentResponse create(StudentRequest request) {
         Studio studio = studioRepository.findById(request.getStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
-        var membershipPlan = membershipPlanRepository.findById(request.getMembershipPlanId())
+        var membershipPlan = membershipPlanRepository.findByIdAndStudioId(
+                        request.getMembershipPlanId(),
+                        tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Membership plan not found"));
 
         Student student = new Student();
@@ -86,7 +90,9 @@ public class StudentService {
         }
 
         if (request.getMembershipPlanId() != null) {
-            var membershipPlan = membershipPlanRepository.findById(request.getMembershipPlanId())
+            var membershipPlan = membershipPlanRepository.findByIdAndStudioId(
+                            request.getMembershipPlanId(),
+                            tenantContext.getCurrentStudioId())
                     .orElseThrow(() -> new ResourceNotFoundException("Membership plan not found"));
             student.setMembershipPlan(membershipPlan);
         }

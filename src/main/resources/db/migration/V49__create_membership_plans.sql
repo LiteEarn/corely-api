@@ -20,7 +20,25 @@ CREATE UNIQUE INDEX idx_membership_plan_unique_name_per_studio
 
 ALTER TABLE students ADD COLUMN membership_plan_id UUID;
 
-UPDATE students SET membership_plan_id = NULL;
+-- Create a default plan for each studio that has active students without a plan
+INSERT INTO membership_plans (id, studio_id, name, description, monthly_price, sessions_per_week, active)
+SELECT
+    gen_random_uuid(),
+    s.studio_id,
+    'Plano Padrão',
+    'Plano criado automaticamente durante a migração',
+    0,
+    1,
+    true
+FROM (SELECT DISTINCT studio_id FROM students WHERE membership_plan_id IS NULL) s;
+
+-- Assign the default plan to all students without a plan
+UPDATE students
+SET membership_plan_id = mp.id
+FROM membership_plans mp
+WHERE students.studio_id = mp.studio_id
+  AND mp.name = 'Plano Padrão'
+  AND students.membership_plan_id IS NULL;
 
 ALTER TABLE students
     ADD CONSTRAINT fk_student_membership_plan

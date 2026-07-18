@@ -28,6 +28,9 @@ public interface MembershipPlanRepository extends JpaRepository<MembershipPlan, 
     @Query("SELECT p FROM MembershipPlan p WHERE p.id = :id")
     Optional<MembershipPlan> findById(@Param("id") UUID id);
 
+    @Query("SELECT p FROM MembershipPlan p WHERE p.id = :id AND p.studio.id = :studioId")
+    Optional<MembershipPlan> findByIdAndStudioId(@Param("id") UUID id, @Param("studioId") UUID studioId);
+
     @Query("SELECT p FROM MembershipPlan p WHERE p.studio.id = :studioId ORDER BY p.createdAt ASC")
     MembershipPlan findFirstByStudioId(@Param("studioId") UUID studioId);
 
