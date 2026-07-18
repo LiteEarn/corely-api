@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -31,11 +32,19 @@ public class InvoiceService {
         var student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
+        BigDecimal amount = request.getAmount();
+        if (amount == null) {
+            if (student.getMembershipPlan() == null) {
+                throw new BusinessException("Student has no membership plan. Provide an amount or assign a plan.");
+            }
+            amount = student.getMembershipPlan().getMonthlyPrice();
+        }
+
         var invoice = new Invoice();
         invoice.setStudio(studio);
         invoice.setStudent(student);
         invoice.setDueDate(request.getDueDate());
-        invoice.setAmount(request.getAmount());
+        invoice.setAmount(amount);
         invoice.setDescription(request.getDescription());
         invoice.setStatus(InvoiceStatus.PENDING);
 

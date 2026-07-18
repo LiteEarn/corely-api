@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@SuppressWarnings("deprecation")
+
 public class InvoiceRequest {
 
     @NotNull
@@ -15,7 +17,6 @@ public class InvoiceRequest {
     @NotNull
     private LocalDate dueDate;
 
-    @NotNull
     @Positive
     private BigDecimal amount;
 

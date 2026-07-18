@@ -1,7 +1,9 @@
 package br.com.corely.student;
 
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
+import br.com.corely.finance.membershipplan.MembershipPlanRepository;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.dto.StudentRequest;
 import br.com.corely.student.dto.StudentResponse;
@@ -22,11 +24,18 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final MembershipPlanRepository membershipPlanRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public StudentResponse create(StudentRequest request) {
         Studio studio = studioRepository.findById(request.getStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
+
+        var membershipPlan = membershipPlanRepository.findByIdAndStudioId(
+                        request.getMembershipPlanId(),
+                        tenantContext.getCurrentStudioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Membership plan not found"));
 
         Student student = new Student();
         student.setStudio(studio);
@@ -36,6 +45,7 @@ public class StudentService {
         student.setBirthDate(request.getBirthDate());
         student.setActive(true);
         student.setBillingEnabled(true);
+        student.setMembershipPlan(membershipPlan);
 
         student = studentRepository.save(student);
         return toResponse(student);
@@ -79,6 +89,14 @@ public class StudentService {
             student.setBillingEnabled(request.getBillingEnabled());
         }
 
+        if (request.getMembershipPlanId() != null) {
+            var membershipPlan = membershipPlanRepository.findByIdAndStudioId(
+                            request.getMembershipPlanId(),
+                            tenantContext.getCurrentStudioId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Membership plan not found"));
+            student.setMembershipPlan(membershipPlan);
+        }
+
         student = studentRepository.save(student);
         return toResponse(student);
     }
@@ -99,6 +117,8 @@ public class StudentService {
     }
 
     private StudentResponse toResponse(Student student) {
+        UUID planId = student.getMembershipPlan() != null ? student.getMembershipPlan().getId() : null;
+        String planName = student.getMembershipPlan() != null ? student.getMembershipPlan().getName() : null;
         return new StudentResponse(
                 student.getId(),
                 student.getStudio().getId(),
@@ -107,7 +127,9 @@ public class StudentService {
                 student.getEmail(),
                 student.getBirthDate(),
                 student.getActive(),
-                student.getBillingEnabled()
+                student.getBillingEnabled(),
+                planId,
+                planName
         );
     }
 }
