@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@SuppressWarnings("deprecation")
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,4 +33,7 @@ public class StudentRequest {
     private Boolean active;
 
     private Boolean billingEnabled;
+
+    @NotNull(message = "Membership plan is required")
+    private UUID membershipPlanId;
 }

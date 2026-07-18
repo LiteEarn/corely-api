@@ -1,5 +1,6 @@
 package br.com.corely.student;
 
+import br.com.corely.finance.membershipplan.MembershipPlan;
 import br.com.corely.objective.Objective;
 import br.com.corely.shared.audit.BaseEntity;
 import br.com.corely.studio.Studio;
@@ -42,6 +43,10 @@ public class Student extends BaseEntity {
 
     @Column(name = "billing_enabled", nullable = false)
     private Boolean billingEnabled = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "membership_plan_id")
+    private MembershipPlan membershipPlan;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Objective> objectives = new ArrayList<>();

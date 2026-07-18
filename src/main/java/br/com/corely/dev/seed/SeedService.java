@@ -21,6 +21,8 @@ import br.com.corely.evaluation.EvaluationService;
 import br.com.corely.evaluation.dto.EvaluationRequest;
 import br.com.corely.evolution.EvolutionService;
 import br.com.corely.evolution.dto.EvolutionRequest;
+import br.com.corely.finance.membershipplan.MembershipPlan;
+import br.com.corely.finance.membershipplan.MembershipPlanRepository;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.instructor.InstructorService;
@@ -89,7 +91,10 @@ public class SeedService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final MembershipPlanRepository membershipPlanRepository;
+
     private Studio studio;
+    private MembershipPlan defaultPlan;
     private List<Instructor> instructors;
     private List<ClassGroup> classGroups;
     private List<UUID> studentIds;
@@ -103,6 +108,7 @@ public class SeedService {
         clearAll();
 
         createStudio();
+        createDefaultPlan();
         createUsers();
         createInstructors();
         createClassGroups();
@@ -140,8 +146,10 @@ public class SeedService {
         studentRepository.deleteAll();
         instructorRepository.deleteAll();
         userRepository.deleteAll();
+        membershipPlanRepository.deleteAll();
         studioRepository.deleteAll();
         studio = null;
+        defaultPlan = null;
         instructors = null;
         classGroups = null;
         studentIds = null;
@@ -152,6 +160,17 @@ public class SeedService {
         studio.setName("Corely Pilates Studio");
         studio.setActive(true);
         studio = studioRepository.save(studio);
+    }
+
+    private void createDefaultPlan() {
+        var plan = new MembershipPlan();
+        plan.setStudio(studio);
+        plan.setName("Plano Básico");
+        plan.setDescription("Plano básico de Pilates");
+        plan.setMonthlyPrice(BigDecimal.valueOf(199));
+        plan.setSessionsPerWeek(2);
+        plan.setActive(true);
+        defaultPlan = membershipPlanRepository.save(plan);
     }
 
     private void createUsers() {
@@ -282,6 +301,7 @@ public class SeedService {
             req.setEmail(info.email);
             req.setBirthDate(info.birthDate);
             req.setActive(true);
+            req.setMembershipPlanId(defaultPlan.getId());
             var response = studentService.create(req);
             Student student = studentRepository.findById(response.getId()).orElseThrow();
             assignObjectives(student);
@@ -607,6 +627,12 @@ public class SeedService {
 
     @Transactional
     public void ensureDashboardData() {
+        if (defaultPlan == null) {
+            defaultPlan = membershipPlanRepository.findFirstByStudioId(studio.getId());
+            if (defaultPlan == null) {
+                createDefaultPlan();
+            }
+        }
         LocalDate today = LocalDate.now();
         List<ClassSession> todaySessions = classSessionRepository.findBySessionDate(today);
         if (todaySessions.isEmpty()) {
@@ -653,6 +679,7 @@ public class SeedService {
 
     public void seedStudentsOnly() {
         findOrCreateStudio();
+        createDefaultPlan();
         createInstructors();
         createClassGroups();
         enrollmentRepository.deleteAll();

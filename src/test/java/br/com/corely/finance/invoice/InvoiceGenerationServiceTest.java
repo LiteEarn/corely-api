@@ -4,6 +4,7 @@ import br.com.corely.billingconfiguration.BillingConfiguration;
 import br.com.corely.billingconfiguration.BillingConfigurationRepository;
 import br.com.corely.finance.invoice.dto.GenerateInvoiceRequest;
 import br.com.corely.finance.invoice.dto.GenerateInvoiceResponse;
+import br.com.corely.finance.membershipplan.MembershipPlanRepository;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
@@ -38,6 +39,9 @@ class InvoiceGenerationServiceTest {
     @Mock
     private BillingConfigurationRepository billingConfigurationRepository;
 
+    @Mock
+    private MembershipPlanRepository membershipPlanRepository;
+
     @Captor
     private ArgumentCaptor<List<Invoice>> invoiceListCaptor;
 
@@ -52,7 +56,7 @@ class InvoiceGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InvoiceGenerationService(invoiceRepository, studentRepository, billingConfigurationRepository);
+        service = new InvoiceGenerationService(invoiceRepository, studentRepository, billingConfigurationRepository, membershipPlanRepository);
 
         studioId = UUID.randomUUID();
         studio = new Studio();

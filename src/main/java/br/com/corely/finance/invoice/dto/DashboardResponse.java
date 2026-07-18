@@ -1,6 +1,7 @@
 package br.com.corely.finance.invoice.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class DashboardResponse {
 
@@ -12,12 +13,16 @@ public class DashboardResponse {
     private BigDecimal receivedRevenue;
     private BigDecimal pendingRevenue;
     private long totalBilledStudents;
+    private List<PlanMetricsResponse> studentsPerPlan;
+    private List<PlanMetricsResponse> expectedRevenuePerPlan;
 
     public DashboardResponse() {}
 
     public DashboardResponse(long pendingInvoices, long paidInvoices, long overdueInvoices, long cancelledInvoices,
                               BigDecimal expectedRevenue, BigDecimal receivedRevenue, BigDecimal pendingRevenue,
-                              long totalBilledStudents) {
+                              long totalBilledStudents,
+                              List<PlanMetricsResponse> studentsPerPlan,
+                              List<PlanMetricsResponse> expectedRevenuePerPlan) {
         this.pendingInvoices = pendingInvoices;
         this.paidInvoices = paidInvoices;
         this.overdueInvoices = overdueInvoices;
@@ -26,6 +31,8 @@ public class DashboardResponse {
         this.receivedRevenue = receivedRevenue;
         this.pendingRevenue = pendingRevenue;
         this.totalBilledStudents = totalBilledStudents;
+        this.studentsPerPlan = studentsPerPlan;
+        this.expectedRevenuePerPlan = expectedRevenuePerPlan;
     }
 
     public long getPendingInvoices() { return pendingInvoices; }
@@ -36,4 +43,6 @@ public class DashboardResponse {
     public BigDecimal getReceivedRevenue() { return receivedRevenue; }
     public BigDecimal getPendingRevenue() { return pendingRevenue; }
     public long getTotalBilledStudents() { return totalBilledStudents; }
+    public List<PlanMetricsResponse> getStudentsPerPlan() { return studentsPerPlan; }
+    public List<PlanMetricsResponse> getExpectedRevenuePerPlan() { return expectedRevenuePerPlan; }
 }

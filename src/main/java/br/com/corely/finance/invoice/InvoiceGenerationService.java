@@ -5,6 +5,8 @@ import br.com.corely.billingconfiguration.BillingConfigurationRepository;
 import br.com.corely.finance.invoice.dto.DashboardResponse;
 import br.com.corely.finance.invoice.dto.GenerateInvoiceRequest;
 import br.com.corely.finance.invoice.dto.GenerateInvoiceResponse;
+import br.com.corely.finance.invoice.dto.PlanMetricsResponse;
+import br.com.corely.finance.membershipplan.MembershipPlanRepository;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
@@ -25,6 +27,7 @@ public class InvoiceGenerationService {
     private final InvoiceRepository invoiceRepository;
     private final StudentRepository studentRepository;
     private final BillingConfigurationRepository billingConfigurationRepository;
+    private final MembershipPlanRepository membershipPlanRepository;
 
     @Transactional
     public GenerateInvoiceResponse generate(GenerateInvoiceRequest request, UUID studioId) {
@@ -100,8 +103,35 @@ public class InvoiceGenerationService {
                 .add(invoiceRepository.sumAmountByStudioIdAndStatusAndBillingMonth(studioId, InvoiceStatus.OVERDUE, billingMonth));
         long totalBilledStudents = invoiceRepository.countDistinctStudentByStudioIdAndBillingMonth(studioId, billingMonth);
 
+        List<PlanMetricsResponse> studentsPerPlan = buildStudentsPerPlan(studioId);
+        List<PlanMetricsResponse> expectedRevenuePerPlan = buildExpectedRevenuePerPlan(studioId);
+
         return new DashboardResponse(pending, paid, overdue, cancelled,
-                expectedRevenue, receivedRevenue, pendingRevenue, totalBilledStudents);
+                expectedRevenue, receivedRevenue, pendingRevenue, totalBilledStudents,
+                studentsPerPlan, expectedRevenuePerPlan);
+    }
+
+    private List<PlanMetricsResponse> buildStudentsPerPlan(UUID studioId) {
+        return membershipPlanRepository.countStudentsPerPlanByStudioId(studioId).stream()
+                .map(row -> new PlanMetricsResponse(
+                        (UUID) row[0],
+                        (String) row[1],
+                        (long) row[2],
+                        BigDecimal.ZERO))
+                .toList();
+    }
+
+    private List<PlanMetricsResponse> buildExpectedRevenuePerPlan(UUID studioId) {
+        return membershipPlanRepository.revenuePerPlanByStudioId(studioId).stream()
+                .map(row -> {
+                    var planId = (UUID) row[0];
+                    var planName = (String) row[1];
+                    var monthlyPrice = (BigDecimal) row[2];
+                    var studentCount = (long) row[3];
+                    var expectedRevenue = monthlyPrice.multiply(BigDecimal.valueOf(studentCount));
+                    return new PlanMetricsResponse(planId, planName, studentCount, expectedRevenue);
+                })
+                .toList();
     }
 
     private static int clampDay(int day, String billingMonth) {

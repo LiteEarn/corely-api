@@ -21,4 +21,7 @@ public class StudentResponse {
     private Boolean active;
 
     private Boolean billingEnabled;
+
+    private UUID membershipPlanId;
+    private String membershipPlanName;
 }
