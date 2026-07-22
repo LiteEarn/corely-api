@@ -291,6 +291,20 @@ public class BookingService {
             throw new BusinessException("Only CANCELLED bookings can be confirmed");
         }
 
+        var classSession = classSessionRepository.findByIdWithLock(booking.getClassSession().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
+
+        if (classSession.isFinished()) {
+            throw new BusinessException("Cannot confirm a booking for a finished session");
+        }
+
+        if (classSession.getBookedCount() >= classSession.getCapacity()) {
+            throw new BusinessException("ClassSession is full, cannot reconfirm booking");
+        }
+
+        classSession.setBookedCount(classSession.getBookedCount() + 1);
+        classSessionRepository.save(classSession);
+
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setActive(true);
         bookingRepository.save(booking);
@@ -340,21 +354,17 @@ public class BookingService {
         var originSessionId = booking.getClassSession().getId();
         var targetSessionId = request.getNewClassSessionId();
 
-        // Lock in deterministic order to avoid deadlock
-        List<UUID> orderedIds = new ArrayList<>(List.of(originSessionId, targetSessionId));
-        Collections.sort(orderedIds);
-        boolean originFirst = orderedIds.get(0).equals(originSessionId);
+        // Lock in deterministic UUID order to avoid deadlock
+        UUID firstId = originSessionId.compareTo(targetSessionId) <= 0 ? originSessionId : targetSessionId;
+        UUID secondId = firstId.equals(originSessionId) ? targetSessionId : originSessionId;
 
-        var originSession = classSessionRepository.findByIdWithLock(originSessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Origin ClassSession not found"));
-        var targetSession = classSessionRepository.findByIdWithLock(targetSessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Target ClassSession not found"));
+        var firstLocked = classSessionRepository.findByIdWithLock(firstId)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found: " + firstId));
+        var secondLocked = classSessionRepository.findByIdWithLock(secondId)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found: " + secondId));
 
-        if (!originFirst) {
-            // Re-read in locks to ensure consistent order
-            if (originSession == null) originSession = classSessionRepository.findByIdWithLock(originSessionId).orElseThrow();
-            if (targetSession == null) targetSession = classSessionRepository.findByIdWithLock(targetSessionId).orElseThrow();
-        }
+        var originSession = firstId.equals(originSessionId) ? firstLocked : secondLocked;
+        var targetSession = firstId.equals(originSessionId) ? secondLocked : firstLocked;
 
         if (!targetSession.getActive() || !targetSession.isScheduled()) {
             throw new BusinessException("Target ClassSession must be active and SCHEDULED");
