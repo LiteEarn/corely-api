@@ -14,6 +14,9 @@ public class ScheduleSlotResponse {
     private LocalTime endTime;
     private Integer capacity;
     private Boolean active;
+    private UUID instructorId;
+    private String instructorName;
+    private Long roomId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -21,7 +24,8 @@ public class ScheduleSlotResponse {
 
     public ScheduleSlotResponse(UUID id, UUID scheduleId, DayOfWeek dayOfWeek,
                                 LocalTime startTime, LocalTime endTime, Integer capacity,
-                                Boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                                Boolean active, UUID instructorId, String instructorName,
+                                Long roomId, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.scheduleId = scheduleId;
         this.dayOfWeek = dayOfWeek;
@@ -29,6 +33,9 @@ public class ScheduleSlotResponse {
         this.endTime = endTime;
         this.capacity = capacity;
         this.active = active;
+        this.instructorId = instructorId;
+        this.instructorName = instructorName;
+        this.roomId = roomId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -40,6 +47,9 @@ public class ScheduleSlotResponse {
     public LocalTime getEndTime() { return endTime; }
     public Integer getCapacity() { return capacity; }
     public Boolean getActive() { return active; }
+    public UUID getInstructorId() { return instructorId; }
+    public String getInstructorName() { return instructorName; }
+    public Long getRoomId() { return roomId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

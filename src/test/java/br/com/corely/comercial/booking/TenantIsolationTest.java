@@ -12,6 +12,8 @@ import br.com.corely.comercial.scheduleslot.ScheduleSlotRepository;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.instructor.Instructor;
+import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -84,7 +87,7 @@ class TenantIsolationTest {
     private ContractSnapshotRepository contractSnapshotRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private InstructorRepository instructorRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -101,6 +104,8 @@ class TenantIsolationTest {
     private Student studentB;
     private Booking bookingA;
     private Booking bookingB;
+    private Instructor instructorA;
+    private Instructor instructorB;
 
     @BeforeEach
     void setUp() {
@@ -109,13 +114,16 @@ class TenantIsolationTest {
 
         createAndAuthenticateUser(studioA, UserRole.ADMIN);
 
+        instructorA = instructorRepository.save(createInstructor(studioA, "Instructor A"));
+        instructorB = instructorRepository.save(createInstructor(studioB, "Instructor B"));
+
         scheduleA = scheduleRepository.save(createSchedule(studioA, "Schedule A"));
         scheduleB = scheduleRepository.save(createSchedule(studioB, "Schedule B"));
 
         slotA = scheduleSlotRepository.save(createSlot(studioA, scheduleA, DayOfWeek.MONDAY,
-                LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
+                LocalTime.of(8, 0), LocalTime.of(9, 0), 10, instructorA));
         slotB = scheduleSlotRepository.save(createSlot(studioB, scheduleB, DayOfWeek.MONDAY,
-                LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
+                LocalTime.of(8, 0), LocalTime.of(9, 0), 10, instructorB));
 
         sessionA = classSessionRepository.save(createSession(studioA, slotA, LocalDate.of(2026, 8, 1),
                 LocalTime.of(8, 0), LocalTime.of(9, 0)));
@@ -168,6 +176,49 @@ class TenantIsolationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void confirm_shouldReturn404_whenBookingBelongsToOtherTenant() throws Exception {
+        mockMvc.perform(put("/comercial/bookings/{id}/confirm", bookingB.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancel_shouldReturn404_whenBookingBelongsToOtherTenant() throws Exception {
+        var cancelRequest = new br.com.corely.comercial.booking.dto.CancelBookingRequest(
+                br.com.corely.comercial.booking.CancelReason.OTHER, null);
+        mockMvc.perform(put("/comercial/bookings/{id}/cancel", bookingB.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cancelRequest)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void reschedule_shouldReturn404_whenBookingBelongsToOtherTenant() throws Exception {
+        var rescheduleRequest = new br.com.corely.comercial.booking.dto.RescheduleBookingRequest(sessionA.getId());
+        mockMvc.perform(put("/comercial/bookings/{id}/reschedule", bookingB.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(rescheduleRequest)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void noShow_shouldReturn404_whenBookingBelongsToOtherTenant() throws Exception {
+        mockMvc.perform(put("/comercial/bookings/{id}/no-show", bookingB.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void complete_shouldReturn404_whenBookingBelongsToOtherTenant() throws Exception {
+        mockMvc.perform(put("/comercial/bookings/{id}/complete", bookingB.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void findConflicts_shouldReturn404_whenBookingBelongsToOtherTenant() throws Exception {
+        mockMvc.perform(get("/comercial/bookings/{id}/conflicts", bookingB.getId()))
+                .andExpect(status().isNotFound());
+    }
+
     private User createAndAuthenticateUser(Studio studio, UserRole role) {
         var user = new User();
         user.setName(role.name() + " User");
@@ -199,7 +250,8 @@ class TenantIsolationTest {
     }
 
     private ScheduleSlot createSlot(Studio studio, Schedule schedule, DayOfWeek dayOfWeek,
-                                    LocalTime startTime, LocalTime endTime, int capacity) {
+                                    LocalTime startTime, LocalTime endTime, int capacity,
+                                    Instructor instructor) {
         var slot = new ScheduleSlot();
         slot.setStudio(studio);
         slot.setSchedule(schedule);
@@ -208,6 +260,7 @@ class TenantIsolationTest {
         slot.setEndTime(endTime);
         slot.setCapacity(capacity);
         slot.setActive(true);
+        slot.setInstructor(instructor);
         return slot;
     }
 
@@ -233,6 +286,17 @@ class TenantIsolationTest {
         student.setActive(true);
         return studentRepository.save(student);
     }
+
+    private Instructor createInstructor(Studio studio, String name) {
+        var instructor = new Instructor();
+        instructor.setStudio(studio);
+        instructor.setFullName(name);
+        instructor.setActive(true);
+        return instructor;
+    }
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private void createActiveStudentPlan(Studio studio, Student student) {
         var snapshot = new ContractSnapshot();

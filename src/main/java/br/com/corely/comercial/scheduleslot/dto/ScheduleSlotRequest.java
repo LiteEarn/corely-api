@@ -22,6 +22,8 @@ public class ScheduleSlotRequest {
     private Integer capacity;
 
     private Boolean active;
+    private java.util.UUID instructorId;
+    private Long roomId;
 
     public ScheduleSlotRequest() {}
 
@@ -35,4 +37,8 @@ public class ScheduleSlotRequest {
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public java.util.UUID getInstructorId() { return instructorId; }
+    public void setInstructorId(java.util.UUID instructorId) { this.instructorId = instructorId; }
+    public Long getRoomId() { return roomId; }
+    public void setRoomId(Long roomId) { this.roomId = roomId; }
 }
