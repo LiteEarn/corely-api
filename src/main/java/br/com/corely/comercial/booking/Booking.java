@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity(name = "ComercialBooking")
 @Table(name = "comercial_bookings")
@@ -31,6 +32,19 @@ public class Booking extends ComercialBaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_reason", nullable = true, length = 20)
+    private CancelReason cancelReason;
+
+    @Column(name = "cancel_description", nullable = true)
+    private String cancelDescription;
+
+    @Column(name = "cancelled_by", nullable = true)
+    private UUID cancelledBy;
+
+    @Column(name = "cancelled_at", nullable = true)
+    private LocalDateTime cancelledAt;
+
     public Booking() {}
 
     public ClassSession getClassSession() { return classSession; }
@@ -43,4 +57,12 @@ public class Booking extends ComercialBaseEntity {
     public void setStatus(BookingStatus status) { this.status = status; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public CancelReason getCancelReason() { return cancelReason; }
+    public void setCancelReason(CancelReason cancelReason) { this.cancelReason = cancelReason; }
+    public String getCancelDescription() { return cancelDescription; }
+    public void setCancelDescription(String cancelDescription) { this.cancelDescription = cancelDescription; }
+    public UUID getCancelledBy() { return cancelledBy; }
+    public void setCancelledBy(UUID cancelledBy) { this.cancelledBy = cancelledBy; }
+    public LocalDateTime getCancelledAt() { return cancelledAt; }
+    public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
 }

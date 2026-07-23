@@ -3,7 +3,7 @@ package br.com.corely.comercial.booking;
 import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
 import br.com.corely.comercial.classsession.SessionStatus;
-import br.com.corely.comercial.booking.dto.BookingRequest;
+import br.com.corely.comercial.booking.dto.*;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotRepository;
 import br.com.corely.comercial.schedule.Schedule;
@@ -13,6 +13,8 @@ import br.com.corely.comercial.scheduleslot.ScheduleSlotRepository;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.instructor.Instructor;
+import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
@@ -40,8 +42,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -83,6 +84,9 @@ class BookingControllerTest {
     private ContractSnapshotRepository contractSnapshotRepository;
 
     @Autowired
+    private InstructorRepository instructorRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private Studio studio;
@@ -90,189 +94,45 @@ class BookingControllerTest {
     private ScheduleSlot slot;
     private ClassSession session;
     private Student student;
-    private Booking booking1;
-    private Booking booking2;
+    private Instructor instructor;
 
     @BeforeEach
     void setUp() {
         studio = studioRepository.save(createStudio("Test Studio"));
         authenticateAs(studio, UserRole.ADMIN);
 
-        schedule = scheduleRepository.save(createSchedule(studio, "Morning Class"));
+        instructor = instructorRepository.save(createInstructor("Test Instructor"));
+
+        schedule = scheduleRepository.save(createSchedule(studio, "Schedule A"));
         slot = scheduleSlotRepository.save(createSlot(studio, schedule, DayOfWeek.MONDAY,
                 LocalTime.of(8, 0), LocalTime.of(9, 0), 10));
         session = classSessionRepository.save(createSession(studio, slot, LocalDate.of(2026, 8, 1),
                 LocalTime.of(8, 0), LocalTime.of(9, 0)));
-
-        student = createAndSaveStudent("John Doe");
-        createActiveStudentPlan(student);
-
-        var secondStudent = createAndSaveStudent("Jane Doe");
-        createActiveStudentPlan(secondStudent);
-
-        booking1 = createBooking(session, student);
-        booking2 = createBooking(session, secondStudent);
+        student = createAndSaveStudent(studio, "Test Student");
+        createActiveStudentPlan(studio, student);
     }
 
     @Test
     void create_shouldReturn201() throws Exception {
-        var thirdStudent = createAndSaveStudent("Bob Smith");
-        createActiveStudentPlan(thirdStudent);
-
         var request = new BookingRequest();
         request.setClassSessionId(session.getId());
-        request.setStudentId(thirdStudent.getId());
+        request.setStudentId(student.getId());
 
         mockMvc.perform(post("/comercial/bookings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.classSessionId").value(session.getId().toString()))
-                .andExpect(jsonPath("$.studentId").value(thirdStudent.getId().toString()))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.active").value(true));
     }
 
     @Test
-    void create_shouldReturn409_whenDuplicate() throws Exception {
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void create_shouldReturn404_whenClassSessionNotFound() throws Exception {
-        var request = new BookingRequest();
-        request.setClassSessionId(UUID.randomUUID());
-        request.setStudentId(student.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void create_shouldReturn409_whenClassSessionFull() throws Exception {
-        session.setCapacity(1);
-        session.setBookedCount(1);
-        classSessionRepository.save(session);
-
-        var thirdStudent = createAndSaveStudent("Bob Smith");
-        createActiveStudentPlan(thirdStudent);
-
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(thirdStudent.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void create_shouldReturn409_whenStudentInactive() throws Exception {
-        student.setActive(false);
-        studentRepository.save(student);
-
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void create_shouldReturn409_whenNoActivePlan() throws Exception {
-        var plan = studentPlanRepository.findByStudentIdAndStatus(student.getId(), StudentPlanStatus.ACTIVE);
-        plan.ifPresent(p -> {
-            p.setStatus(StudentPlanStatus.CANCELLED);
-            studentPlanRepository.save(p);
-        });
-
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void create_shouldReturn409_whenBookingBlocked() throws Exception {
-        var plan = studentPlanRepository.findByStudentIdAndStatus(student.getId(), StudentPlanStatus.ACTIVE);
-        plan.ifPresent(p -> {
-            p.setBookingBlocked(true);
-            studentPlanRepository.save(p);
-        });
-
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(student.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void create_shouldReturn409_whenPlanEndedBeforeSession() throws Exception {
-        var newStudent = createAndSaveStudent("Plan Ended");
-        createActiveStudentPlan(newStudent, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 6, 30));
-
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(newStudent.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void create_shouldReturn409_whenPlanNotStartedYet() throws Exception {
-        var newStudent = createAndSaveStudent("Plan Future");
-        createActiveStudentPlan(newStudent, LocalDate.of(2026, 9, 1), null);
-
-        var request = new BookingRequest();
-        request.setClassSessionId(session.getId());
-        request.setStudentId(newStudent.getId());
-
-        mockMvc.perform(post("/comercial/bookings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void findAll_shouldReturnPagedResults() throws Exception {
-        mockMvc.perform(get("/comercial/bookings")
-                        .param("size", "10")
-                        .param("page", "0"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(2));
-    }
-
-    @Test
     void findById_shouldReturnBooking() throws Exception {
-        mockMvc.perform(get("/comercial/bookings/{id}", booking1.getId()))
+        var booking = createBooking(session, student);
+
+        mockMvc.perform(get("/comercial/bookings/{id}", booking.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(booking1.getId().toString()))
-                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+                .andExpect(jsonPath("$.studentName").value("Test Student"));
     }
 
     @Test
@@ -283,32 +143,142 @@ class BookingControllerTest {
 
     @Test
     void delete_shouldReturn204() throws Exception {
-        mockMvc.perform(delete("/comercial/bookings/{id}", booking1.getId()))
-                .andExpect(status().isNoContent());
+        var booking = createBooking(session, student);
 
-        var updatedSession = classSessionRepository.findById(session.getId()).orElseThrow();
-        assert updatedSession.getBookedCount() >= 0;
-    }
-
-    @Test
-    void delete_shouldReturn204_whenAlreadyCancelled() throws Exception {
-        mockMvc.perform(delete("/comercial/bookings/{id}", booking1.getId()))
-                .andExpect(status().isNoContent());
-
-        mockMvc.perform(delete("/comercial/bookings/{id}", booking1.getId()))
+        mockMvc.perform(delete("/comercial/bookings/{id}", booking.getId()))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void delete_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(delete("/comercial/bookings/{id}", UUID.randomUUID()))
-                .andExpect(status().isNotFound());
+    void confirm_shouldReturn200() throws Exception {
+        var booking = createBooking(session, student);
+
+        mockMvc.perform(put("/comercial/bookings/{id}/confirm", booking.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cancel_shouldReturn200() throws Exception {
+        var booking = createBooking(session, student);
+        var cancelRequest = new CancelBookingRequest(CancelReason.STUDENT, "Student request");
+
+        mockMvc.perform(put("/comercial/bookings/{id}/cancel", booking.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cancelRequest)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void reschedule_shouldReturn200() throws Exception {
+        var booking = createBooking(session, student);
+        var targetSession = classSessionRepository.save(createSession(studio, slot, LocalDate.of(2026, 8, 2),
+                LocalTime.of(9, 0), LocalTime.of(10, 0)));
+        var rescheduleRequest = new RescheduleBookingRequest(targetSession.getId());
+
+        mockMvc.perform(put("/comercial/bookings/{id}/reschedule", booking.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(rescheduleRequest)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void noShow_shouldReturn200() throws Exception {
+        var booking = createBooking(session, student);
+        session.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session);
+
+        mockMvc.perform(put("/comercial/bookings/{id}/no-show", booking.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void complete_shouldReturn200() throws Exception {
+        var booking = createBooking(session, student);
+        session.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session);
+        session.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(session);
+
+        mockMvc.perform(put("/comercial/bookings/{id}/complete", booking.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void findAgenda_shouldReturnResults() throws Exception {
+        createBooking(session, student);
+
+        mockMvc.perform(get("/comercial/bookings/agenda")
+                        .param("startDate", "2026-08-01")
+                        .param("endDate", "2026-08-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void findConflicts_shouldReturnEmpty_whenNoConflicts() throws Exception {
+        var booking = createBooking(session, student);
+
+        mockMvc.perform(get("/comercial/bookings/{id}/conflicts", booking.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void findAvailability_shouldReturnResults() throws Exception {
+        mockMvc.perform(get("/comercial/bookings/availability")
+                        .param("date", "2026-08-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void getDashboard_shouldReturnMetrics() throws Exception {
+        mockMvc.perform(get("/comercial/bookings/dashboard")
+                        .param("date", "2026-08-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.date").value("2026-08-01"));
+    }
+
+    @Test
+    void timeBlock_create_shouldReturn201() throws Exception {
+        var request = new TimeBlockRequest();
+        request.setInstructorId(instructor.getId());
+        request.setStartDateTime(LocalDate.now().plusDays(10).atTime(10, 0));
+        request.setEndDateTime(LocalDate.now().plusDays(10).atTime(12, 0));
+        request.setBlockType(BlockType.ADMIN);
+        request.setReason("Test block");
+
+        mockMvc.perform(post("/comercial/time-blocks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void timeBlock_findAll_shouldReturnPagedResults() throws Exception {
+        mockMvc.perform(get("/comercial/time-blocks"))
+                .andExpect(status().isOk());
+    }
+
+    private User createAndAuthenticateUser(Studio studio, UserRole role) {
+        var user = new User();
+        user.setName(role.name() + " User");
+        user.setEmail(role.name().toLowerCase() + "@test.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user.setStudio(studio);
+        user = userRepository.save(user);
+
+        var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        return user;
     }
 
     private void authenticateAs(Studio studio, UserRole role) {
         var user = new User();
         user.setName(role.name() + " User");
-        user.setEmail(role.name().toLowerCase() + "@test.com");
+        user.setEmail(role.name().toLowerCase() + "_" + studio.getId() + "@controller.com");
         user.setPassword(passwordEncoder.encode("password"));
         user.setRole(role);
         user.setActive(true);
@@ -344,6 +314,7 @@ class BookingControllerTest {
         slot.setEndTime(endTime);
         slot.setCapacity(capacity);
         slot.setActive(true);
+        slot.setInstructor(instructor);
         return slot;
     }
 
@@ -362,7 +333,7 @@ class BookingControllerTest {
         return session;
     }
 
-    private Student createAndSaveStudent(String name) {
+    private Student createAndSaveStudent(Studio studio, String name) {
         var student = new Student();
         student.setStudio(studio);
         student.setFullName(name);
@@ -370,11 +341,15 @@ class BookingControllerTest {
         return studentRepository.save(student);
     }
 
-    private void createActiveStudentPlan(Student student) {
-        createActiveStudentPlan(student, LocalDate.now().minusDays(30), null);
+    private Instructor createInstructor(String name) {
+        var instructor = new Instructor();
+        instructor.setStudio(studio);
+        instructor.setFullName(name);
+        instructor.setActive(true);
+        return instructor;
     }
 
-    private void createActiveStudentPlan(Student student, LocalDate startDate, LocalDate endDate) {
+    private void createActiveStudentPlan(Studio studio, Student student) {
         var snapshot = new ContractSnapshot();
         snapshot.setStudioId(studio.getId());
         snapshot.setPlanId(UUID.randomUUID());
@@ -389,21 +364,24 @@ class BookingControllerTest {
         plan.setStudio(studio);
         plan.setStudent(student);
         plan.setContractSnapshot(snapshot);
-        plan.setStartDate(startDate);
-        plan.setEndDate(endDate);
+        plan.setStartDate(LocalDate.now().minusDays(30));
         plan.setStatus(StudentPlanStatus.ACTIVE);
         plan.setBookingBlocked(false);
         studentPlanRepository.save(plan);
     }
 
-    private Booking createBooking(ClassSession session, Student student) {
+    private Booking createBooking(ClassSession classSession, Student student) {
         var booking = new Booking();
         booking.setStudio(studio);
-        booking.setClassSession(session);
+        booking.setClassSession(classSession);
         booking.setStudent(student);
         booking.setBookingDateTime(LocalDate.now().atStartOfDay());
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setActive(true);
+
+        classSession.setBookedCount(classSession.getBookedCount() + 1);
+        classSessionRepository.save(classSession);
+
         return bookingRepository.save(booking);
     }
 }

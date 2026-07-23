@@ -19,4 +19,8 @@ public class ComercialTenantContext {
         }
         return studioId;
     }
+
+    public UUID getCurrentUserId() {
+        return authenticationFacade.getCurrentUserId();
+    }
 }

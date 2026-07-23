@@ -3,7 +3,7 @@ package br.com.corely.comercial.booking;
 import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
 import br.com.corely.comercial.classsession.SessionStatus;
-import br.com.corely.comercial.booking.dto.BookingRequest;
+import br.com.corely.comercial.booking.dto.*;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotRepository;
 import br.com.corely.comercial.schedule.Schedule;
@@ -13,6 +13,8 @@ import br.com.corely.comercial.scheduleslot.ScheduleSlotRepository;
 import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.instructor.Instructor;
+import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
@@ -78,6 +80,9 @@ class BookingServiceTest {
     private ContractSnapshotRepository contractSnapshotRepository;
 
     @Autowired
+    private InstructorRepository instructorRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private Studio studio;
@@ -85,11 +90,14 @@ class BookingServiceTest {
     private ScheduleSlot slot;
     private ClassSession session;
     private Student student;
+    private Instructor instructor;
 
     @BeforeEach
     void setUp() {
         studio = studioRepository.save(createStudio("Test Studio"));
         authenticateAs(studio, UserRole.ADMIN);
+
+        instructor = instructorRepository.save(createInstructor("Test Instructor"));
 
         schedule = scheduleRepository.save(createSchedule("Morning Class"));
         slot = scheduleSlotRepository.save(createSlot(schedule, DayOfWeek.MONDAY,
@@ -370,6 +378,305 @@ class BookingServiceTest {
         assertThat(response.getStudentId()).isEqualTo(secondStudent.getId());
     }
 
+    @Test
+    void confirm_shouldBeIdempotent_whenAlreadyConfirmed() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        bookingService.confirm(created.getId());
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+    }
+
+    @Test
+    void confirm_shouldThrowException_whenBookingNotFound() {
+        assertThatThrownBy(() -> bookingService.confirm(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found");
+    }
+
+    @Test
+    void cancel_shouldSetCancelAuditFields() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var cancelRequest = new CancelBookingRequest(CancelReason.STUDENT, "Student requested cancellation");
+        bookingService.cancel(created.getId(), cancelRequest);
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(booking.getActive()).isFalse();
+        assertThat(booking.getCancelReason()).isEqualTo(CancelReason.STUDENT);
+        assertThat(booking.getCancelDescription()).isEqualTo("Student requested cancellation");
+        assertThat(booking.getCancelledBy()).isNotNull();
+        assertThat(booking.getCancelledAt()).isNotNull();
+    }
+
+    @Test
+    void cancel_shouldThrowException_whenAlreadyCancelled() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var cancelRequest = new CancelBookingRequest(CancelReason.STUDENT, null);
+        bookingService.cancel(created.getId(), cancelRequest);
+
+        assertThatThrownBy(() -> bookingService.cancel(created.getId(), cancelRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Only CONFIRMED bookings can be cancelled");
+    }
+
+    @Test
+    void cancel_shouldThrowException_whenBookingNotFound() {
+        var cancelRequest = new CancelBookingRequest(CancelReason.OTHER, null);
+        assertThatThrownBy(() -> bookingService.cancel(UUID.randomUUID(), cancelRequest))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void noShow_shouldSetStatus() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        session.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session);
+
+        bookingService.markNoShow(created.getId());
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.NO_SHOW);
+    }
+
+    @Test
+    void noShow_shouldThrowException_whenSessionNotStarted() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        assertThatThrownBy(() -> bookingService.markNoShow(created.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot mark no-show for a session that has not started yet");
+    }
+
+    @Test
+    void complete_shouldSetStatus() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        session.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session);
+        session.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(session);
+
+        bookingService.complete(created.getId());
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.COMPLETED);
+    }
+
+    @Test
+    void complete_shouldThrowException_whenSessionNotFinished() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        assertThatThrownBy(() -> bookingService.complete(created.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot complete a booking for a session that is not finished yet");
+    }
+
+    @Test
+    void reschedule_shouldMoveBooking() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+        assertThat(session.getBookedCount()).isEqualTo(1);
+
+        var targetSession = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 2),
+                LocalTime.of(9, 0), LocalTime.of(10, 0)));
+
+        var rescheduleRequest = new RescheduleBookingRequest(targetSession.getId());
+        bookingService.reschedule(created.getId(), rescheduleRequest);
+
+        var originSession = classSessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(originSession.getBookedCount()).isZero();
+
+        var updatedTarget = classSessionRepository.findById(targetSession.getId()).orElseThrow();
+        assertThat(updatedTarget.getBookedCount()).isEqualTo(1);
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getClassSession().getId()).isEqualTo(targetSession.getId());
+    }
+
+    @Test
+    void reschedule_shouldThrowException_whenTargetFull() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var targetSession = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 2),
+                LocalTime.of(9, 0), LocalTime.of(10, 0)));
+        targetSession.setCapacity(1);
+        targetSession.setBookedCount(1);
+        classSessionRepository.save(targetSession);
+
+        var rescheduleRequest = new RescheduleBookingRequest(targetSession.getId());
+        assertThatThrownBy(() -> bookingService.reschedule(created.getId(), rescheduleRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Target ClassSession is full");
+    }
+
+    @Test
+    void findAvailability_shouldReturnResults() {
+        var results = bookingService.findAvailability(LocalDate.of(2026, 8, 1), null, null);
+
+        assertThat(results).isNotEmpty();
+        assertThat(results.get(0).getCapacity()).isEqualTo(10);
+        assertThat(results.get(0).getBookedCount()).isZero();
+        assertThat(results.get(0).isAvailable()).isTrue();
+    }
+
+    @Test
+    void getDashboard_shouldReturnMetrics() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        bookingService.create(request);
+
+        var dashboard = bookingService.getDashboard(LocalDate.of(2026, 8, 1));
+
+        assertThat(dashboard).isNotNull();
+        assertThat(dashboard.getTotalBookings()).isEqualTo(1);
+        assertThat(dashboard.getConfirmed()).isEqualTo(1);
+        assertThat(dashboard.getTotalCapacity()).isEqualTo(10);
+        assertThat(dashboard.getTotalBooked()).isEqualTo(1);
+        assertThat(dashboard.getFreeCapacity()).isEqualTo(9);
+    }
+
+    @Test
+    void findConflicts_shouldReturnEmpty_whenNoConflicts() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var conflicts = bookingService.findConflicts(created.getId());
+        assertThat(conflicts).isEmpty();
+    }
+
+    @Test
+    void confirm_shouldReincrementBookedCount_whenReactivatingCancelledBooking() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var cancelRequest = new CancelBookingRequest(CancelReason.OTHER, null);
+        bookingService.cancel(created.getId(), cancelRequest);
+
+        var afterCancel = classSessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(afterCancel.getBookedCount()).isZero();
+
+        bookingService.confirm(created.getId());
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(booking.getActive()).isTrue();
+
+        var afterConfirm = classSessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(afterConfirm.getBookedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void confirm_shouldThrowException_whenSessionIsFull() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var cancelRequest = new CancelBookingRequest(CancelReason.OTHER, null);
+        bookingService.cancel(created.getId(), cancelRequest);
+
+        session.setCapacity(1);
+        session.setBookedCount(1);
+        classSessionRepository.save(session);
+
+        assertThatThrownBy(() -> bookingService.confirm(created.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("ClassSession is full, cannot reconfirm booking");
+    }
+
+    @Test
+    void confirm_shouldThrowException_whenSessionIsFinished() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var cancelRequest = new CancelBookingRequest(CancelReason.OTHER, null);
+        bookingService.cancel(created.getId(), cancelRequest);
+
+        session.setStatus(SessionStatus.FINISHED);
+        classSessionRepository.save(session);
+
+        assertThatThrownBy(() -> bookingService.confirm(created.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot confirm a booking for a finished session");
+    }
+
+    @Test
+    void reschedule_shouldLockClassSessionsInDeterministicOrder_whenOriginSmallerThanTarget() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        var targetSession = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 2),
+                LocalTime.of(9, 0), LocalTime.of(10, 0)));
+
+        var rescheduleRequest = new RescheduleBookingRequest(targetSession.getId());
+        bookingService.reschedule(created.getId(), rescheduleRequest);
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getClassSession().getId()).isEqualTo(targetSession.getId());
+    }
+
+    @Test
+    void reschedule_shouldLockClassSessionsInDeterministicOrder_whenTargetSmallerThanOrigin() {
+        var originSessionWithHighId = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 10),
+                LocalTime.of(6, 0), LocalTime.of(7, 0)));
+
+        var request = new BookingRequest();
+        request.setClassSessionId(originSessionWithHighId.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        assertThat(created.getClassSessionId()).isEqualTo(originSessionWithHighId.getId());
+
+        var targetSession = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 2),
+                LocalTime.of(9, 0), LocalTime.of(10, 0)));
+
+        var rescheduleRequest = new RescheduleBookingRequest(targetSession.getId());
+        bookingService.reschedule(created.getId(), rescheduleRequest);
+
+        var booking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(booking.getClassSession().getId()).isEqualTo(targetSession.getId());
+    }
+
     private void authenticateAs(Studio studio, UserRole role) {
         var user = new User();
         user.setName(role.name() + " User");
@@ -409,6 +716,7 @@ class BookingServiceTest {
         slot.setEndTime(endTime);
         slot.setCapacity(capacity);
         slot.setActive(true);
+        slot.setInstructor(instructor);
         return slot;
     }
 
@@ -433,6 +741,14 @@ class BookingServiceTest {
         student.setFullName(name);
         student.setActive(true);
         return studentRepository.save(student);
+    }
+
+    private Instructor createInstructor(String name) {
+        var instructor = new Instructor();
+        instructor.setStudio(studio);
+        instructor.setFullName(name);
+        instructor.setActive(true);
+        return instructor;
     }
 
     private void createActiveStudentPlan(Student student) {

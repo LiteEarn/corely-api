@@ -4,6 +4,7 @@ import br.com.corely.comercial.schedule.ScheduleRepository;
 import br.com.corely.comercial.scheduleslot.dto.ScheduleSlotRequest;
 import br.com.corely.comercial.scheduleslot.dto.ScheduleSlotResponse;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
+import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.StudioRepository;
@@ -21,6 +22,7 @@ public class ScheduleSlotService {
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final ScheduleRepository scheduleRepository;
     private final StudioRepository studioRepository;
+    private final InstructorRepository instructorRepository;
     private final ComercialTenantContext tenantContext;
 
     @Transactional
@@ -40,6 +42,10 @@ public class ScheduleSlotService {
         slot.setEndTime(request.getEndTime());
         slot.setCapacity(request.getCapacity());
         slot.setActive(request.getActive() != null ? request.getActive() : true);
+        if (request.getInstructorId() != null) {
+            slot.setInstructor(instructorRepository.getReferenceById(request.getInstructorId()));
+        }
+        slot.setRoomId(request.getRoomId());
 
         slot = scheduleSlotRepository.save(slot);
         return toResponse(slot);
@@ -79,6 +85,12 @@ public class ScheduleSlotService {
         if (request.getActive() != null) {
             slot.setActive(request.getActive());
         }
+        if (request.getInstructorId() != null) {
+            slot.setInstructor(instructorRepository.getReferenceById(request.getInstructorId()));
+        } else {
+            slot.setInstructor(null);
+        }
+        slot.setRoomId(request.getRoomId());
 
         slot = scheduleSlotRepository.save(slot);
         return toResponse(slot);
@@ -116,6 +128,7 @@ public class ScheduleSlotService {
     }
 
     private ScheduleSlotResponse toResponse(ScheduleSlot slot) {
+        var instructor = slot.getInstructor();
         return new ScheduleSlotResponse(
                 slot.getId(),
                 slot.getSchedule().getId(),
@@ -124,6 +137,9 @@ public class ScheduleSlotService {
                 slot.getEndTime(),
                 slot.getCapacity(),
                 slot.getActive(),
+                instructor != null ? instructor.getId() : null,
+                instructor != null ? instructor.getFullName() : null,
+                slot.getRoomId(),
                 slot.getCreatedAt(),
                 slot.getUpdatedAt()
         );
