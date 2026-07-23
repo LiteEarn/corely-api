@@ -4,6 +4,7 @@ import br.com.corely.comercial.schedule.Schedule;
 import br.com.corely.comercial.schedule.ScheduleRepository;
 import br.com.corely.comercial.scheduleslot.ScheduleSlot;
 import br.com.corely.comercial.scheduleslot.ScheduleSlotRepository;
+import br.com.corely.comercial.classsession.dto.CancelSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionRequest;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
@@ -430,6 +431,62 @@ class ClassSessionControllerTest {
     void finish_shouldReturn404_whenNotFound() throws Exception {
         mockMvc.perform(post("/comercial/class-sessions/{id}/finish", UUID.randomUUID()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancel_shouldReturn200() throws Exception {
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.INSTRUCTOR_UNAVAILABLE);
+        request.setDescription("Instructor sick");
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/cancel", session1.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.cancelReason").value("INSTRUCTOR_UNAVAILABLE"))
+                .andExpect(jsonPath("$.cancelDescription").value("Instructor sick"))
+                .andExpect(jsonPath("$.cancelledBy").isNotEmpty())
+                .andExpect(jsonPath("$.cancelledAt").isNotEmpty());
+    }
+
+    @Test
+    void cancel_shouldReturn409_whenSessionNotScheduled() throws Exception {
+        session1.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(session1);
+
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.OTHER);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/cancel", session1.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cancel_shouldReturn404_whenNotFound() throws Exception {
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.OTHER);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/cancel", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancel_shouldBeForbiddenForFinancial() throws Exception {
+        var studio = studioRepository.save(createStudio("Studio Financial"));
+        authenticateAs(studio, UserRole.FINANCIAL);
+
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.OTHER);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/cancel", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     private void authenticateAs(Studio studio, UserRole role) {

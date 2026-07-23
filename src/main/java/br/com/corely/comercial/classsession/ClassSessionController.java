@@ -1,6 +1,7 @@
 package br.com.corely.comercial.classsession;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.comercial.classsession.dto.CancelSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionResponse;
 import br.com.corely.comercial.classsession.dto.SessionStatusDto;
@@ -50,6 +51,14 @@ public class ClassSessionController {
     public ResponseEntity<ClassSessionResponse> update(@PathVariable UUID id,
                                                        @Valid @RequestBody ClassSessionRequest request) {
         var response = classSessionService.update(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/comercial/class-sessions/{id}/cancel")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
+    public ResponseEntity<ClassSessionResponse> cancel(@PathVariable UUID id,
+                                                       @Valid @RequestBody CancelSessionRequest request) {
+        var response = classSessionService.cancelSession(id, request);
         return ResponseEntity.ok(response);
     }
 

@@ -4,6 +4,7 @@ import br.com.corely.comercial.schedule.Schedule;
 import br.com.corely.comercial.schedule.ScheduleRepository;
 import br.com.corely.comercial.scheduleslot.ScheduleSlot;
 import br.com.corely.comercial.scheduleslot.ScheduleSlotRepository;
+import br.com.corely.comercial.classsession.dto.CancelSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionRequest;
 import br.com.corely.comercial.classsession.dto.SessionStatusDto;
 import br.com.corely.shared.exception.BusinessException;
@@ -427,6 +428,39 @@ class ClassSessionServiceTest {
         assertThatThrownBy(() -> classSessionService.finishSession(saved.getId()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot finish");
+    }
+
+    @Test
+    void cancelSession_shouldCancelScheduledSession_withReasonAndAudit() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.INSTRUCTOR_UNAVAILABLE);
+        request.setDescription("Instructor called in sick");
+
+        var response = classSessionService.cancelSession(saved.getId(), request);
+
+        assertThat(response.getStatus()).isEqualTo(SessionStatusDto.CANCELLED);
+        assertThat(response.getCancelReason()).isEqualTo(SessionCancelReason.INSTRUCTOR_UNAVAILABLE);
+        assertThat(response.getCancelDescription()).isEqualTo("Instructor called in sick");
+        assertThat(response.getCancelledBy()).isNotNull();
+        assertThat(response.getCancelledAt()).isNotNull();
+    }
+
+    @Test
+    void cancelSession_shouldThrowException_whenSessionNotScheduled() {
+        var saved = classSessionRepository.save(createSession(slot, LocalDate.of(2026, 8, 1),
+                LocalTime.of(8, 0), LocalTime.of(9, 0)));
+        saved.setStatus(SessionStatus.IN_PROGRESS);
+        classSessionRepository.save(saved);
+
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.OTHER);
+
+        assertThatThrownBy(() -> classSessionService.cancelSession(saved.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot cancel");
     }
 
     private void authenticateAs(Studio studio, UserRole role) {
