@@ -19,7 +19,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service("comercialAttendanceService")
@@ -95,6 +97,14 @@ public class AttendanceService {
     public Page<AttendanceResponse> findByStudentId(UUID studentId, Pageable pageable) {
         return attendanceRepository.findByStudentId(studentId, pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> findByScheduleAndDate(UUID scheduleId, LocalDate date) {
+        return attendanceRepository.findByScheduleIdAndSessionDate(scheduleId, date)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional

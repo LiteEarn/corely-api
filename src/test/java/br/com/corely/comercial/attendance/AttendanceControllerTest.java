@@ -208,6 +208,67 @@ class AttendanceControllerTest {
                 .andExpect(jsonPath("$.content").isArray());
     }
 
+    @Test
+    void register_shouldBeForbiddenForFinancial() throws Exception {
+        authenticateAs(studio, UserRole.FINANCIAL);
+
+        var request = new AttendanceRequest(booking.getId(), AttendanceStatus.PRESENT, null);
+
+        mockMvc.perform(post("/comercial/attendances/sessions/{sessionId}", session.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void bulkSave_shouldBeForbiddenForFinancial() throws Exception {
+        authenticateAs(studio, UserRole.FINANCIAL);
+
+        var request = new BulkAttendanceRequest(session.getId(), List.of(
+                new BulkAttendanceRequest.AttendanceItem(booking.getId(), true, null)
+        ));
+
+        mockMvc.perform(post("/comercial/attendances/bulk")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void findBySessionId_shouldBeForbiddenForInstructor() throws Exception {
+        authenticateAs(studio, UserRole.INSTRUCTOR);
+
+        mockMvc.perform(get("/comercial/attendances/sessions/{sessionId}", session.getId()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void findByBookingId_shouldBeForbiddenForInstructor() throws Exception {
+        authenticateAs(studio, UserRole.INSTRUCTOR);
+
+        mockMvc.perform(get("/comercial/attendances/bookings/{bookingId}", booking.getId()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void findByStudentId_shouldBeForbiddenForInstructor() throws Exception {
+        authenticateAs(studio, UserRole.INSTRUCTOR);
+
+        mockMvc.perform(get("/comercial/attendances/students/{studentId}", student.getId()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void findByScheduleAndDate_shouldReturn200() throws Exception {
+        attendanceRepository.save(createAttendance(session, booking, AttendanceStatus.PRESENT));
+        var schedule = scheduleRepository.findAll().getFirst();
+
+        mockMvc.perform(get("/comercial/attendances/schedules/{scheduleId}/date/{date}",
+                        schedule.getId(), session.getSessionDate()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
     private Studio createStudio(String name) {
         var studio = new Studio();
         studio.setName(name);
