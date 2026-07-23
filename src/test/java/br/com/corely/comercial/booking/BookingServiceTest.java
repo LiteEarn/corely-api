@@ -2,7 +2,10 @@ package br.com.corely.comercial.booking;
 
 import br.com.corely.comercial.classsession.ClassSession;
 import br.com.corely.comercial.classsession.ClassSessionRepository;
+import br.com.corely.comercial.classsession.ClassSessionService;
+import br.com.corely.comercial.classsession.SessionCancelReason;
 import br.com.corely.comercial.classsession.SessionStatus;
+import br.com.corely.comercial.classsession.dto.CancelSessionRequest;
 import br.com.corely.comercial.booking.dto.*;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotRepository;
@@ -15,6 +18,7 @@ import br.com.corely.comercial.studentplan.StudentPlanRepository;
 import br.com.corely.comercial.studentplan.StudentPlanStatus;
 import br.com.corely.instructor.Instructor;
 import br.com.corely.instructor.InstructorRepository;
+import br.com.corely.comercial.classsession.ClassSessionCancelledEvent;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.Student;
@@ -81,6 +85,12 @@ class BookingServiceTest {
 
     @Autowired
     private InstructorRepository instructorRepository;
+
+    @Autowired
+    private ClassSessionService classSessionService;
+
+    @Autowired
+    private ClassSessionCancelledListener classSessionCancelledListener;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -675,6 +685,32 @@ class BookingServiceTest {
 
         var booking = bookingRepository.findById(created.getId()).orElseThrow();
         assertThat(booking.getClassSession().getId()).isEqualTo(targetSession.getId());
+    }
+
+    @Test
+    void classSessionCancelled_shouldCancelAllConfirmedBookings() {
+        var request = new BookingRequest();
+        request.setClassSessionId(session.getId());
+        request.setStudentId(student.getId());
+        var created = bookingService.create(request);
+
+        assertThat(created.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+
+        // Directly invoke the listener to verify cascade logic
+        // (in @Transactional tests, @TransactionalEventListener may not fire
+        // due to transaction rollback, so we invoke it directly)
+        classSessionCancelledListener.onClassSessionCancelled(
+                new ClassSessionCancelledEvent(this, session.getId()));
+
+        var updatedBooking = bookingRepository.findById(created.getId()).orElseThrow();
+        assertThat(updatedBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(updatedBooking.getActive()).isFalse();
+        assertThat(updatedBooking.getCancelReason()).isEqualTo(CancelReason.SESSION_CANCELLED);
+        assertThat(updatedBooking.getCancelDescription()).isEqualTo("Sessão cancelada");
+
+        // bookedCount NÃO deve ser alterado pelo listener (permanece como estava)
+        var updatedSession = classSessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(updatedSession.getBookedCount()).isEqualTo(1);
     }
 
     private void authenticateAs(Studio studio, UserRole role) {

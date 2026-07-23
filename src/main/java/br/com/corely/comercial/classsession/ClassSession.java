@@ -7,7 +7,9 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 @Entity(name = "ComercialClassSession")
 @Table(name = "comercial_class_sessions")
@@ -40,6 +42,19 @@ public class ClassSession extends ComercialBaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_reason", nullable = true, length = 30)
+    private SessionCancelReason cancelReason;
+
+    @Column(name = "cancel_description", nullable = true)
+    private String cancelDescription;
+
+    @Column(name = "cancelled_by", nullable = true)
+    private UUID cancelledBy;
+
+    @Column(name = "cancelled_at", nullable = true)
+    private LocalDateTime cancelledAt;
+
     public ClassSession() {}
 
     public void start() {
@@ -56,11 +71,15 @@ public class ClassSession extends ComercialBaseEntity {
         this.status = SessionStatus.FINISHED;
     }
 
-    public void cancel() {
+    public void cancel(SessionCancelReason reason, String description, UUID cancelledBy) {
         if (status != SessionStatus.SCHEDULED) {
             throw new BusinessException("Cannot cancel a session with status " + status);
         }
         this.status = SessionStatus.CANCELLED;
+        this.cancelReason = reason;
+        this.cancelDescription = description;
+        this.cancelledBy = cancelledBy;
+        this.cancelledAt = LocalDateTime.now();
     }
 
     public boolean isScheduled() {
@@ -99,4 +118,8 @@ public class ClassSession extends ComercialBaseEntity {
     public void setStatus(SessionStatus status) { this.status = status; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public SessionCancelReason getCancelReason() { return cancelReason; }
+    public String getCancelDescription() { return cancelDescription; }
+    public UUID getCancelledBy() { return cancelledBy; }
+    public LocalDateTime getCancelledAt() { return cancelledAt; }
 }

@@ -4,6 +4,7 @@ import br.com.corely.comercial.schedule.Schedule;
 import br.com.corely.comercial.schedule.ScheduleRepository;
 import br.com.corely.comercial.scheduleslot.ScheduleSlot;
 import br.com.corely.comercial.scheduleslot.ScheduleSlotRepository;
+import br.com.corely.comercial.classsession.dto.CancelSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionRequest;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
@@ -146,6 +147,17 @@ class TenantIsolationTest {
     @Test
     void delete_shouldReturn404_whenSessionBelongsToOtherTenant() throws Exception {
         mockMvc.perform(delete("/comercial/class-sessions/{id}", sessionB.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancel_shouldReturn404_whenSessionBelongsToOtherTenant() throws Exception {
+        var request = new CancelSessionRequest();
+        request.setReason(SessionCancelReason.OTHER);
+
+        mockMvc.perform(post("/comercial/class-sessions/{id}/cancel", sessionB.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
     }
 

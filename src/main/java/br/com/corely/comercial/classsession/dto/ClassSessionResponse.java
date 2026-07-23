@@ -1,5 +1,7 @@
 package br.com.corely.comercial.classsession.dto;
 
+import br.com.corely.comercial.classsession.SessionCancelReason;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -16,6 +18,10 @@ public class ClassSessionResponse {
     private Integer bookedCount;
     private SessionStatusDto status;
     private Boolean active;
+    private SessionCancelReason cancelReason;
+    private String cancelDescription;
+    private UUID cancelledBy;
+    private LocalDateTime cancelledAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -24,6 +30,8 @@ public class ClassSessionResponse {
     public ClassSessionResponse(UUID id, UUID scheduleSlotId, LocalDate sessionDate,
                                 LocalTime startTime, LocalTime endTime, Integer capacity,
                                 Integer bookedCount, SessionStatusDto status, Boolean active,
+                                SessionCancelReason cancelReason, String cancelDescription,
+                                UUID cancelledBy, LocalDateTime cancelledAt,
                                 LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.scheduleSlotId = scheduleSlotId;
@@ -34,6 +42,10 @@ public class ClassSessionResponse {
         this.bookedCount = bookedCount;
         this.status = status;
         this.active = active;
+        this.cancelReason = cancelReason;
+        this.cancelDescription = cancelDescription;
+        this.cancelledBy = cancelledBy;
+        this.cancelledAt = cancelledAt;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -47,6 +59,10 @@ public class ClassSessionResponse {
     public Integer getBookedCount() { return bookedCount; }
     public SessionStatusDto getStatus() { return status; }
     public Boolean getActive() { return active; }
+    public SessionCancelReason getCancelReason() { return cancelReason; }
+    public String getCancelDescription() { return cancelDescription; }
+    public UUID getCancelledBy() { return cancelledBy; }
+    public LocalDateTime getCancelledAt() { return cancelledAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

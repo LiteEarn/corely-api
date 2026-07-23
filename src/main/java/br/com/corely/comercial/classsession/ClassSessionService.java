@@ -1,5 +1,6 @@
 package br.com.corely.comercial.classsession;
 
+import br.com.corely.comercial.classsession.dto.CancelSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionRequest;
 import br.com.corely.comercial.classsession.dto.ClassSessionResponse;
 import br.com.corely.comercial.classsession.dto.SessionStatusDto;
@@ -135,6 +136,19 @@ public class ClassSessionService {
     }
 
     @Transactional
+    public ClassSessionResponse cancelSession(UUID id, CancelSessionRequest request) {
+        var session = classSessionRepository.findByIdWithLock(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
+
+        session.cancel(request.getReason(), request.getDescription(), tenantContext.getCurrentUserId());
+        session = classSessionRepository.save(session);
+
+        eventPublisher.publishEvent(new ClassSessionCancelledEvent(this, session.getId()));
+
+        return toResponse(session);
+    }
+
+    @Transactional
     public void delete(UUID id) {
         var session = classSessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ClassSession not found"));
@@ -174,6 +188,10 @@ public class ClassSessionService {
                 session.getBookedCount(),
                 SessionStatusDto.valueOf(session.getStatus().name()),
                 session.getActive(),
+                session.getCancelReason(),
+                session.getCancelDescription(),
+                session.getCancelledBy(),
+                session.getCancelledAt(),
                 session.getCreatedAt(),
                 session.getUpdatedAt()
         );

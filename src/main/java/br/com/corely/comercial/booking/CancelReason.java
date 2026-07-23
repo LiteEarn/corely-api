@@ -5,5 +5,6 @@ public enum CancelReason {
     STUDIO,
     INSTRUCTOR,
     WEATHER,
-    OTHER
+    OTHER,
+    SESSION_CANCELLED
 }

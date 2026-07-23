@@ -85,4 +85,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT COUNT(b) FROM ComercialBooking b JOIN b.classSession cs WHERE cs.sessionDate = :date AND b.status = :status")
     long countBySessionDateAndStatus(@Param("date") LocalDate date, @Param("status") BookingStatus status);
+
+    @Query("SELECT b FROM ComercialBooking b WHERE b.classSession.id = :classSessionId AND b.status = :status")
+    List<Booking> findByClassSessionIdAndStatus(@Param("classSessionId") UUID classSessionId,
+                                                @Param("status") BookingStatus status);
 }
