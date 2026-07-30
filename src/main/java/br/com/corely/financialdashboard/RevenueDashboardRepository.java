@@ -32,4 +32,19 @@ public interface RevenueDashboardRepository extends JpaRepository<Invoice, UUID>
            "WHERE i.referenceMonth = :referenceMonth AND i.status = 'PAID' " +
            "GROUP BY cs.id, cs.planName, cs.planPrice")
     List<Object[]> revenuePerPlanForMonth(@Param("referenceMonth") String referenceMonth);
+
+    @Query("SELECT i.referenceMonth, COALESCE(SUM(i.amount), 0), COUNT(i) " +
+           "FROM Invoice i WHERE i.status = 'PAID' AND i.referenceMonth >= :referenceMonth " +
+           "GROUP BY i.referenceMonth ORDER BY i.referenceMonth")
+    List<Object[]> revenuePerMonth(@Param("referenceMonth") String referenceMonth);
+
+    @Query("SELECT i.referenceMonth, COUNT(i) " +
+           "FROM Invoice i WHERE i.status = 'OVERDUE' AND i.referenceMonth >= :referenceMonth " +
+           "GROUP BY i.referenceMonth ORDER BY i.referenceMonth")
+    List<Object[]> delinquencyPerMonth(@Param("referenceMonth") String referenceMonth);
+
+    @Query("SELECT i.referenceMonth, COUNT(i) " +
+           "FROM Invoice i WHERE i.referenceMonth >= :referenceMonth " +
+           "GROUP BY i.referenceMonth ORDER BY i.referenceMonth")
+    List<Object[]> totalInvoicesPerMonth(@Param("referenceMonth") String referenceMonth);
 }
