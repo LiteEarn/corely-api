@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,9 +23,9 @@ public class RevenueTrendIndicator {
     private final RevenueDashboardRepository revenueDashboardRepository;
 
     @Transactional(readOnly = true)
-    public RevenueTrendResponse calculate() {
-        LocalDate now = LocalDate.now();
-        String startReferenceMonth = now.minusMonths(11).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+    public RevenueTrendResponse calculate(String referenceMonth) {
+        YearMonth endMonth = YearMonth.parse(referenceMonth, DateTimeFormatter.ofPattern("yyyy-MM"));
+        String startReferenceMonth = endMonth.minusMonths(11).format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
         List<MonthlyRevenueItem> monthlyRevenue = calculateMonthlyRevenue(startReferenceMonth);
         List<DelinquencyEvolutionItem> delinquencyEvolution = calculateDelinquencyEvolution(startReferenceMonth);

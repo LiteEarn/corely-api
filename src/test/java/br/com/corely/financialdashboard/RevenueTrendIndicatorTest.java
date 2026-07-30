@@ -53,7 +53,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Arrays.asList(overdueRow1, overdueRow2, overdueRow3));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyRevenue()).hasSize(3);
         assertThat(response.getDelinquencyEvolution()).hasSize(3);
@@ -79,7 +79,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.emptyList());
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyRevenue()).isEmpty();
         assertThat(response.getMonthlyGrowthRate()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -102,7 +102,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyGrowthRate()).isEqualByComparingTo(new BigDecimal("0.1000"));
     }
@@ -120,7 +120,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyGrowthRate()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -139,7 +139,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyGrowthRate()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -156,7 +156,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getDelinquencyEvolution()).hasSize(1);
         DelinquencyEvolutionItem item = response.getDelinquencyEvolution().get(0);
@@ -180,7 +180,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyGrowthRate()).isEqualByComparingTo(new BigDecimal("-0.2000"));
     }
@@ -199,7 +199,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getMonthlyGrowthRate()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -223,7 +223,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Arrays.asList(overdueRow1, overdueRow2, overdueRow3));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getDelinquencyEvolution()).hasSize(3);
 
@@ -262,7 +262,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         List<MonthlyRevenueItem> monthly = response.getMonthlyRevenue();
         assertThat(monthly).hasSize(3);
@@ -284,7 +284,7 @@ class RevenueTrendIndicatorTest {
         when(revenueDashboardRepository.delinquencyPerMonth(anyString()))
                 .thenReturn(Collections.singletonList(overdueRow));
 
-        RevenueTrendResponse response = indicator.calculate();
+        RevenueTrendResponse response = indicator.calculate("2026-07");
 
         assertThat(response.getDelinquencyEvolution()).hasSize(1);
         DelinquencyEvolutionItem item = response.getDelinquencyEvolution().get(0);
