@@ -13,7 +13,19 @@ import br.com.corely.classsession.ClassSession;
 import br.com.corely.classsession.ClassSessionRepository;
 import br.com.corely.classsession.ClassSessionService;
 import br.com.corely.classsession.ClassSessionStatus;
-import br.com.corely.finance.membershipplan.MembershipPlan;
+import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
+import br.com.corely.comercial.contractsnapshot.ContractSnapshotRepository;
+import br.com.corely.comercial.invoice.Invoice;
+import br.com.corely.comercial.invoice.InvoiceStatus;
+import br.com.corely.comercial.invoice.InvoiceRepository;
+import br.com.corely.comercial.payment.Payment;
+import br.com.corely.comercial.payment.PaymentMethod;
+import br.com.corely.comercial.payment.PaymentRepository;
+import br.com.corely.comercial.plan.Plan;
+import br.com.corely.comercial.plan.PlanRepository;
+import br.com.corely.comercial.studentplan.StudentPlan;
+import br.com.corely.comercial.studentplan.StudentPlanRepository;
+import br.com.corely.comercial.studentplan.StudentPlanStatus;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.enrollment.EnrollmentService;
@@ -96,6 +108,12 @@ public class SeedService {
 
     private final MembershipPlanRepository membershipPlanRepository;
 
+    private final PlanRepository comercialPlanRepository;
+    private final ContractSnapshotRepository contractSnapshotRepository;
+    private final StudentPlanRepository studentPlanRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final PaymentRepository paymentRepository;
+
     private Studio studio;
     private MembershipPlan defaultPlan;
     private List<Instructor> instructors;
@@ -128,6 +146,7 @@ public class SeedService {
         createMakeupRequests();
         createEvaluations();
         createEvolutions();
+        createComercialData();
 
         response.setStudents(studentIds.size());
         response.setClassGroups(classGroups.size());
@@ -139,6 +158,11 @@ public class SeedService {
 
     @Transactional
     public void clearAll() {
+        paymentRepository.deleteAll();
+        invoiceRepository.deleteAll();
+        studentPlanRepository.deleteAll();
+        contractSnapshotRepository.deleteAll();
+        comercialPlanRepository.deleteAll();
         makeupRequestRepository.deleteAll();
         attendanceRepository.deleteAll();
         classSessionRepository.deleteAll();
@@ -635,6 +659,148 @@ public class SeedService {
                 req.setDescription("Progresso satisfatorio. Aluno demonstra melhora na execucao dos exercicios.");
                 evolutionService.create(req);
             } catch (Exception ignored) {}
+        }
+    }
+
+    private void createComercialData() {
+        Random rnd = new Random(555);
+
+        List<Plan> plans = createComercialPlans();
+        List<ContractSnapshot> snapshots = createContractSnapshots(plans);
+        List<StudentPlan> studentPlans = createComercialStudentPlans(snapshots, rnd);
+        List<Invoice> invoices = createComercialInvoices(studentPlans, rnd);
+        createComercialPayments(invoices, rnd);
+    }
+
+    private List<Plan> createComercialPlans() {
+        List<Plan> plans = new ArrayList<>();
+
+        Plan mensal = new Plan();
+        mensal.setStudio(studio);
+        mensal.setName("Plano Mensal");
+        mensal.setDescription("Acesso ilimitado a aulas de Pilates");
+        mensal.setPrice(BigDecimal.valueOf(250));
+        mensal.setDuration(1);
+        mensal.setVersion(1);
+        mensal.setActive(true);
+        mensal.setAutoRenew(true);
+        plans.add(comercialPlanRepository.save(mensal));
+
+        Plan trimestral = new Plan();
+        trimestral.setStudio(studio);
+        trimestral.setName("Plano Trimestral");
+        trimestral.setDescription("Acesso ilimitado com desconto trimestral");
+        trimestral.setPrice(BigDecimal.valueOf(650));
+        trimestral.setDuration(3);
+        trimestral.setVersion(1);
+        trimestral.setActive(true);
+        trimestral.setAutoRenew(true);
+        plans.add(comercialPlanRepository.save(trimestral));
+
+        Plan anual = new Plan();
+        anual.setStudio(studio);
+        anual.setName("Plano Anual");
+        anual.setDescription("Acesso ilimitado com desconto anual");
+        anual.setPrice(BigDecimal.valueOf(2200));
+        anual.setDuration(12);
+        anual.setVersion(1);
+        anual.setActive(true);
+        anual.setAutoRenew(true);
+        plans.add(comercialPlanRepository.save(anual));
+
+        return plans;
+    }
+
+    private List<ContractSnapshot> createContractSnapshots(List<Plan> plans) {
+        List<ContractSnapshot> snapshots = new ArrayList<>();
+        for (Plan plan : plans) {
+            ContractSnapshot snapshot = new ContractSnapshot();
+            snapshot.setStudioId(studio.getId());
+            snapshot.setPlanId(plan.getId());
+            snapshot.setPlanVersion(plan.getVersion());
+            snapshot.setPlanName(plan.getName());
+            snapshot.setPlanDescription(plan.getDescription());
+            snapshot.setPlanPrice(plan.getPrice());
+            snapshot.setPlanDuration(plan.getDuration());
+            snapshot.setRules("[]");
+            snapshots.add(contractSnapshotRepository.save(snapshot));
+        }
+        return snapshots;
+    }
+
+    private List<StudentPlan> createComercialStudentPlans(List<ContractSnapshot> snapshots, Random rnd) {
+        List<StudentPlan> studentPlans = new ArrayList<>();
+        List<UUID> shuffled = new ArrayList<>(studentIds);
+        Collections.shuffle(shuffled, rnd);
+
+        int target = Math.min(shuffled.size(), 40 + rnd.nextInt(21));
+        for (int i = 0; i < target; i++) {
+            ContractSnapshot snapshot = snapshots.get(rnd.nextInt(snapshots.size()));
+            StudentPlan sp = new StudentPlan();
+            sp.setStudio(studio);
+            sp.setStudent(studentRepository.findById(shuffled.get(i)).orElseThrow());
+            sp.setContractSnapshot(snapshot);
+            sp.setStartDate(LocalDate.now().minusDays(30 + rnd.nextInt(150)));
+            sp.setStatus(StudentPlanStatus.ACTIVE);
+            sp.setBookingBlocked(false);
+            studentPlans.add(studentPlanRepository.save(sp));
+        }
+        return studentPlans;
+    }
+
+    private List<Invoice> createComercialInvoices(List<StudentPlan> studentPlans, Random rnd) {
+        List<Invoice> invoices = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        for (StudentPlan sp : studentPlans) {
+            BigDecimal amount = sp.getContractSnapshot().getPlanPrice();
+            for (int m = 5; m >= 0; m--) {
+                LocalDate month = today.minusMonths(m);
+                String refMonth = String.format("%d-%02d", month.getYear(), month.getMonthValue());
+                LocalDate dueDate = month.withDayOfMonth(10);
+
+                Invoice invoice = new Invoice();
+                invoice.setStudio(studio);
+                invoice.setStudentPlan(sp);
+                invoice.setReferenceMonth(refMonth);
+                invoice.setAmount(amount);
+                invoice.setIssueDate(month.withDayOfMonth(1));
+
+                double dice = rnd.nextDouble();
+                if (m == 0) {
+                    invoice.setStatus(InvoiceStatus.PENDING);
+                    invoice.setDueDate(dueDate);
+                } else if (dice < 0.70) {
+                    invoice.setStatus(InvoiceStatus.PAID);
+                    invoice.setDueDate(dueDate);
+                } else if (dice < 0.85) {
+                    invoice.setStatus(InvoiceStatus.OVERDUE);
+                    invoice.setDueDate(dueDate);
+                } else {
+                    invoice.setStatus(InvoiceStatus.CANCELLED);
+                    invoice.setDueDate(dueDate);
+                }
+
+                invoices.add(invoiceRepository.save(invoice));
+            }
+        }
+        return invoices;
+    }
+
+    private void createComercialPayments(List<Invoice> invoices, Random rnd) {
+        PaymentMethod[] methods = {PaymentMethod.PIX, PaymentMethod.CREDIT_CARD,
+                PaymentMethod.DEBIT_CARD, PaymentMethod.BOLETO, PaymentMethod.CASH};
+
+        for (Invoice invoice : invoices) {
+            if (invoice.getStatus() == InvoiceStatus.PAID) {
+                Payment payment = new Payment();
+                payment.setStudio(studio);
+                payment.setInvoice(invoice);
+                payment.setAmount(invoice.getAmount());
+                payment.setPaymentDate(invoice.getDueDate().minusDays(rnd.nextInt(5)));
+                payment.setPaymentMethod(methods[rnd.nextInt(methods.length)]);
+                paymentRepository.save(payment);
+            }
         }
     }
 
