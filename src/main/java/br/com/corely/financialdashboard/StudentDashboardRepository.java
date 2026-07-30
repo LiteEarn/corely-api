@@ -1,0 +1,24 @@
+package br.com.corely.financialdashboard;
+
+import br.com.corely.comercial.studentplan.StudentPlan;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Repository
+public interface StudentDashboardRepository extends JpaRepository<StudentPlan, UUID> {
+
+    @Query("SELECT COUNT(sp) FROM StudentPlan sp WHERE sp.status = 'ACTIVE'")
+    long countActive();
+
+    @Query("SELECT COUNT(sp) FROM StudentPlan sp WHERE sp.createdAt >= :monthStart AND sp.createdAt < :monthEnd")
+    long countCreatedInMonth(@Param("monthStart") LocalDateTime monthStart, @Param("monthEnd") LocalDateTime monthEnd);
+
+    @Query("SELECT COUNT(sp) FROM StudentPlan sp WHERE sp.cancellationDate >= :dateStart AND sp.cancellationDate < :dateEnd AND sp.status = 'CANCELLED'")
+    long countCancelledInMonth(@Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
+}
