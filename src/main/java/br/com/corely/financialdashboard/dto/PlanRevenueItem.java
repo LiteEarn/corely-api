@@ -12,21 +12,28 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Métricas financeiras por plano")
+@Schema(description = "Métricas financeiras por plano. " +
+        "Cada item representa um plano (contractSnapshot) identificado pelo seu ID único. " +
+        "A receita e a contagem de faturas são baseadas exclusivamente em faturas com status PAID no mês de referência. " +
+        "O ticket médio é calculado como receita / quantidade de faturas pagas, utilizando a mesma base amostral.")
 public class PlanRevenueItem {
 
     @Schema(description = "Nome do plano", example = "Premium")
     private String planName;
 
-    @Schema(description = "Preço base do plano no contrato", example = "299.00")
+    @Schema(description = "Preço base do plano registrado no contrato no momento da assinatura", example = "299.00")
     private BigDecimal planPrice;
 
-    @Schema(description = "Receita total paga no mês para este plano", example = "8000.00")
+    @Schema(description = "Receita total de faturas PAID no mês para este plano", example = "11960.00")
     private BigDecimal revenue;
 
-    @Schema(description = "Quantidade de alunos com contrato ativo neste plano", example = "40")
+    @Schema(description = "Quantidade de faturas PAID no mês para este plano (base de cálculo do ticket médio)", example = "40")
+    private Long paidInvoiceCount;
+
+    @Schema(description = "Quantidade de contratos ACTIVE neste plano (independente da receita do mês)", example = "45")
     private Long studentCount;
 
-    @Schema(description = "Ticket médio por aluno neste plano (receita / quantidade)", example = "200.00")
+    @Schema(description = "Ticket médio por fatura paga: receita / paidInvoiceCount. " +
+            "Utiliza a mesma base amostral da receita (faturas PAID) para evitar distorções.", example = "299.00")
     private BigDecimal averageTicket;
 }

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -25,33 +26,42 @@ public class PlanMetricsIndicator {
         List<Object[]> revenueData = revenueDashboardRepository.revenuePerPlanForMonth(referenceMonth);
         List<Object[]> countData = studentDashboardRepository.countActivePerPlan();
 
-        Map<String, PlanAggregate> planMap = new LinkedHashMap<>();
+        Map<UUID, PlanAggregate> planMap = new LinkedHashMap<>();
 
         for (Object[] row : countData) {
-            String planName = (String) row[0];
-            BigDecimal planPrice = (BigDecimal) row[1];
-            Long studentCount = (Long) row[2];
-            planMap.put(planName, new PlanAggregate(planName, planPrice, BigDecimal.ZERO, studentCount));
+            UUID csId = (UUID) row[0];
+            String planName = (String) row[1];
+            BigDecimal planPrice = (BigDecimal) row[2];
+            Long studentCount = (Long) row[3];
+            planMap.put(csId, new PlanAggregate(csId, planName, planPrice, BigDecimal.ZERO, 0L, studentCount));
         }
 
         for (Object[] row : revenueData) {
-            String planName = (String) row[0];
-            BigDecimal planPrice = (BigDecimal) row[1];
-            BigDecimal revenue = (BigDecimal) row[3];
-            planMap.merge(planName, new PlanAggregate(planName, planPrice, revenue, 0L),
-                    (existing, incoming) -> new PlanAggregate(planName, existing.planPrice, revenue, existing.studentCount));
+            UUID csId = (UUID) row[0];
+            String planName = (String) row[1];
+            BigDecimal planPrice = (BigDecimal) row[2];
+            Long paidInvoiceCount = (Long) row[3];
+            BigDecimal revenue = (BigDecimal) row[4];
+
+            PlanAggregate existing = planMap.get(csId);
+            if (existing != null) {
+                planMap.put(csId, new PlanAggregate(csId, planName, planPrice, revenue, paidInvoiceCount, existing.studentCount));
+            } else {
+                planMap.put(csId, new PlanAggregate(csId, planName, planPrice, revenue, paidInvoiceCount, 0L));
+            }
         }
 
         List<PlanRevenueItem> plans = new ArrayList<>();
         for (PlanAggregate agg : planMap.values()) {
-            BigDecimal averageTicket = agg.studentCount > 0
-                    ? agg.revenue.divide(BigDecimal.valueOf(agg.studentCount), 2, RoundingMode.HALF_UP)
+            BigDecimal averageTicket = agg.paidInvoiceCount > 0
+                    ? agg.revenue.divide(BigDecimal.valueOf(agg.paidInvoiceCount), 2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
 
             plans.add(PlanRevenueItem.builder()
                     .planName(agg.planName)
                     .planPrice(agg.planPrice)
                     .revenue(agg.revenue)
+                    .paidInvoiceCount(agg.paidInvoiceCount)
                     .studentCount(agg.studentCount)
                     .averageTicket(averageTicket)
                     .build());
@@ -63,5 +73,5 @@ public class PlanMetricsIndicator {
                 .build();
     }
 
-    private record PlanAggregate(String planName, BigDecimal planPrice, BigDecimal revenue, long studentCount) {}
+    private record PlanAggregate(UUID contractSnapshotId, String planName, BigDecimal planPrice, BigDecimal revenue, long paidInvoiceCount, long studentCount) {}
 }

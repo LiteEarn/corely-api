@@ -22,9 +22,9 @@ public interface StudentDashboardRepository extends JpaRepository<StudentPlan, U
     @Query("SELECT COUNT(sp) FROM StudentPlan sp WHERE sp.cancellationDate >= :dateStart AND sp.cancellationDate < :dateEnd AND sp.status = 'CANCELLED'")
     long countCancelledInMonth(@Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
 
-    @Query("SELECT cs.planName, cs.planPrice, COUNT(sp) " +
+    @Query("SELECT cs.id, cs.planName, cs.planPrice, COUNT(sp) " +
            "FROM StudentPlan sp JOIN sp.contractSnapshot cs " +
            "WHERE sp.status = 'ACTIVE' " +
-           "GROUP BY cs.planName, cs.planPrice")
+           "GROUP BY cs.id, cs.planName, cs.planPrice")
     List<Object[]> countActivePerPlan();
 }
