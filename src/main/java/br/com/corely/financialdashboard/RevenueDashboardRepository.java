@@ -26,4 +26,10 @@ public interface RevenueDashboardRepository extends JpaRepository<Invoice, UUID>
 
     @Query("SELECT COUNT(DISTINCT i.studentPlan.student.id) FROM Invoice i WHERE i.status = 'OVERDUE'")
     long countDelinquentStudents();
+
+    @Query("SELECT cs.planName, cs.planPrice, COUNT(i), COALESCE(SUM(i.amount), 0) " +
+           "FROM Invoice i JOIN i.studentPlan sp JOIN sp.contractSnapshot cs " +
+           "WHERE i.referenceMonth = :referenceMonth AND i.status = 'PAID' " +
+           "GROUP BY cs.planName, cs.planPrice")
+    List<Object[]> revenuePerPlanForMonth(@Param("referenceMonth") String referenceMonth);
 }
