@@ -25,4 +25,9 @@ public interface PaymentDashboardRepository extends JpaRepository<Payment, UUID>
            "WHERE i.referenceMonth >= :referenceMonth " +
            "GROUP BY i.referenceMonth ORDER BY i.referenceMonth")
     List<Object[]> paymentsPerMonth(@Param("referenceMonth") String referenceMonth);
+
+    @Query("SELECT COUNT(p), COALESCE(SUM(p.amount), 0) " +
+           "FROM Payment p " +
+           "WHERE p.paymentDate >= :dateStart AND p.paymentDate <= :dateEnd")
+    Object[] countAndSumPayments(@Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
 }
