@@ -2,7 +2,7 @@ spring:
   application:
     name: corely-api
   datasource:
-    url: jdbc:postgresql://localhost:5432/corely
+    url: jdbc:postgresql://localhost:5432/corely?currentSchema=corely
     username: corely
     password: corely
     driver-class-name: org.postgresql.Driver
