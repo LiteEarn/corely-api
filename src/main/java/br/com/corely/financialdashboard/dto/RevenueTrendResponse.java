@@ -19,7 +19,9 @@ public class RevenueTrendResponse {
     @Schema(description = "Receita mensal nos últimos 12 meses")
     private List<MonthlyRevenueItem> monthlyRevenue;
 
-    @Schema(description = "Crescimento mensal da receita em relação ao mês anterior (positivo = crescimento)", example = "0.05")
+    @Schema(description = "Crescimento mensal da receita: (último mês - penúltimo mês) / penúltimo mês. " +
+            "Os dados são ordenados cronologicamente antes do cálculo. " +
+            "Retorna 0 quando há menos de 2 meses com receita ou quando o mês anterior tem receita zero.", example = "0.05")
     private BigDecimal monthlyGrowthRate;
 
     @Schema(description = "Evolução da inadimplência mensal nos últimos 12 meses")

@@ -42,4 +42,9 @@ public interface RevenueDashboardRepository extends JpaRepository<Invoice, UUID>
            "FROM Invoice i WHERE i.status = 'OVERDUE' AND i.referenceMonth >= :referenceMonth " +
            "GROUP BY i.referenceMonth ORDER BY i.referenceMonth")
     List<Object[]> delinquencyPerMonth(@Param("referenceMonth") String referenceMonth);
+
+    @Query("SELECT i.referenceMonth, COUNT(i) " +
+           "FROM Invoice i WHERE i.referenceMonth >= :referenceMonth " +
+           "GROUP BY i.referenceMonth ORDER BY i.referenceMonth")
+    List<Object[]> totalInvoicesPerMonth(@Param("referenceMonth") String referenceMonth);
 }

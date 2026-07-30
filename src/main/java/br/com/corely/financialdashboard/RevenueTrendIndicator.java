@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -53,17 +54,18 @@ public class RevenueTrendIndicator {
                     .build());
         }
 
+        result.sort(Comparator.comparing(MonthlyRevenueItem::getMonth));
         return result;
     }
 
     private List<DelinquencyEvolutionItem> calculateDelinquencyEvolution(String startReferenceMonth) {
         List<Object[]> overdueData = revenueDashboardRepository.delinquencyPerMonth(startReferenceMonth);
-        List<Object[]> totalData = revenueDashboardRepository.revenuePerMonth(startReferenceMonth);
+        List<Object[]> totalData = revenueDashboardRepository.totalInvoicesPerMonth(startReferenceMonth);
 
         LinkedHashMap<String, Long> totalMap = new LinkedHashMap<>();
         for (Object[] row : totalData) {
             String month = (String) row[0];
-            Long count = (Long) row[2];
+            Long count = (Long) row[1];
             totalMap.put(month, count);
         }
 
