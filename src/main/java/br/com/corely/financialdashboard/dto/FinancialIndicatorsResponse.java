@@ -12,24 +12,33 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Indicadores financeiros consolidados")
+@Schema(description = "Indicadores financeiros consolidados. " +
+        "Todos os percentuais utilizam regime de competência (accrual basis): " +
+        "tanto numerador quanto denominador são extraídos da tabela de faturas (Invoice) " +
+        "para o mesmo mês de referência, garantindo consistência.")
 public class FinancialIndicatorsResponse {
 
-    @Schema(description = "Ticket médio (valor total recebido / quantidade de recebimentos no mês)", example = "240.00")
+    @Schema(description = "Ticket médio por fatura paga: soma das faturas PAID / quantidade de faturas PAID. " +
+            "Indica o valor médio efetivamente recebido por fatura no mês. " +
+            "Base: faturas PAID do mês de referência (regime de competência).", example = "240.00")
     private BigDecimal averageTicket;
 
-    @Schema(description = "Taxa de inadimplência (faturas OVERDUE / total de faturas emitidas no mês)", example = "0.0667")
+    @Schema(description = "Taxa de inadimplência: faturas OVERDUE / total de faturas emitidas no mês. " +
+            "Regime de competência: todas as faturas consideradas são do mesmo mês de referência.", example = "0.0667")
     private BigDecimal delinquencyRate;
 
-    @Schema(description = "Percentual da receita recebida em relação ao total faturado", example = "0.80")
+    @Schema(description = "Percentual do faturamento que já foi recebido: " +
+            "soma das faturas PAID / soma total das faturas emitidas. " +
+            "Regime de competência: numerador e denominador são do mesmo mês de referência. " +
+            "Não inclui pagamentos de meses anteriores recebidos neste período.", example = "0.80")
     private BigDecimal receivedPercentage;
 
-    @Schema(description = "Percentual da receita pendente em relação ao total faturado", example = "0.13")
+    @Schema(description = "Percentual do faturamento pendente: soma das faturas PENDING / soma total das faturas emitidas", example = "0.13")
     private BigDecimal pendingPercentage;
 
-    @Schema(description = "Percentual da receita vencida em relação ao total faturado", example = "0.05")
+    @Schema(description = "Percentual do faturamento vencido: soma das faturas OVERDUE / soma total das faturas emitidas", example = "0.05")
     private BigDecimal overduePercentage;
 
-    @Schema(description = "Percentual da receita cancelada em relação ao total faturado", example = "0.02")
+    @Schema(description = "Percentual do faturamento cancelado: soma das faturas CANCELLED / soma total das faturas emitidas", example = "0.02")
     private BigDecimal cancelledPercentage;
 }
