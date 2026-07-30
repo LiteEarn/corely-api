@@ -31,7 +31,7 @@ public class FinancialDashboardService {
                 .planMetrics(planMetricsIndicator.calculate(referenceMonth))
                 .paymentMetrics(paymentMetricsIndicator.calculate(referenceMonth))
                 .financialIndicators(financialIndicatorsCalculator.calculate(referenceMonth))
-                .revenueTrend(revenueTrendIndicator.calculate())
+                .revenueTrend(revenueTrendIndicator.calculate(referenceMonth))
                 .build();
     }
 }

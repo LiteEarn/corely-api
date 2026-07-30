@@ -7,8 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.util.Collections;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -51,7 +51,7 @@ class FinancialDashboardServiceTest {
         when(planMetricsIndicator.calculate("2026-07")).thenReturn(planMetrics);
         when(paymentMetricsIndicator.calculate("2026-07")).thenReturn(paymentMetrics);
         when(financialIndicatorsCalculator.calculate("2026-07")).thenReturn(financialIndicators);
-        when(revenueTrendIndicator.calculate()).thenReturn(revenueTrend);
+        when(revenueTrendIndicator.calculate("2026-07")).thenReturn(revenueTrend);
 
         FinancialDashboardResponse response = service.getDashboard("2026-07");
 
@@ -67,7 +67,7 @@ class FinancialDashboardServiceTest {
         verify(planMetricsIndicator).calculate("2026-07");
         verify(paymentMetricsIndicator).calculate("2026-07");
         verify(financialIndicatorsCalculator).calculate("2026-07");
-        verify(revenueTrendIndicator).calculate();
+        verify(revenueTrendIndicator).calculate("2026-07");
         verifyNoMoreInteractions(revenueSummaryIndicator, studentMetricsIndicator,
                 planMetricsIndicator, paymentMetricsIndicator, financialIndicatorsCalculator,
                 revenueTrendIndicator);
@@ -75,18 +75,42 @@ class FinancialDashboardServiceTest {
 
     @Test
     void getDashboard_whenNullMonth_shouldDefaultToCurrentMonth() {
-        String expectedMonth = java.time.YearMonth.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"));
+        String expectedMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
         when(revenueSummaryIndicator.calculate(expectedMonth)).thenReturn(new RevenueSummaryResponse());
         when(studentMetricsIndicator.calculate(expectedMonth)).thenReturn(new StudentMetricsResponse());
         when(planMetricsIndicator.calculate(expectedMonth)).thenReturn(new PlanMetricsResponse());
         when(paymentMetricsIndicator.calculate(expectedMonth)).thenReturn(new PaymentMetricsResponse());
         when(financialIndicatorsCalculator.calculate(expectedMonth)).thenReturn(new FinancialIndicatorsResponse());
-        when(revenueTrendIndicator.calculate()).thenReturn(new RevenueTrendResponse());
+        when(revenueTrendIndicator.calculate(expectedMonth)).thenReturn(new RevenueTrendResponse());
 
         FinancialDashboardResponse response = service.getDashboard(null);
 
         assertThat(response).isNotNull();
         verify(revenueSummaryIndicator).calculate(expectedMonth);
+        verify(revenueTrendIndicator).calculate(expectedMonth);
+        verifyNoMoreInteractions(revenueTrendIndicator);
+    }
+
+    @Test
+    void getDashboard_withHistoricalMonth_shouldPassSameMonthToAllIndicators() {
+        String historicalMonth = "2025-03";
+
+        when(revenueSummaryIndicator.calculate(historicalMonth)).thenReturn(new RevenueSummaryResponse());
+        when(studentMetricsIndicator.calculate(historicalMonth)).thenReturn(new StudentMetricsResponse());
+        when(planMetricsIndicator.calculate(historicalMonth)).thenReturn(new PlanMetricsResponse());
+        when(paymentMetricsIndicator.calculate(historicalMonth)).thenReturn(new PaymentMetricsResponse());
+        when(financialIndicatorsCalculator.calculate(historicalMonth)).thenReturn(new FinancialIndicatorsResponse());
+        when(revenueTrendIndicator.calculate(historicalMonth)).thenReturn(new RevenueTrendResponse());
+
+        FinancialDashboardResponse response = service.getDashboard(historicalMonth);
+
+        assertThat(response).isNotNull();
+        verify(revenueTrendIndicator).calculate(historicalMonth);
+        verify(revenueSummaryIndicator).calculate(historicalMonth);
+        verify(studentMetricsIndicator).calculate(historicalMonth);
+        verify(planMetricsIndicator).calculate(historicalMonth);
+        verify(paymentMetricsIndicator).calculate(historicalMonth);
+        verify(financialIndicatorsCalculator).calculate(historicalMonth);
     }
 }
