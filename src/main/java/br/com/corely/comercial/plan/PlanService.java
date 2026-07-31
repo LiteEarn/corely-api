@@ -2,6 +2,9 @@ package br.com.corely.comercial.plan;
 
 import br.com.corely.comercial.plan.dto.PlanRequest;
 import br.com.corely.comercial.plan.dto.PlanResponse;
+import br.com.corely.comercial.planrule.PlanRuleRepository;
+import br.com.corely.comercial.studentplan.StudentPlanRepository;
+import br.com.corely.comercial.studentplan.StudentPlanStatus;
 import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -21,6 +24,8 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final StudioRepository studioRepository;
     private final ComercialTenantContext tenantContext;
+    private final StudentPlanRepository studentPlanRepository;
+    private final PlanRuleRepository planRuleRepository;
 
     @Transactional
     public PlanResponse create(PlanRequest request) {
@@ -108,9 +113,39 @@ public class PlanService {
         if (!plan.getActive()) {
             throw new BusinessException("Plan is already inactive");
         }
+
+        boolean hasActiveContracts = studentPlanRepository
+                .existsByContractSnapshotPlanIdAndStatus(id, StudentPlanStatus.ACTIVE);
+        if (hasActiveContracts) {
+            throw new BusinessException(
+                    "Cannot inactivate plan with active student contracts. Cancel or transfer active contracts first.");
+        }
+
         plan.setActive(false);
         plan.setVersion(plan.getVersion() + 1);
         planRepository.save(plan);
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        var plan = planRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
+
+        boolean hasAnyContracts = studentPlanRepository
+                .existsByContractSnapshotPlanIdAndStatus(id, StudentPlanStatus.ACTIVE)
+                || studentPlanRepository
+                .existsByContractSnapshotPlanIdAndStatus(id, StudentPlanStatus.SUSPENDED);
+        if (hasAnyContracts) {
+            throw new BusinessException(
+                    "Cannot delete plan with active or suspended student contracts.");
+        }
+
+        long ruleCount = planRuleRepository.countByPlanId(id);
+        if (ruleCount > 0) {
+            planRuleRepository.deleteAll(planRuleRepository.findByPlanIdOrderByCreatedAt(id));
+        }
+
+        planRepository.delete(plan);
     }
 
     private void validateUniqueName(UUID id, String name) {
@@ -124,6 +159,10 @@ public class PlanService {
     }
 
     private PlanResponse toResponse(Plan plan) {
+        long activeStudentCount = studentPlanRepository
+                .countByPlanIdAndStatus(plan.getId(), StudentPlanStatus.ACTIVE);
+        long ruleCount = planRuleRepository.countByPlanId(plan.getId());
+
         return new PlanResponse(
                 plan.getId(),
                 plan.getName(),
@@ -133,6 +172,8 @@ public class PlanService {
                 plan.getVersion(),
                 plan.getActive(),
                 plan.getAutoRenew(),
+                activeStudentCount,
+                ruleCount,
                 plan.getCreatedAt(),
                 plan.getUpdatedAt()
         );

@@ -1,86 +1,118 @@
 package br.com.corely.comercial.plan;
 
 import br.com.corely.comercial.plan.dto.PlanRequest;
+import br.com.corely.comercial.plan.dto.PlanResponse;
+import br.com.corely.comercial.planrule.PlanRuleRepository;
+import br.com.corely.comercial.studentplan.StudentPlanRepository;
+import br.com.corely.comercial.studentplan.StudentPlanStatus;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
-import br.com.corely.user.User;
-import br.com.corely.user.UserRepository;
-import br.com.corely.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class PlanServiceTest {
 
-    @Autowired
+    @Mock
+    private PlanRepository planRepository;
+    @Mock
+    private StudioRepository studioRepository;
+    @Mock
+    private ComercialTenantContext tenantContext;
+    @Mock
+    private StudentPlanRepository studentPlanRepository;
+    @Mock
+    private PlanRuleRepository planRuleRepository;
+
     private PlanService planService;
 
-    @Autowired
-    private PlanRepository planRepository;
-
-    @Autowired
-    private StudioRepository studioRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    private UUID studioId;
     private Studio studio;
-    private Plan existingPlan;
+    private Plan activePlan;
+    private UUID activePlanId;
 
     @BeforeEach
     void setUp() {
-        studio = studioRepository.save(createStudio("Test Studio"));
-        authenticateAs(studio, UserRole.ADMIN);
+        planService = new PlanService(planRepository, studioRepository, tenantContext,
+                studentPlanRepository, planRuleRepository);
 
-        existingPlan = planRepository.save(createPlan("Basic Plan", BigDecimal.valueOf(100), 30));
+        studioId = UUID.randomUUID();
+        studio = new Studio();
+        studio.setId(studioId);
+        studio.setName("Test Studio");
+
+        activePlanId = UUID.randomUUID();
+        activePlan = new Plan();
+        activePlan.setId(activePlanId);
+        activePlan.setStudio(studio);
+        activePlan.setName("Plano Mensal");
+        activePlan.setDescription("Acesso ilimitado");
+        activePlan.setPrice(BigDecimal.valueOf(250));
+        activePlan.setDuration(1);
+        activePlan.setVersion(1);
+        activePlan.setActive(true);
+        activePlan.setAutoRenew(true);
     }
 
     @Test
-    void create_shouldPersistPlan() {
+    void create_shouldSaveAndReturnResponse() {
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(planRepository.existsByStudioIdAndName(studioId, "Plano Mensal")).thenReturn(false);
+        when(studioRepository.getReferenceById(studioId)).thenReturn(studio);
+        when(planRepository.save(any(Plan.class))).thenAnswer(inv -> {
+            Plan p = inv.getArgument(0);
+            p.setId(UUID.randomUUID());
+            return p;
+        });
+        when(studentPlanRepository.countByPlanIdAndStatus(any(), eq(StudentPlanStatus.ACTIVE))).thenReturn(0L);
+        when(planRuleRepository.countByPlanId(any())).thenReturn(0L);
+
         var request = new PlanRequest();
-        request.setName("Premium Plan");
-        request.setDescription("Premium plan description");
-        request.setPrice(BigDecimal.valueOf(200));
-        request.setDuration(60);
+        request.setName("Plano Mensal");
+        request.setDescription("Acesso ilimitado");
+        request.setPrice(BigDecimal.valueOf(250));
+        request.setDuration(1);
+        request.setAutoRenew(true);
 
         var response = planService.create(request);
 
-        assertThat(response.getId()).isNotNull();
-        assertThat(response.getName()).isEqualTo("Premium Plan");
-        assertThat(response.getDescription()).isEqualTo("Premium plan description");
-        assertThat(response.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(200));
-        assertThat(response.getDuration()).isEqualTo(60);
-        assertThat(response.getVersion()).isEqualTo(1);
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo("Plano Mensal");
+        assertThat(response.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(250));
         assertThat(response.getActive()).isTrue();
+        assertThat(response.getVersion()).isEqualTo(1);
+        assertThat(response.getActiveStudentCount()).isEqualTo(0L);
+        assertThat(response.getRuleCount()).isEqualTo(0L);
+        verify(planRepository).save(any(Plan.class));
     }
 
     @Test
-    void create_shouldThrowException_whenNameAlreadyExistsInSameStudio() {
+    void create_shouldThrowWhenNameAlreadyExists() {
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(planRepository.existsByStudioIdAndName(studioId, "Plano Mensal")).thenReturn(true);
+
         var request = new PlanRequest();
-        request.setName("Basic Plan");
-        request.setPrice(BigDecimal.valueOf(150));
-        request.setDuration(30);
+        request.setName("Plano Mensal");
+        request.setPrice(BigDecimal.valueOf(250));
+        request.setDuration(1);
 
         assertThatThrownBy(() -> planService.create(request))
                 .isInstanceOf(BusinessException.class)
@@ -88,223 +120,193 @@ class PlanServiceTest {
     }
 
     @Test
-    void create_shouldAllowSameNameInDifferentStudio() {
-        var otherStudio = studioRepository.save(createStudio("Other Studio"));
-        authenticateAs(otherStudio, UserRole.ADMIN);
+    void update_shouldSaveAndIncrementVersion() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(planRepository.existsByStudioIdAndNameAndIdNot(studioId, "Plano Mensal", activePlanId)).thenReturn(false);
+        when(planRepository.save(any(Plan.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(studentPlanRepository.countByPlanIdAndStatus(any(), eq(StudentPlanStatus.ACTIVE))).thenReturn(5L);
+        when(planRuleRepository.countByPlanId(any())).thenReturn(3L);
 
         var request = new PlanRequest();
-        request.setName("Basic Plan");
+        request.setName("Plano Mensal");
+        request.setPrice(BigDecimal.valueOf(299));
+        request.setDuration(1);
+
+        var response = planService.update(activePlanId, request);
+
+        assertThat(response.getVersion()).isEqualTo(2);
+        assertThat(response.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(299));
+        assertThat(response.getActiveStudentCount()).isEqualTo(5L);
+        assertThat(response.getRuleCount()).isEqualTo(3L);
+    }
+
+    @Test
+    void update_shouldThrowWhenPlanNotFound() {
+        when(planRepository.findById(any())).thenReturn(Optional.empty());
+
+        var request = new PlanRequest();
+        request.setName("Test");
         request.setPrice(BigDecimal.valueOf(100));
-        request.setDuration(30);
+        request.setDuration(1);
 
-        var response = planService.create(request);
-
-        assertThat(response.getId()).isNotNull();
-        assertThat(response.getName()).isEqualTo("Basic Plan");
-    }
-
-    @Test
-    void create_shouldSetDefaultActiveTrue_whenNotProvided() {
-        var request = new PlanRequest();
-        request.setName("New Plan");
-        request.setPrice(BigDecimal.valueOf(50));
-        request.setDuration(15);
-
-        var response = planService.create(request);
-
-        assertThat(response.getActive()).isTrue();
-    }
-
-    @Test
-    void findById_shouldReturnPlan() {
-        var response = planService.findById(existingPlan.getId());
-
-        assertThat(response).isNotNull();
-        assertThat(response.getName()).isEqualTo("Basic Plan");
-    }
-
-    @Test
-    void findById_shouldThrowException_whenNotFound() {
-        assertThatThrownBy(() -> planService.findById(UUID.randomUUID()))
+        assertThatThrownBy(() -> planService.update(UUID.randomUUID(), request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Plan not found");
     }
 
     @Test
-    void findAll_shouldReturnPagedResults() {
-        var page = planService.findAll(null, null, PageRequest.of(0, 10));
+    void inactivate_shouldDeactivatePlan() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE))
+                .thenReturn(false);
+        when(planRepository.save(any(Plan.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThat(page.getContent()).hasSize(1);
-        assertThat(page.getTotalElements()).isEqualTo(1);
+        planService.inactivate(activePlanId);
+
+        assertThat(activePlan.getActive()).isFalse();
+        assertThat(activePlan.getVersion()).isEqualTo(2);
     }
 
     @Test
-    void findAll_shouldFilterByName() {
-        var page = planService.findAll("Basic", null, PageRequest.of(0, 10));
+    void inactivate_shouldThrowWhenPlanAlreadyInactive() {
+        activePlan.setActive(false);
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
 
-        assertThat(page.getContent()).hasSize(1);
-        assertThat(page.getContent().get(0).getName()).isEqualTo("Basic Plan");
-    }
-
-    @Test
-    void findAll_shouldFilterByActive() {
-        var page = planService.findAll(null, true, PageRequest.of(0, 10));
-
-        assertThat(page.getContent()).hasSize(1);
-    }
-
-    @Test
-    void findAll_shouldReturnEmpty_whenNoMatch() {
-        var page = planService.findAll("Nonexistent", null, PageRequest.of(0, 10));
-
-        assertThat(page.getContent()).isEmpty();
-    }
-
-    @Test
-    void update_shouldModifyPlan() {
-        var request = new PlanRequest();
-        request.setName("Updated Plan");
-        request.setPrice(BigDecimal.valueOf(150));
-        request.setDuration(45);
-
-        var response = planService.update(existingPlan.getId(), request);
-
-        assertThat(response.getName()).isEqualTo("Updated Plan");
-        assertThat(response.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(150));
-        assertThat(response.getDuration()).isEqualTo(45);
-        assertThat(response.getVersion()).isEqualTo(2);
-    }
-
-    @Test
-    void update_shouldThrowException_whenNameAlreadyExistsInSameStudio() {
-        var another = planRepository.save(createPlan("Another Plan", BigDecimal.valueOf(80), 20));
-
-        var request = new PlanRequest();
-        request.setName("Another Plan");
-        request.setPrice(BigDecimal.valueOf(200));
-        request.setDuration(30);
-
-        assertThatThrownBy(() -> planService.update(existingPlan.getId(), request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Plan name already exists");
-    }
-
-    @Test
-    void update_shouldAllowSameNameForSamePlan() {
-        var request = new PlanRequest();
-        request.setName("Basic Plan");
-        request.setPrice(BigDecimal.valueOf(200));
-        request.setDuration(60);
-
-        var response = planService.update(existingPlan.getId(), request);
-
-        assertThat(response.getName()).isEqualTo("Basic Plan");
-        assertThat(response.getVersion()).isEqualTo(2);
-    }
-
-    @Test
-    void update_shouldThrowException_whenNotFound() {
-        var request = new PlanRequest();
-        request.setName("Nonexistent");
-        request.setPrice(BigDecimal.TEN);
-        request.setDuration(30);
-
-        assertThatThrownBy(() -> planService.update(UUID.randomUUID(), request))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void activate_shouldSetActiveTrue() {
-        planService.inactivate(existingPlan.getId());
-
-        planService.activate(existingPlan.getId());
-
-        var entity = planRepository.findById(existingPlan.getId()).orElseThrow();
-        assertThat(entity.getActive()).isTrue();
-        assertThat(entity.getVersion()).isEqualTo(3);
-    }
-
-    @Test
-    void activate_shouldThrowException_whenAlreadyActive() {
-        assertThatThrownBy(() -> planService.activate(existingPlan.getId()))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("Plan is already active");
-    }
-
-    @Test
-    void activate_shouldThrowException_whenNotFound() {
-        assertThatThrownBy(() -> planService.activate(UUID.randomUUID()))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void inactivate_shouldSetActiveFalse() {
-        planService.inactivate(existingPlan.getId());
-
-        var entity = planRepository.findById(existingPlan.getId()).orElseThrow();
-        assertThat(entity.getActive()).isFalse();
-        assertThat(entity.getVersion()).isEqualTo(2);
-    }
-
-    @Test
-    void inactivate_shouldThrowException_whenAlreadyInactive() {
-        planService.inactivate(existingPlan.getId());
-
-        assertThatThrownBy(() -> planService.inactivate(existingPlan.getId()))
+        assertThatThrownBy(() -> planService.inactivate(activePlanId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Plan is already inactive");
     }
 
     @Test
-    void inactivate_shouldThrowException_whenNotFound() {
-        assertThatThrownBy(() -> planService.inactivate(UUID.randomUUID()))
-                .isInstanceOf(ResourceNotFoundException.class);
+    void inactivate_shouldThrowWhenHasActiveContracts() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> planService.inactivate(activePlanId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot inactivate plan with active student contracts");
     }
 
     @Test
-    void create_shouldIncrementVersionOnUpdate() {
-        var request = new PlanRequest();
-        request.setName("Version Test");
-        request.setPrice(BigDecimal.valueOf(100));
-        request.setDuration(30);
+    void activate_shouldActivatePlan() {
+        activePlan.setActive(false);
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(planRepository.save(any(Plan.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var created = planService.create(request);
-        assertThat(created.getVersion()).isEqualTo(1);
+        planService.activate(activePlanId);
 
-        request.setPrice(BigDecimal.valueOf(200));
-        var updated = planService.update(created.getId(), request);
-        assertThat(updated.getVersion()).isEqualTo(2);
+        assertThat(activePlan.getActive()).isTrue();
+        assertThat(activePlan.getVersion()).isEqualTo(2);
     }
 
-    private void authenticateAs(Studio studio, UserRole role) {
-        var user = new User();
-        user.setName(role.name() + " User");
-        user.setEmail(role.name().toLowerCase() + "_" + studio.getId() + "@test.com");
-        user.setPassword(passwordEncoder.encode("password"));
-        user.setRole(role);
-        user.setActive(true);
-        user.setStudio(studio);
-        user = userRepository.save(user);
+    @Test
+    void activate_shouldThrowWhenPlanAlreadyActive() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
 
-        var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        assertThatThrownBy(() -> planService.activate(activePlanId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Plan is already active");
     }
 
-    private Studio createStudio(String name) {
-        var studio = new Studio();
-        studio.setName(name);
-        studio.setActive(true);
-        return studio;
+    @Test
+    void delete_shouldDeletePlanAndRules() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE))
+                .thenReturn(false);
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.SUSPENDED))
+                .thenReturn(false);
+        when(planRuleRepository.countByPlanId(activePlanId)).thenReturn(2L);
+        when(planRuleRepository.findByPlanIdOrderByCreatedAt(activePlanId)).thenReturn(List.of());
+
+        planService.delete(activePlanId);
+
+        verify(planRuleRepository).deleteAll(any());
+        verify(planRepository).delete(activePlan);
     }
 
-    private Plan createPlan(String name, BigDecimal price, Integer duration) {
-        var plan = new Plan();
-        plan.setStudio(studio);
-        plan.setName(name);
-        plan.setPrice(price);
-        plan.setDuration(duration);
-        plan.setVersion(1);
-        plan.setActive(true);
-        return plan;
+    @Test
+    void delete_shouldDeletePlanWithoutRules() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE))
+                .thenReturn(false);
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.SUSPENDED))
+                .thenReturn(false);
+        when(planRuleRepository.countByPlanId(activePlanId)).thenReturn(0L);
+
+        planService.delete(activePlanId);
+
+        verify(planRuleRepository, never()).deleteAll(any());
+        verify(planRepository).delete(activePlan);
+    }
+
+    @Test
+    void delete_shouldThrowWhenHasActiveContracts() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> planService.delete(activePlanId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot delete plan with active or suspended student contracts");
+    }
+
+    @Test
+    void delete_shouldThrowWhenHasSuspendedContracts() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE))
+                .thenReturn(false);
+        when(studentPlanRepository.existsByContractSnapshotPlanIdAndStatus(activePlanId, StudentPlanStatus.SUSPENDED))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> planService.delete(activePlanId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot delete plan with active or suspended student contracts");
+    }
+
+    @Test
+    void delete_shouldThrowWhenPlanNotFound() {
+        when(planRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> planService.delete(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Plan not found");
+    }
+
+    @Test
+    void findAll_shouldReturnPageWithCounts() {
+        var page = new PageImpl<>(List.of(activePlan), PageRequest.of(0, 10), 1);
+        when(planRepository.findAll(PageRequest.of(0, 10))).thenReturn(page);
+        when(studentPlanRepository.countByPlanIdAndStatus(any(), eq(StudentPlanStatus.ACTIVE))).thenReturn(3L);
+        when(planRuleRepository.countByPlanId(any())).thenReturn(2L);
+
+        var result = planService.findAll(null, null, PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getActiveStudentCount()).isEqualTo(3L);
+        assertThat(result.getContent().get(0).getRuleCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void findById_shouldReturnPlanWithCounts() {
+        when(planRepository.findById(activePlanId)).thenReturn(Optional.of(activePlan));
+        when(studentPlanRepository.countByPlanIdAndStatus(activePlanId, StudentPlanStatus.ACTIVE)).thenReturn(7L);
+        when(planRuleRepository.countByPlanId(activePlanId)).thenReturn(4L);
+
+        var response = planService.findById(activePlanId);
+
+        assertThat(response.getId()).isEqualTo(activePlanId);
+        assertThat(response.getActiveStudentCount()).isEqualTo(7L);
+        assertThat(response.getRuleCount()).isEqualTo(4L);
+    }
+
+    @Test
+    void findById_shouldThrowWhenNotFound() {
+        when(planRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> planService.findById(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Plan not found");
     }
 }

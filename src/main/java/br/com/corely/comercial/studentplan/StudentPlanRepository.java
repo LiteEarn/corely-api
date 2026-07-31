@@ -31,4 +31,9 @@ public interface StudentPlanRepository extends JpaRepository<StudentPlan, UUID> 
     List<StudentPlan> findByStatusAndEndDateBefore(
             @Param("status") StudentPlanStatus status,
             @Param("date") LocalDate date);
+
+    @Query("SELECT COUNT(sp) FROM StudentPlan sp WHERE sp.contractSnapshot.planId = :planId AND sp.status = :status")
+    long countByPlanIdAndStatus(@Param("planId") UUID planId, @Param("status") StudentPlanStatus status);
+
+    boolean existsByContractSnapshotPlanIdAndStatus(UUID planId, StudentPlanStatus status);
 }
