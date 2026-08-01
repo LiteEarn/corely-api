@@ -1,5 +1,7 @@
 package br.com.corely.comercial.studentplan;
 
+import br.com.corely.comercial.billingschedule.BillingSchedule;
+import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
@@ -8,16 +10,19 @@ import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.StudioRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StudentPlanService {
 
     private final StudentPlanRepository studentPlanRepository;
@@ -25,6 +30,8 @@ public class StudentPlanService {
     private final StudioRepository studioRepository;
     private final ContractSnapshotService contractSnapshotService;
     private final ComercialTenantContext tenantContext;
+    private final BillingScheduleRepository billingScheduleRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public StudentPlanResponse create(StudentPlanRequest request) {
@@ -126,13 +133,20 @@ public class StudentPlanService {
     public StudentPlanResponse findById(UUID id) {
         var enrollment = studentPlanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("StudentPlan not found"));
-        return toResponse(enrollment);
+        var billingSchedule = billingScheduleRepository.findByStudentPlanId(id).orElse(null);
+        return toResponse(enrollment, billingSchedule);
     }
 
     @Transactional(readOnly = true)
     public List<StudentPlanResponse> findAll() {
-        return studentPlanRepository.findAll().stream()
-                .map(this::toResponse)
+        var enrollments = studentPlanRepository.findAll();
+        var studentPlanIds = enrollments.stream().map(StudentPlan::getId).toList();
+        var billingSchedules = billingScheduleRepository.findByStudentPlanIdIn(studentPlanIds);
+        var billingScheduleMap = new HashMap<UUID, BillingSchedule>();
+        billingSchedules.forEach(bs -> billingScheduleMap.put(bs.getStudentPlan().getId(), bs));
+
+        return enrollments.stream()
+                .map(sp -> toResponse(sp, billingScheduleMap.get(sp.getId())))
                 .toList();
     }
 
@@ -145,29 +159,76 @@ public class StudentPlanService {
     @Transactional(readOnly = true)
     public StudentPlanResponse findActiveByStudent(UUID studentId) {
         return studentPlanRepository.findByStudentIdAndStatus(studentId, StudentPlanStatus.ACTIVE)
-                .map(this::toResponse)
+                .map(sp -> {
+                    var billingSchedule = billingScheduleRepository.findByStudentPlanId(sp.getId()).orElse(null);
+                    return toResponse(sp, billingSchedule);
+                })
                 .orElse(null);
     }
 
     public record StudentPlanData(StudentPlan entity, StudentPlanResponse response) {}
 
     private StudentPlanResponse toResponse(StudentPlan enrollment) {
+        return toResponse(enrollment, null);
+    }
+
+    private StudentPlanResponse toResponse(StudentPlan enrollment, BillingSchedule billingSchedule) {
         var snapshot = enrollment.getContractSnapshot();
-        return new StudentPlanResponse(
-                enrollment.getId(),
-                enrollment.getStudent().getId(),
-                enrollment.getStudent().getFullName(),
-                snapshot.getId(),
-                snapshot.getPlanName(),
-                enrollment.getStartDate(),
-                enrollment.getEndDate(),
-                enrollment.getStatus(),
-                enrollment.getCancellationDate(),
-                enrollment.getCancellationReason(),
-                enrollment.getBookingBlocked(),
-                enrollment.getSuspensionReason(),
-                enrollment.getCreatedAt(),
-                enrollment.getUpdatedAt()
-        );
+
+        var response = new StudentPlanResponse();
+        response.setId(enrollment.getId());
+        response.setStudentId(enrollment.getStudent().getId());
+        response.setStudentName(enrollment.getStudent().getFullName());
+        response.setContractSnapshotId(snapshot.getId());
+        response.setSnapshotName(snapshot.getPlanName());
+        response.setPlanId(snapshot.getPlanId());
+        response.setPlanDescription(snapshot.getPlanDescription());
+        response.setPlanPrice(snapshot.getPlanPrice());
+        response.setWeeklyClasses(extractWeeklyClasses(snapshot.getRules()));
+        response.setStatus(enrollment.getStatus());
+        response.setStartDate(enrollment.getStartDate());
+        response.setEndDate(enrollment.getEndDate());
+        response.setCancellationDate(enrollment.getCancellationDate());
+        response.setCancellationReason(enrollment.getCancellationReason());
+        response.setBookingBlocked(enrollment.getBookingBlocked());
+        response.setSuspensionReason(enrollment.getSuspensionReason());
+        response.setCreatedAt(enrollment.getCreatedAt());
+        response.setUpdatedAt(enrollment.getUpdatedAt());
+
+        if (billingSchedule != null && billingSchedule.getActive()) {
+            response.setNextBillingDate(billingSchedule.getNextBillingDate());
+            response.setNextBillingFrequency(billingSchedule.getFrequency());
+            response.setNextBillingDay(billingSchedule.getBillingDay());
+            response.setNextBillingActive(billingSchedule.getActive());
+            response.setBillingCycle(billingSchedule.getFrequency());
+        } else {
+            response.setBillingCycle(null);
+            response.setNextBillingDate(null);
+            response.setNextBillingFrequency(null);
+            response.setNextBillingDay(null);
+            response.setNextBillingActive(null);
+        }
+
+        return response;
+    }
+
+    private Integer extractWeeklyClasses(String rulesJson) {
+        if (rulesJson == null || rulesJson.isBlank()) {
+            return null;
+        }
+        try {
+            List<Map<String, Object>> rules = objectMapper.readValue(
+                    rulesJson, new TypeReference<>() {});
+            return rules.stream()
+                    .filter(r -> "WEEKLY_CLASSES".equals(r.get("code")))
+                    .map(r -> r.get("value"))
+                    .filter(Objects::nonNull)
+                    .map(v -> Integer.parseInt(v.toString()))
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.debug("Failed to parse rules JSON for weeklyClasses: {}", e.getMessage());
+            return null;
+        }
     }
 }

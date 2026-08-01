@@ -16,4 +16,6 @@ public interface BillingScheduleRepository extends JpaRepository<BillingSchedule
     Optional<BillingSchedule> findByStudentPlanId(UUID studentPlanId);
 
     List<BillingSchedule> findByActiveTrueAndNextBillingDateLessThanEqual(LocalDate date);
+
+    List<BillingSchedule> findByStudentPlanIdIn(List<UUID> studentPlanIds);
 }

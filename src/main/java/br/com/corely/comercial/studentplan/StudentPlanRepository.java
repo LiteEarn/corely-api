@@ -1,5 +1,6 @@
 package br.com.corely.comercial.studentplan;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,20 +14,25 @@ import java.util.UUID;
 @Repository
 public interface StudentPlanRepository extends JpaRepository<StudentPlan, UUID> {
 
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
     Optional<StudentPlan> findByStudentIdAndStatus(UUID studentId, StudentPlanStatus status);
 
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
     List<StudentPlan> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
 
     boolean existsByStudentIdAndStatus(UUID studentId, StudentPlanStatus status);
 
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
     @Query("SELECT sp FROM StudentPlan sp WHERE sp.status = :status")
     List<StudentPlan> findByStatus(@Param("status") StudentPlanStatus status);
 
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
     @Query("SELECT sp FROM StudentPlan sp WHERE sp.status = :status AND sp.endDate <= :date")
     List<StudentPlan> findByStatusAndEndDateLessThanEqual(
             @Param("status") StudentPlanStatus status,
             @Param("date") LocalDate date);
 
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
     @Query("SELECT sp FROM StudentPlan sp WHERE sp.status = :status AND sp.endDate < :date")
     List<StudentPlan> findByStatusAndEndDateBefore(
             @Param("status") StudentPlanStatus status,
@@ -36,4 +42,10 @@ public interface StudentPlanRepository extends JpaRepository<StudentPlan, UUID> 
     long countByPlanIdAndStatus(@Param("planId") UUID planId, @Param("status") StudentPlanStatus status);
 
     boolean existsByContractSnapshotPlanIdAndStatus(UUID planId, StudentPlanStatus status);
+
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
+    Optional<StudentPlan> findById(UUID id);
+
+    @EntityGraph(attributePaths = {"student", "contractSnapshot"})
+    List<StudentPlan> findAll();
 }
