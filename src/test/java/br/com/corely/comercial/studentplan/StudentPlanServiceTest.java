@@ -4,6 +4,7 @@ import br.com.corely.comercial.billingschedule.BillingSchedule;
 import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
 import br.com.corely.comercial.billingschedule.BillingFrequency;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshot;
+import br.com.corely.comercial.contractsnapshot.ContractSnapshotParser;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
@@ -54,7 +55,7 @@ class StudentPlanServiceTest {
     @Mock
     private BillingScheduleRepository billingScheduleRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ContractSnapshotParser contractSnapshotParser = new ContractSnapshotParser(new ObjectMapper());
 
     private StudentPlanService service;
 
@@ -68,7 +69,7 @@ class StudentPlanServiceTest {
     @BeforeEach
     void setUp() {
         service = new StudentPlanService(studentPlanRepository, studentRepository, studioRepository,
-                contractSnapshotService, tenantContext, billingScheduleRepository, objectMapper);
+                contractSnapshotService, tenantContext, billingScheduleRepository, contractSnapshotParser);
 
         studioId = UUID.randomUUID();
         snapshotId = UUID.randomUUID();

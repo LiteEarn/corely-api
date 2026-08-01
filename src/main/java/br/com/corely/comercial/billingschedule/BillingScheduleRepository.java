@@ -1,5 +1,6 @@
 package br.com.corely.comercial.billingschedule;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,5 +18,6 @@ public interface BillingScheduleRepository extends JpaRepository<BillingSchedule
 
     List<BillingSchedule> findByActiveTrueAndNextBillingDateLessThanEqual(LocalDate date);
 
+    @EntityGraph(attributePaths = {"studentPlan"})
     List<BillingSchedule> findByStudentPlanIdIn(List<UUID> studentPlanIds);
 }

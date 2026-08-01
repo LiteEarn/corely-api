@@ -2,6 +2,7 @@ package br.com.corely.comercial.studentplan;
 
 import br.com.corely.comercial.billingschedule.BillingSchedule;
 import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
+import br.com.corely.comercial.contractsnapshot.ContractSnapshotParser;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.studentplan.dto.StudentPlanRequest;
 import br.com.corely.comercial.studentplan.dto.StudentPlanResponse;
@@ -10,10 +11,7 @@ import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.StudioRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +20,6 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class StudentPlanService {
 
     private final StudentPlanRepository studentPlanRepository;
@@ -31,7 +28,7 @@ public class StudentPlanService {
     private final ContractSnapshotService contractSnapshotService;
     private final ComercialTenantContext tenantContext;
     private final BillingScheduleRepository billingScheduleRepository;
-    private final ObjectMapper objectMapper;
+    private final ContractSnapshotParser contractSnapshotParser;
 
     @Transactional
     public StudentPlanResponse create(StudentPlanRequest request) {
@@ -184,7 +181,7 @@ public class StudentPlanService {
         response.setPlanId(snapshot.getPlanId());
         response.setPlanDescription(snapshot.getPlanDescription());
         response.setPlanPrice(snapshot.getPlanPrice());
-        response.setWeeklyClasses(extractWeeklyClasses(snapshot.getRules()));
+        response.setWeeklyClasses(contractSnapshotParser.parse(snapshot).weeklyClasses().orElse(null));
         response.setStatus(enrollment.getStatus());
         response.setStartDate(enrollment.getStartDate());
         response.setEndDate(enrollment.getEndDate());
@@ -210,21 +207,5 @@ public class StudentPlanService {
         }
 
         return response;
-    }
-
-    private Integer extractWeeklyClasses(String rulesJson) {
-        if (rulesJson == null || rulesJson.isBlank()) {
-            return null;
-        }
-        try {
-            Map<String, Object> rules = objectMapper.readValue(
-                    rulesJson, new TypeReference<>() {});
-            Object value = rules.get("WEEKLY_CLASSES");
-            if (value == null) return null;
-            return Integer.parseInt(value.toString());
-        } catch (Exception e) {
-            log.debug("Failed to parse rules JSON for weeklyClasses: {}", e.getMessage());
-            return null;
-        }
     }
 }

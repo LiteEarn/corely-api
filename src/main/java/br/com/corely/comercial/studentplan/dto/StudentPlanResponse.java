@@ -28,19 +28,19 @@ public class StudentPlanResponse {
     @Schema(description = "Nome do plano (snapshot)")
     private String snapshotName;
 
-    @Schema(description = "ID do plano")
+    @Schema(description = "ID do plano (origem: ContractSnapshot.planId)")
     private UUID planId;
 
-    @Schema(description = "Descricao do plano")
+    @Schema(description = "Descricao do plano (origem: ContractSnapshot.planDescription). Pode ser null quando o plano nao possui descricao")
     private String planDescription;
 
-    @Schema(description = "Preco do plano")
+    @Schema(description = "Preco do plano (origem: ContractSnapshot.planPrice)")
     private BigDecimal planPrice;
 
-    @Schema(description = "Ciclo de cobranca")
+    @Schema(description = "Ciclo de cobranca (origem: BillingSchedule.frequency). Null quando nao ha billing schedule ativo")
     private BillingFrequency billingCycle;
 
-    @Schema(description = "Quantidade de aulas por semana")
+    @Schema(description = "Quantidade de aulas por semana (origem: regra WEEKLY_CLASSES do ContractSnapshot.rules). Null quando a regra nao esta definida")
     private Integer weeklyClasses;
 
     @Schema(description = "Status da matricula")
@@ -52,16 +52,16 @@ public class StudentPlanResponse {
     @Schema(description = "Data de termino")
     private LocalDate endDate;
 
-    @Schema(description = "Data da proxima cobranca")
+    @Schema(description = "Data da proxima cobranca (origem: BillingSchedule.nextBillingDate). Null quando nao ha billing schedule ativo")
     private LocalDate nextBillingDate;
 
-    @Schema(description = "Frequencia de cobranca")
+    @Schema(description = "Frequencia de cobranca (origem: BillingSchedule.frequency). Null quando nao ha billing schedule ativo")
     private BillingFrequency nextBillingFrequency;
 
-    @Schema(description = "Dia da cobranca")
+    @Schema(description = "Dia da cobranca (origem: BillingSchedule.billingDay). Null quando nao ha billing schedule ativo")
     private Integer nextBillingDay;
 
-    @Schema(description = "Se a cobranca esta ativa")
+    @Schema(description = "Se a cobranca esta ativa (origem: BillingSchedule.active). Null quando nao ha billing schedule ativo")
     private Boolean nextBillingActive;
 
     @Schema(description = "Data de criacao")
