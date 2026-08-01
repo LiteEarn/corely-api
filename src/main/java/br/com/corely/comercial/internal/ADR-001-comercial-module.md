@@ -104,10 +104,9 @@ br.com.corely.comercial/
 │       ├── StudentPlanRequest.java
 │       └── StudentPlanResponse.java
 ├── tenant/
-│   ├── ComercialTenantContext.java       # Resolução de studioId exclusivamente do JWT
+│   ├── ComercialTenantContext.java       # Compatibilidade: delega para TenantContext global
 │   ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
-│   ├── TenantInterceptor.java            # Habilita o @Filter de tenant por request
-│   └── TenantResolutionException.java    # Exceção para falha de resolução de tenant
+│   └── (contexto global em shared/tenant/TenantContext.java)
 ├── invoice/
 │   ├── InvoiceStatus.java                # Enum: PENDING, PAID, OVERDUE, CANCELLED
 │   ├── Invoice.java                      # Título financeiro vinculado a StudentPlan
@@ -168,16 +167,19 @@ br.com.corely.comercial/
 
 ## Isolamento Multi-Tenant
 
-1. **Resolução**: `ComercialTenantContext.getCurrentStudioId()` obtém o studioId
-   exclusivamente do JWT via `AuthenticationFacade` — nunca de parâmetros de
-   requisição, cabeçalhos ou DTOs.
+1. **Resolução**: o contexto **global** `TenantContext`
+   (`br.com.corely.shared.tenant.TenantContext.getCurrentStudioId()`) obtém o
+   studioId exclusivamente do JWT via `AuthenticationFacade` — nunca de
+   parâmetros de requisição, cabeçalhos ou DTOs. `ComercialTenantContext` delega
+   para o contexto global (compatibilidade do módulo).
 2. **Aplicação automática**: `TenantInterceptor` (HandlerInterceptor) habilita
    o `@Filter(name = "comercialTenantFilter")` no EntityManager a cada request
-   para paths `/comercial/**`, filtrando automaticamente por `studio_id`.
+   para paths `/comercial/**` e `/finance/**`, filtrando automaticamente por
+   `studio_id` usando o `TenantContext` global.
 3. **Entidades**: toda nova entidade do módulo deve estender `ComercialBaseEntity`
    para que o filtro de tenant seja aplicado.
 4. **Fallback**: para contextos não-web (schedulers, filas), use
-   `ComercialTenantContext.getCurrentStudioId()` e habilite o filtro manualmente:
+   `TenantContext.getCurrentStudioId()` e habilite o filtro manualmente:
    ```java
    session.enableFilter("comercialTenantFilter")
        .setParameter("studioId", tenantContext.getCurrentStudioId());

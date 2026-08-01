@@ -1,5 +1,7 @@
 package br.com.corely.comercial.tenant;
 
+import br.com.corely.shared.tenant.TenantContext;
+import br.com.corely.shared.tenant.TenantResolutionException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,7 +17,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @RequiredArgsConstructor
 public class TenantInterceptor implements HandlerInterceptor {
 
-    private final ComercialTenantContext tenantContext;
+    private final TenantContext tenantContext;
 
     @PersistenceContext
     private EntityManager entityManager;

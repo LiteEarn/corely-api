@@ -1,6 +1,6 @@
 package br.com.corely.comercial.tenant;
 
-import br.com.corely.auth.security.AuthenticationFacade;
+import br.com.corely.shared.tenant.TenantContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -10,35 +10,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ComercialTenantContextTest {
 
     @Mock
-    private AuthenticationFacade authenticationFacade;
+    private TenantContext tenantContext;
 
     @InjectMocks
-    private ComercialTenantContext tenantContext;
+    private ComercialTenantContext comercialTenantContext;
 
     @Test
-    void getCurrentStudioId_shouldReturnStudioIdFromAuthenticatedUser() {
+    void getCurrentStudioId_shouldDelegateToGlobalTenantContext() {
         UUID expectedStudioId = UUID.randomUUID();
-        when(authenticationFacade.getCurrentStudioId()).thenReturn(expectedStudioId);
+        when(tenantContext.getCurrentStudioId()).thenReturn(expectedStudioId);
 
-        UUID result = tenantContext.getCurrentStudioId();
+        UUID result = comercialTenantContext.getCurrentStudioId();
 
         assertThat(result).isEqualTo(expectedStudioId);
     }
 
     @Test
-    void getCurrentStudioId_whenNotAuthenticated_shouldThrowTenantResolutionException() {
-        when(authenticationFacade.getCurrentStudioId()).thenReturn(null);
+    void getCurrentUserId_shouldDelegateToGlobalTenantContext() {
+        UUID expectedUserId = UUID.randomUUID();
+        when(tenantContext.getCurrentUserId()).thenReturn(expectedUserId);
 
-        assertThatThrownBy(() -> tenantContext.getCurrentStudioId())
-                .isInstanceOf(TenantResolutionException.class)
-                .hasMessageContaining("Studio ID could not be resolved");
+        UUID result = comercialTenantContext.getCurrentUserId();
+
+        assertThat(result).isEqualTo(expectedUserId);
     }
 
     @Test
