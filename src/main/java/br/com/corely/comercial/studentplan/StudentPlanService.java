@@ -217,15 +217,11 @@ public class StudentPlanService {
             return null;
         }
         try {
-            List<Map<String, Object>> rules = objectMapper.readValue(
+            Map<String, Object> rules = objectMapper.readValue(
                     rulesJson, new TypeReference<>() {});
-            return rules.stream()
-                    .filter(r -> "WEEKLY_CLASSES".equals(r.get("code")))
-                    .map(r -> r.get("value"))
-                    .filter(Objects::nonNull)
-                    .map(v -> Integer.parseInt(v.toString()))
-                    .findFirst()
-                    .orElse(null);
+            Object value = rules.get("WEEKLY_CLASSES");
+            if (value == null) return null;
+            return Integer.parseInt(value.toString());
         } catch (Exception e) {
             log.debug("Failed to parse rules JSON for weeklyClasses: {}", e.getMessage());
             return null;

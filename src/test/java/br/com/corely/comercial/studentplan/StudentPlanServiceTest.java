@@ -88,7 +88,7 @@ class StudentPlanServiceTest {
         snapshot.setPlanDescription("Premium access");
         snapshot.setPlanPrice(BigDecimal.valueOf(199));
         snapshot.setPlanDuration(30);
-        snapshot.setRules("[{\"code\":\"WEEKLY_CLASSES\",\"value\":\"2\"}]");
+        snapshot.setRules("{\"WEEKLY_CLASSES\":2}");
     }
 
     @Test
@@ -154,7 +154,7 @@ class StudentPlanServiceTest {
 
     @Test
     void create_shouldReturnNullWeeklyClasses_whenNoWeeklyClassesRule() {
-        snapshot.setRules("[{\"code\":\"VALIDITY_DAYS\",\"value\":\"30\"}]");
+        snapshot.setRules("{\"VALIDITY_DAYS\":30}");
         var planId = UUID.randomUUID();
         var request = new StudentPlanRequest();
         request.setStudentId(studentId);
