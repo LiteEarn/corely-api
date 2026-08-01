@@ -1,5 +1,8 @@
 package br.com.corely.comercial.studentplan;
 
+import br.com.corely.comercial.billingschedule.BillingFrequency;
+import br.com.corely.comercial.billingschedule.BillingSchedule;
+import br.com.corely.comercial.billingschedule.BillingScheduleRepository;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotRepository;
 import br.com.corely.comercial.contractsnapshot.ContractSnapshotService;
 import br.com.corely.comercial.plan.Plan;
@@ -72,10 +75,14 @@ class StudentPlanIntegrationTest {
     @Autowired
     private ContractSnapshotRepository contractSnapshotRepository;
 
+    @Autowired
+    private BillingScheduleRepository billingScheduleRepository;
+
     private Studio studio;
     private Student student;
     private Plan plan;
     private RuleDefinition validityDays;
+    private RuleDefinition weeklyClassesRule;
 
     @BeforeEach
     void setUp() {
@@ -87,6 +94,9 @@ class StudentPlanIntegrationTest {
 
         validityDays = ruleDefinitionRepository.save(createRuleDef("VALIDITY_DAYS", ValueType.INTEGER));
         planRuleRepository.save(createPlanRule(plan, validityDays, "30"));
+
+        weeklyClassesRule = ruleDefinitionRepository.save(createRuleDef("WEEKLY_CLASSES", ValueType.INTEGER));
+        planRuleRepository.save(createPlanRule(plan, weeklyClassesRule, "5"));
     }
 
     @Test
@@ -103,6 +113,14 @@ class StudentPlanIntegrationTest {
         assertThat(response.getContractSnapshotId()).isNotNull();
         assertThat(response.getSnapshotName()).isEqualTo("Premium Plan");
         assertThat(response.getStatus()).isEqualTo(StudentPlanStatus.ACTIVE);
+        assertThat(response.getPlanId()).isEqualTo(plan.getId());
+        assertThat(response.getPlanPrice()).isEqualByComparingTo(BigDecimal.valueOf(299));
+        assertThat(response.getWeeklyClasses()).isEqualTo(5);
+        assertThat(response.getBillingCycle()).isNull();
+        assertThat(response.getNextBillingDate()).isNull();
+        assertThat(response.getNextBillingActive()).isNull();
+        assertThat(response.getCreatedAt()).isNotNull();
+        assertThat(response.getUpdatedAt()).isNotNull();
 
         assertThat(contractSnapshotRepository.count()).isEqualTo(1);
     }
@@ -241,6 +259,50 @@ class StudentPlanIntegrationTest {
         var all = studentPlanService.findAll();
 
         assertThat(all).hasSize(1);
+        assertThat(all.get(0).getPlanId()).isEqualTo(plan.getId());
+        assertThat(all.get(0).getPlanPrice()).isEqualByComparingTo(BigDecimal.valueOf(299));
+        assertThat(all.get(0).getWeeklyClasses()).isEqualTo(5);
+    }
+
+    @Test
+    void findById_shouldEnrichBillingSchedule_whenPresent() {
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.now());
+        var created = studentPlanService.create(request);
+
+        var billing = new BillingSchedule();
+        billing.setStudio(studio);
+        billing.setStudentPlan(studentPlanRepository.findById(created.getId()).orElseThrow());
+        billing.setFrequency(BillingFrequency.MONTHLY);
+        billing.setBillingDay(10);
+        billing.setNextBillingDate(LocalDate.now().plusDays(15));
+        billing.setActive(true);
+        billingScheduleRepository.save(billing);
+
+        var response = studentPlanService.findById(created.getId());
+
+        assertThat(response.getBillingCycle()).isEqualTo(BillingFrequency.MONTHLY);
+        assertThat(response.getNextBillingFrequency()).isEqualTo(BillingFrequency.MONTHLY);
+        assertThat(response.getNextBillingDay()).isEqualTo(10);
+        assertThat(response.getNextBillingActive()).isTrue();
+        assertThat(response.getNextBillingDate()).isEqualTo(LocalDate.now().plusDays(15));
+    }
+
+    @Test
+    void findById_shouldReturnNullBilling_whenNoScheduleExists() {
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.now());
+        var created = studentPlanService.create(request);
+
+        var response = studentPlanService.findById(created.getId());
+
+        assertThat(response.getBillingCycle()).isNull();
+        assertThat(response.getNextBillingDate()).isNull();
+        assertThat(response.getNextBillingActive()).isNull();
     }
 
     private void authenticateAs(Studio studio, UserRole role) {

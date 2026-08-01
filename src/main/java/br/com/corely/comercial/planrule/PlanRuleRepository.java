@@ -15,4 +15,6 @@ public interface PlanRuleRepository extends JpaRepository<PlanRule, UUID> {
     Optional<PlanRule> findByPlanIdAndId(UUID planId, UUID id);
 
     boolean existsByPlanIdAndRuleDefinitionId(UUID planId, UUID ruleDefinitionId);
+
+    long countByPlanId(UUID planId);
 }
