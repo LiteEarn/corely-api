@@ -1,5 +1,5 @@
 ---
-description: Continua o desenvolvimento executando a Story Atual definida em PROJECT_STATUS.md. Implementa, testa, entrega para @corely-review (aprovacao obrigatoria) e, se APPROVED, marca a Story como IN_REVIEW. Nenhuma Story vira DONE sem aprovacao humana.
+description: Continua o desenvolvimento executando a Story Atual definida em PROJECT_STATUS.md. Implementa, testa, entrega para @corely-review (aprovacao obrigatoria) e, se APPROVED, faz commit, push e abre o PR. Nenhuma Story vira DONE sem aprovacao humana.
 agent: corely-dev
 ---
 
@@ -24,16 +24,21 @@ Voce e o agente **corely-dev**. Execute a **Story Atual** do projeto Corely de f
    - **Aguarde o veredito** (`APPROVED` ou `CHANGES_REQUESTED`). Voce nao emite veredito.
 8. **Apos o veredito do @corely-review**:
    - Se **CHANGES_REQUESTED**: corrija os itens do **PLANO DE CORRECAO** e entregue novamente para nova revisao. Repita ate `APPROVED`. A story permanece `IN_PROGRESS`.
-   - Se **APPROVED**: atualize o roadmap marcando a story como `IN_REVIEW` (aguardando aprovacao humana) — **nunca `DONE`**. Prepara os artefatos do PR conforme a secao PREPARACAO DO PR do relatorio do reviewer.
+   - Se **APPROVED**: faca **commit, push e PR**:
+     1. `git add` dos arquivos alterados.
+     2. `git commit` com mensagem no formato `tipo(escopo): descricao (STORY_ID)`.
+     3. `git push` para a branch atual.
+     4. `gh pr create` com titulo e corpo descritivos.
+     5. Atualize o roadmap marcando a story como `IN_REVIEW`.
 9. **Atualizar PROJECT_STATUS**: registre a story em `IN_REVIEW`, mantenha a Story Atual apontando para ela (a proxima story so avanca apos aprovacao humana) e ajuste bloqueadores/percentual somente quando aplicavel.
-10. **Gerar relatorio**: registre o que foi feito, o veredito do reviewer, o que nao foi e o proximo passo.
+10. **Gerar relatorio**: registre o que foi feito, o veredito do reviewer, o commit, o PR, o que nao foi e o proximo passo.
 
 ## Regras
 
 - **Nunca implementar funcionalidades fora do roadmap.**
 - **Deterministico**: a proxima story e definida por `PROJECT_STATUS.md`, nao por inferencia.
 - **Nunca emita `APPROVED`/`CHANGES_REQUESTED`** — veredito exclusivo do `corely-review`.
-- **Nunca marque Story como `DONE`** — ao aprovar, a story vai para `IN_REVIEW` e so a aprovacao humana a torna `DONE`.
+- **Nunca marque Story como `DONE`** — ao aprovar, faca commit/push/PR e va para `IN_REVIEW`; so a aprovacao humana a torna `DONE`.
 - Nunca quebre contratos REST existentes.
 - Nunca crie divida tecnica, TODO, codigo morto ou hardcode.
 - Respeite multi-tenant (`studioId`).

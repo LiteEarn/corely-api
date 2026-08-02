@@ -58,20 +58,26 @@ e do status oficial (`PROJECT_STATUS.md`).
 
 - Apos concluir a implementacao e os testes, entregar para o `corely-review`
   (veredito `APPROVED`/`CHANGES_REQUESTED`).
-- Se `APPROVED`: marcar `status: IN_REVIEW` no roadmap e atualizar
-  `PROJECT_STATUS.md` (Story Atual permanece nela, aguardando aprovacao humana).
+- Se `APPROVED`: faca **commit, push e PR**:
+  1. `git add` dos arquivos alterados.
+  2. `git commit` com mensagem no formato `tipo(escopo): descricao (STORY_ID)`.
+  3. `git push` para a branch atual.
+  4. `gh pr create` com titulo e corpo descritivos.
+  5. Marcar `status: IN_REVIEW` no roadmap.
+  6. Atualizar `PROJECT_STATUS.md` (Story Atual permanece nela, aguardando
+     aprovacao humana).
 - Se `CHANGES_REQUESTED`: manter `IN_PROGRESS`, corrigir o plano de correcao e
   re-entregar para nova revisao.
 - Apos aprovacao humana: marcar `status: DONE` e atualizar `PROJECT_STATUS.md`
   (proxima Story Atual, percentual, bloqueadores).
 - `progress` do epico e percentual (0-100) calculado por stories concluidas.
-- Nunca antecipar conclusao: marcar `DONE` apenas com codigo, testes, docs e
-  aprovacao humana.
+- Nunca antecipar conclusao: marcar `DONE` apenas com codigo, testes, docs,
+  commit/push/PR e aprovacao humana.
 
 ## Como marcar itens concluídos
 
-- Story: `IN_REVIEW` quando aprovada pelo `corely-review`; `DONE` apenas apos
-  aprovacao humana.
+- Story: `IN_REVIEW` quando aprovada pelo `corely-review` e PR aberto; `DONE`
+  apenas apos aprovacao humana.
 - Épico: `DONE` quando todas as stories estiverem `DONE`.
 
 ## Regras
