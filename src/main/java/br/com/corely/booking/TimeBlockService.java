@@ -2,6 +2,7 @@ package br.com.corely.booking;
 
 import br.com.corely.booking.dto.TimeBlockRequest;
 import br.com.corely.booking.dto.TimeBlockResponse;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.StudioRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,11 @@ public class TimeBlockService {
 
     private final TimeBlockRepository timeBlockRepository;
     private final StudioRepository studioRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public TimeBlockResponse create(TimeBlockRequest request) {
-        var studio = studioRepository.findById(request.getStudioId())
+        var studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         var block = new TimeBlock();

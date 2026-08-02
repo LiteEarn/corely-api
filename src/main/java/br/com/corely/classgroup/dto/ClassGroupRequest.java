@@ -14,9 +14,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ClassGroupRequest {
 
-    @NotNull(message = "Studio ID is required")
-    private UUID studioId;
-
     @NotNull(message = "Instructor ID is required")
     private UUID instructorId;
 

@@ -14,9 +14,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TimeBlockRequest {
 
-    @NotNull(message = "Studio ID is required")
-    private UUID studioId;
-
     private Long instructorId;
 
     private Long roomId;

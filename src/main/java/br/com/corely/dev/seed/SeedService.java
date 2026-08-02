@@ -261,7 +261,6 @@ public class SeedService {
 
     private Instructor createInstructor(String name, String email, String phone, String specialty) {
         InstructorRequest req = new InstructorRequest();
-        req.setStudioId(studio.getId());
         req.setFullName(name);
         req.setEmail(email);
         req.setPhone(phone);
@@ -309,7 +308,6 @@ public class SeedService {
                                          LocalTime start, LocalTime end, int capacity,
                                          boolean mon, boolean tue, boolean wed, boolean thu, boolean fri, boolean sat) {
         ClassGroupRequest req = new ClassGroupRequest();
-        req.setStudioId(studio.getId());
         req.setInstructorId(instructor.getId());
         req.setName(name);
         req.setDescription(description);
@@ -332,7 +330,6 @@ public class SeedService {
         List<StudentInfo> studentInfos = buildStudentInfos();
         for (StudentInfo info : studentInfos) {
             StudentRequest req = new StudentRequest();
-            req.setStudioId(studio.getId());
             req.setFullName(info.name);
             req.setPhone(info.phone);
             req.setEmail(info.email);
@@ -353,7 +350,6 @@ public class SeedService {
         Collections.shuffle(shuffled, rnd);
         for (int i = 0; i < count && i < shuffled.size(); i++) {
             ObjectiveRequest req = new ObjectiveRequest();
-            req.setStudioId(studio.getId());
             req.setStudentId(student.getId());
             req.setTitle(shuffled.get(i));
             req.setDescription("Objetivo de " + shuffled.get(i).toLowerCase());
@@ -430,7 +426,6 @@ public class SeedService {
                 if (enrolled >= targetEnrollments) break;
                 try {
                     EnrollmentRequest req = new EnrollmentRequest();
-                    req.setStudioId(studio.getId());
                     req.setStudentId(studentId);
                     req.setClassGroupId(cg.getId());
                     req.setEnrollmentDate(LocalDate.now().minusDays(rnd.nextInt(30)));
@@ -631,7 +626,6 @@ public class SeedService {
         for (int i = 0; i < target; i++) {
             try {
                 EvaluationRequest req = new EvaluationRequest();
-                req.setStudioId(studio.getId());
                 req.setStudentId(shuffled.get(i));
                 req.setEvaluationDate(LocalDate.now().minusDays(rnd.nextInt(90)));
                 req.setWeight(BigDecimal.valueOf(50 + rnd.nextDouble() * 50).setScale(2, RoundingMode.HALF_UP));
@@ -652,7 +646,6 @@ public class SeedService {
             UUID studentId = shuffled.get(i % shuffled.size());
             try {
                 EvolutionRequest req = new EvolutionRequest();
-                req.setStudioId(studio.getId());
                 req.setStudentId(studentId);
                 req.setEvolutionDate(LocalDate.now().minusDays(rnd.nextInt(180)));
                 req.setTitle("Evolucao " + (i + 1));

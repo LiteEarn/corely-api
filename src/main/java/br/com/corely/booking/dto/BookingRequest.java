@@ -14,9 +14,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class BookingRequest {
 
-    @NotNull(message = "Studio ID is required")
-    private UUID studioId;
-
     @NotNull(message = "Student ID is required")
     private UUID studentId;
 

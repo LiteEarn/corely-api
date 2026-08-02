@@ -82,7 +82,6 @@ class BookingControllerTest {
     void create_shouldReturn201() throws Exception {
         var json = """
                 {
-                    "studioId": "%s",
                     "studentId": "%s",
                     "instructorId": "%s",
                     "classType": "Pilates",
@@ -91,7 +90,6 @@ class BookingControllerTest {
                     "capacity": 5
                 }
                 """.formatted(
-                studio.getId(),
                 student.getId(),
                 instructor.getId(),
                 LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).toString(),

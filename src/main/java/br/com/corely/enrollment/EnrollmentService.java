@@ -30,18 +30,19 @@ public class EnrollmentService {
 
     @Transactional
     public EnrollmentResponse create(EnrollmentRequest request) {
+        UUID studioId = tenantContext.getCurrentStudioId();
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno inexistente"));
 
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Turma inexistente"));
 
-        validateStudioIdMatch(student, classGroup, request.getStudioId());
+        validateStudioIdMatch(student, classGroup, studioId);
         validateStudentActiveForEnrollment(student);
         validateClassGroupActiveForEnrollment(classGroup);
         validateInstructorActiveForEnrollment(classGroup);
         validateEnrollmentDate(request.getEnrollmentDate());
-        validateClassGroupCapacity(classGroup.getCapacity(), request.getStudioId(), request.getClassGroupId());
+        validateClassGroupCapacity(classGroup.getCapacity(), studioId, request.getClassGroupId());
         validateUniqueEnrollment(request.getStudentId(), request.getClassGroupId());
 
         Enrollment enrollment = new Enrollment();
@@ -111,6 +112,7 @@ public class EnrollmentService {
 
     @Transactional
     public EnrollmentResponse update(UUID id, EnrollmentRequest request) {
+        UUID studioId = tenantContext.getCurrentStudioId();
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Matrícula inexistente"));
 
@@ -120,7 +122,7 @@ public class EnrollmentService {
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Turma inexistente"));
 
-        validateStudioIdMatch(student, classGroup, request.getStudioId());
+        validateStudioIdMatch(student, classGroup, studioId);
         validateStudentActiveForEnrollment(student);
         validateClassGroupActiveForEnrollment(classGroup);
         validateInstructorActiveForEnrollment(classGroup);
@@ -128,7 +130,7 @@ public class EnrollmentService {
         validateUniqueEnrollmentForUpdate(id, request.getStudentId(), request.getClassGroupId());
 
         if (!classGroup.getId().equals(enrollment.getClassGroup().getId())) {
-            validateClassGroupCapacity(classGroup.getCapacity(), request.getStudioId(), request.getClassGroupId());
+            validateClassGroupCapacity(classGroup.getCapacity(), studioId, request.getClassGroupId());
         }
 
         enrollment.setStudio(student.getStudio());

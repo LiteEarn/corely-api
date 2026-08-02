@@ -569,7 +569,6 @@ class AttendanceServiceTest {
 
     private BulkAttendanceRequest bulkRequest(List<BulkAttendanceRequest.AttendanceItem> items) {
         var req = new BulkAttendanceRequest();
-        req.setStudioId(studio.getId());
         req.setClassGroupId(classGroup.getId());
         req.setAttendanceDate(LocalDate.now());
         req.setAttendances(items);
@@ -633,8 +632,21 @@ class AttendanceServiceTest {
         otherStudio.setName("Other Studio");
         var savedOtherStudio = studioRepository.save(otherStudio);
 
-        var req = bulkRequest(List.of(attendanceItem(student.getId(), true, null)));
-        req.setStudioId(savedOtherStudio.getId());
+        var otherStudent = new Student();
+        otherStudent.setStudio(savedOtherStudio);
+        otherStudent.setFullName("Other Student");
+        otherStudent.setActive(true);
+        otherStudent = studentRepository.save(otherStudent);
+
+        var crossStudioEnrollment = new Enrollment();
+        crossStudioEnrollment.setStudio(savedOtherStudio);
+        crossStudioEnrollment.setStudent(otherStudent);
+        crossStudioEnrollment.setClassGroup(classGroup);
+        crossStudioEnrollment.setEnrollmentDate(LocalDate.now());
+        crossStudioEnrollment.setActive(true);
+        enrollmentRepository.save(crossStudioEnrollment);
+
+        var req = bulkRequest(List.of(attendanceItem(otherStudent.getId(), true, null)));
 
         assertThatThrownBy(() -> attendanceService.bulkSave(req))
                 .isInstanceOf(ConflictException.class)

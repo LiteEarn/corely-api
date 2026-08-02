@@ -15,9 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EvolutionRequest {
 
-    @NotNull(message = "Studio ID is required")
-    private UUID studioId;
-
     @NotNull(message = "Student ID is required")
     private UUID studentId;
 

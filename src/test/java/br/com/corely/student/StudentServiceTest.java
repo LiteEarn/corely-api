@@ -210,7 +210,6 @@ class StudentServiceTest {
         authenticateAs(studio, UserRole.ADMIN);
 
         StudentRequest request = new StudentRequest();
-        request.setStudioId(studio.getId());
         request.setFullName("New Student");
         request.setEmail("new@test.com");
         request.setActive(true);
@@ -226,7 +225,6 @@ class StudentServiceTest {
         authenticateAs(studio, UserRole.ADMIN);
 
         StudentRequest request = new StudentRequest();
-        request.setStudioId(studio.getId());
         request.setFullName(student.getFullName());
         request.setEmail(student.getEmail());
         request.setActive(true);
@@ -239,7 +237,6 @@ class StudentServiceTest {
 
     private StudentRequest buildRequest(boolean active) {
         StudentRequest request = new StudentRequest();
-        request.setStudioId(studio.getId());
         request.setFullName(student.getFullName());
         request.setEmail(student.getEmail());
         request.setActive(active);

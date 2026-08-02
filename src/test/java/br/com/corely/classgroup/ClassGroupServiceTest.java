@@ -118,7 +118,6 @@ class ClassGroupServiceTest {
     void create_whenInstructorInactive_throwsBusinessException() {
         // Given
         ClassGroupRequest request = new ClassGroupRequest();
-        request.setStudioId(studio.getId());
         request.setInstructorId(inactiveInstructor.getId());
         request.setName("Test Class Group");
         request.setDescription("Test Description");
@@ -138,7 +137,6 @@ class ClassGroupServiceTest {
     void create_whenInstructorActive_succeeds() {
         // Given
         ClassGroupRequest request = new ClassGroupRequest();
-        request.setStudioId(studio.getId());
         request.setInstructorId(activeInstructor.getId());
         request.setName("Test Class Group");
         request.setDescription("Test Description");
@@ -161,7 +159,6 @@ class ClassGroupServiceTest {
     void update_whenInstructorInactive_throwsBusinessException() {
         // Given - create a class group with active instructor
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -174,7 +171,6 @@ class ClassGroupServiceTest {
 
         // Given - try to update with inactive instructor
         ClassGroupRequest updateRequest = new ClassGroupRequest();
-        updateRequest.setStudioId(studio.getId());
         updateRequest.setInstructorId(inactiveInstructor.getId());
         updateRequest.setName("Updated Class Group");
         updateRequest.setDescription("Updated Description");
@@ -194,7 +190,6 @@ class ClassGroupServiceTest {
     void update_whenInstructorActive_succeeds() {
         // Given - create a class group with active instructor
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -207,7 +202,6 @@ class ClassGroupServiceTest {
 
         // Given - update with same active instructor
         ClassGroupRequest updateRequest = new ClassGroupRequest();
-        updateRequest.setStudioId(studio.getId());
         updateRequest.setInstructorId(activeInstructor.getId());
         updateRequest.setName("Updated Class Group");
         updateRequest.setDescription("Updated Description");
@@ -230,7 +224,6 @@ class ClassGroupServiceTest {
     void findActive_returnsOnlyActiveClassGroups() {
         // Given - create active class group
         ClassGroupRequest activeRequest = new ClassGroupRequest();
-        activeRequest.setStudioId(studio.getId());
         activeRequest.setInstructorId(activeInstructor.getId());
         activeRequest.setName("Active Class Group");
         activeRequest.setDescription("Active Description");
@@ -243,7 +236,6 @@ class ClassGroupServiceTest {
 
         // Given - create inactive class group
         ClassGroupRequest inactiveRequest = new ClassGroupRequest();
-        inactiveRequest.setStudioId(studio.getId());
         inactiveRequest.setInstructorId(activeInstructor.getId());
         inactiveRequest.setName("Inactive Class Group");
         inactiveRequest.setDescription("Inactive Description");
@@ -267,7 +259,6 @@ class ClassGroupServiceTest {
     void findAll_returnsAllClassGroupsIncludingInactive() {
         // Given - create active class group
         ClassGroupRequest activeRequest = new ClassGroupRequest();
-        activeRequest.setStudioId(studio.getId());
         activeRequest.setInstructorId(activeInstructor.getId());
         activeRequest.setName("Active Class Group");
         activeRequest.setDescription("Active Description");
@@ -280,7 +271,6 @@ class ClassGroupServiceTest {
 
         // Given - create inactive class group
         ClassGroupRequest inactiveRequest = new ClassGroupRequest();
-        inactiveRequest.setStudioId(studio.getId());
         inactiveRequest.setInstructorId(activeInstructor.getId());
         inactiveRequest.setName("Inactive Class Group");
         inactiveRequest.setDescription("Inactive Description");
@@ -305,7 +295,6 @@ class ClassGroupServiceTest {
     void update_whenInactivatingWithoutEnrollments_succeeds() {
         // Given - create an active class group with no enrollments
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -318,7 +307,6 @@ class ClassGroupServiceTest {
 
         // When - try to inactivate via update
         ClassGroupRequest updateRequest = new ClassGroupRequest();
-        updateRequest.setStudioId(studio.getId());
         updateRequest.setInstructorId(activeInstructor.getId());
         updateRequest.setName("Test Class Group");
         updateRequest.setDescription("Test Description");
@@ -339,7 +327,6 @@ class ClassGroupServiceTest {
     void update_whenInactivatingWithActiveEnrollments_throwsConfirmationRequired() {
         // Given - create an active class group
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -371,7 +358,6 @@ class ClassGroupServiceTest {
 
         // When - try to inactivate
         ClassGroupRequest updateRequest = new ClassGroupRequest();
-        updateRequest.setStudioId(studio.getId());
         updateRequest.setInstructorId(activeInstructor.getId());
         updateRequest.setName("Test Class Group");
         updateRequest.setDescription("Test Description");
@@ -400,7 +386,6 @@ class ClassGroupServiceTest {
     void inactivate_whenConfirmation_cascadesEnrollments() {
         // Given - create an active class group
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -462,7 +447,6 @@ class ClassGroupServiceTest {
     void inactivate_whenAlreadyInactive_throwsBusinessException() {
         // Given - create and directly inactivate a class group
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -501,7 +485,6 @@ class ClassGroupServiceTest {
     void inactivate_whenCascadeEnrollmentsFalseWithEnrollments_throwsConfirmationRequired() {
         // Given - create an active class group
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -538,7 +521,6 @@ class ClassGroupServiceTest {
     void inactivate_whenCascadeEnrollmentsFalseWithoutEnrollments_succeeds() {
         // Given - create an active class group with no enrollments
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -564,7 +546,6 @@ class ClassGroupServiceTest {
     void inactivate_whenErrorDuringEnrollmentUpdate_rollsBack() {
         // Given - create an active class group
         ClassGroupRequest createRequest = new ClassGroupRequest();
-        createRequest.setStudioId(studio.getId());
         createRequest.setInstructorId(activeInstructor.getId());
         createRequest.setName("Test Class Group");
         createRequest.setDescription("Test Description");
@@ -602,7 +583,6 @@ class ClassGroupServiceTest {
     @Test
     void create_activeClassGroup_generatesSessions() {
         ClassGroupRequest request = new ClassGroupRequest();
-        request.setStudioId(studio.getId());
         request.setInstructorId(activeInstructor.getId());
         request.setName("Test Class Group");
         request.setStartTime(LocalTime.of(9, 0));
@@ -625,7 +605,6 @@ class ClassGroupServiceTest {
     @Test
     void create_inactiveClassGroup_doesNotGenerateSessions() {
         ClassGroupRequest request = new ClassGroupRequest();
-        request.setStudioId(studio.getId());
         request.setInstructorId(activeInstructor.getId());
         request.setName("Test Class Group");
         request.setStartTime(LocalTime.of(9, 0));
@@ -897,7 +876,6 @@ class ClassGroupServiceTest {
 
     private ClassGroupRequest createRequest() {
         ClassGroupRequest request = new ClassGroupRequest();
-        request.setStudioId(studio.getId());
         request.setInstructorId(activeInstructor.getId());
         request.setName("Test Class Group");
         request.setStartTime(LocalTime.of(9, 0));
@@ -912,7 +890,6 @@ class ClassGroupServiceTest {
 
     private ClassGroupRequest createUpdateRequest() {
         ClassGroupRequest request = new ClassGroupRequest();
-        request.setStudioId(studio.getId());
         request.setInstructorId(activeInstructor.getId());
         request.setName("Test Class Group");
         request.setStartTime(LocalTime.of(9, 0));

@@ -29,7 +29,8 @@ public class StudentService {
 
     @Transactional
     public StudentResponse create(StudentRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
+        UUID studioId = tenantContext.getCurrentStudioId();
+        Studio studio = studioRepository.findById(studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         var membershipPlan = membershipPlanRepository.findByIdAndStudioId(
@@ -71,7 +72,8 @@ public class StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        UUID studioId = tenantContext.getCurrentStudioId();
+        Studio studio = studioRepository.findById(studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         student.setStudio(studio);

@@ -33,7 +33,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponse create(BookingRequest request) {
-        var studio = studioRepository.findById(request.getStudioId())
+        var studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
         var student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));

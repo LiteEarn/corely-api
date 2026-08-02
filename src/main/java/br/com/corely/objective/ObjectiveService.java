@@ -29,7 +29,7 @@ public class ObjectiveService {
 
     @Transactional
     public ObjectiveResponse create(ObjectiveRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Student student = studentRepository.findById(request.getStudentId())
@@ -70,7 +70,7 @@ public class ObjectiveService {
         Objective objective = objectiveRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Objective not found"));
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Student student = studentRepository.findById(request.getStudentId())
