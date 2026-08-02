@@ -21,30 +21,38 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
                                            @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT b FROM Booking b WHERE b.student.id = :studentId "
+            + "AND b.studio.id = :studioId "
             + "AND b.startDateTime < :endDate AND b.endDateTime > :startDate "
             + "AND b.active = true AND b.status <> 'CANCELLED' AND b.status <> 'NO_SHOW'")
     List<Booking> findConflictingByStudent(@Param("studentId") UUID studentId,
+                                           @Param("studioId") UUID studioId,
                                            @Param("startDate") LocalDateTime startDate,
                                            @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT b FROM Booking b WHERE b.instructor.id = :instructorId "
+            + "AND b.studio.id = :studioId "
             + "AND b.startDateTime < :endDate AND b.endDateTime > :startDate "
             + "AND b.active = true AND b.status <> 'CANCELLED' AND b.status <> 'NO_SHOW'")
     List<Booking> findConflictingByInstructor(@Param("instructorId") UUID instructorId,
+                                              @Param("studioId") UUID studioId,
                                               @Param("startDate") LocalDateTime startDate,
                                               @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT b FROM Booking b WHERE b.roomId = :roomId "
+            + "AND b.studio.id = :studioId "
             + "AND b.startDateTime < :endDate AND b.endDateTime > :startDate "
             + "AND b.active = true AND b.status <> 'CANCELLED' AND b.status <> 'NO_SHOW'")
     List<Booking> findConflictingByRoom(@Param("roomId") Long roomId,
+                                        @Param("studioId") UUID studioId,
                                         @Param("startDate") LocalDateTime startDate,
                                         @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.roomId = :roomId "
+            + "AND b.studio.id = :studioId "
             + "AND b.startDateTime < :endDate AND b.endDateTime > :startDate "
             + "AND b.active = true AND b.status <> 'CANCELLED' AND b.status <> 'NO_SHOW'")
     long countConflictingByRoom(@Param("roomId") Long roomId,
+                                @Param("studioId") UUID studioId,
                                 @Param("startDate") LocalDateTime startDate,
                                 @Param("endDate") LocalDateTime endDate);
 

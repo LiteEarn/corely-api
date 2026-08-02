@@ -15,6 +15,7 @@ import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
+import br.com.corely.shared.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +33,12 @@ public class AttendanceService {
     private final ClassSessionRepository classSessionRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final TenantContext tenantContext;
 
     @Transactional
     public AttendanceResponse register(UUID sessionId, AttendanceRequest request) {
-        ClassSession session = classSessionRepository.findById(sessionId)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        ClassSession session = classSessionRepository.findByIdAndStudioId(sessionId, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
 
         if (session.getStatus() == ClassSessionStatus.COMPLETED) {
@@ -58,7 +61,7 @@ public class AttendanceService {
         }
 
         Attendance attendance = attendanceRepository
-                .findByClassSessionIdAndEnrollmentId(sessionId, enrollment.getId())
+                .findByClassSessionIdAndEnrollmentIdAndStudioId(sessionId, enrollment.getId(), studioId)
                 .orElse(null);
 
         if (attendance == null) {
@@ -76,20 +79,22 @@ public class AttendanceService {
 
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findBySessionId(UUID sessionId) {
-        if (!classSessionRepository.existsById(sessionId)) {
+        UUID studioId = tenantContext.getCurrentStudioId();
+        if (!classSessionRepository.findByIdAndStudioId(sessionId, studioId).isPresent()) {
             throw new ResourceNotFoundException("Class session not found");
         }
-        return attendanceRepository.findByClassSessionId(sessionId).stream()
+        return attendanceRepository.findByClassSessionIdAndStudioId(sessionId, studioId).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<AttendanceResponse> findByEnrollmentId(UUID enrollmentId) {
+        UUID studioId = tenantContext.getCurrentStudioId();
         if (!enrollmentRepository.existsById(enrollmentId)) {
             throw new ResourceNotFoundException("Enrollment not found");
         }
-        return attendanceRepository.findByEnrollmentId(enrollmentId).stream()
+        return attendanceRepository.findByEnrollmentIdAndStudioId(enrollmentId, studioId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -106,9 +111,10 @@ public class AttendanceService {
 
     @Transactional
     public BulkAttendanceResponse bulkSave(BulkAttendanceRequest request) {
+        UUID studioId = tenantContext.getCurrentStudioId();
         ClassSession session = classSessionRepository
-                .findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTime(
-                        request.getClassGroupId(), request.getAttendanceDate(), ClassSessionStatus.IN_PROGRESS)
+                .findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTimeAndStudioId(
+                        request.getClassGroupId(), request.getAttendanceDate(), ClassSessionStatus.IN_PROGRESS, studioId)
                 .orElseThrow(() -> new ConflictException("Nenhuma sessão em andamento encontrada para esta turma e data."));
 
         int savedCount = 0;
@@ -127,7 +133,7 @@ public class AttendanceService {
             }
 
             Attendance attendance = attendanceRepository
-                    .findByClassSessionIdAndEnrollmentId(session.getId(), enrollment.getId())
+                    .findByClassSessionIdAndEnrollmentIdAndStudioId(session.getId(), enrollment.getId(), studioId)
                     .orElse(null);
 
             if (attendance == null) {
@@ -149,7 +155,8 @@ public class AttendanceService {
     @Transactional
     public List<SessionAttendanceResponse> saveSessionAttendances(
             UUID sessionId, SessionBulkAttendanceRequest request) {
-        ClassSession session = classSessionRepository.findById(sessionId)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        ClassSession session = classSessionRepository.findByIdAndStudioId(sessionId, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
 
         if (session.getStatus() == ClassSessionStatus.COMPLETED) {
@@ -171,7 +178,7 @@ public class AttendanceService {
             }
 
             Attendance attendance = attendanceRepository
-                    .findByClassSessionIdAndEnrollmentId(sessionId, enrollment.getId())
+                    .findByClassSessionIdAndEnrollmentIdAndStudioId(sessionId, enrollment.getId(), studioId)
                     .orElse(null);
 
             if (attendance == null) {

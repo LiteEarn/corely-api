@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 import java.time.LocalDate;
 
@@ -19,6 +20,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Getter
 @Setter
+@Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class Evolution extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

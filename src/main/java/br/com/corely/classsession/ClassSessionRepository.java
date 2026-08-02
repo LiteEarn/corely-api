@@ -26,6 +26,16 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, UUID
     Optional<ClassSession> findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTime(
             UUID classGroupId, LocalDate sessionDate, ClassSessionStatus status);
 
+    @Query("SELECT cs FROM ClassSession cs JOIN cs.classGroup cg WHERE cs.id = :id AND cg.studio.id = :studioId")
+    Optional<ClassSession> findByIdAndStudioId(@Param("id") UUID id, @Param("studioId") UUID studioId);
+
+    @Query("SELECT cs FROM ClassSession cs JOIN cs.classGroup cg WHERE cs.classGroup.id = :classGroupId AND cs.sessionDate = :sessionDate AND cs.status = :status AND cg.studio.id = :studioId ORDER BY cs.startTime")
+    Optional<ClassSession> findFirstByClassGroupIdAndSessionDateAndStatusOrderByStartTimeAndStudioId(
+            @Param("classGroupId") UUID classGroupId,
+            @Param("sessionDate") LocalDate sessionDate,
+            @Param("status") ClassSessionStatus status,
+            @Param("studioId") UUID studioId);
+
     @Query("SELECT COUNT(cs) FROM ClassSession cs JOIN cs.classGroup cg WHERE cg.studio.id = :studioId AND cs.sessionDate = :date")
     long countByStudioIdAndSessionDate(@Param("studioId") UUID studioId, @Param("date") LocalDate date);
 

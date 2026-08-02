@@ -15,11 +15,12 @@ public interface ObjectiveRepository extends JpaRepository<Objective, UUID> {
 
     List<Objective> findByStudentIdAndStatus(UUID studentId, ObjectiveStatus status);
 
-    @Query("SELECT o FROM Objective o WHERE " +
-           "(:studentId IS NULL OR o.student.id = :studentId) AND " +
+    @Query("SELECT o FROM Objective o WHERE o.studio.id = :studioId " +
+           "AND (:studentId IS NULL OR o.student.id = :studentId) AND " +
            "(:status IS NULL OR o.status = :status) AND " +
            "(:search IS NULL OR LOWER(o.title) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))")
     List<Objective> findAllWithFilters(
+            @Param("studioId") UUID studioId,
             @Param("studentId") UUID studentId,
             @Param("status") ObjectiveStatus status,
             @Param("search") String search

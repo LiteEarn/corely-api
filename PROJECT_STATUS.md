@@ -10,11 +10,11 @@
 
 # Backend
 
-- Percentual: **85%** (baseline concluído; épicos de Go Live em andamento)
+- Percentual: **87%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-01 — Multi-Tenant**
-- Story Atual: **EPIC-01-S02 — Eliminar findAll() sem filtro**
-- Último concluído: EPIC-01-S01 — Contexto global de Tenant
-- Itens pendentes: 5 stories de EPIC-01, 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
+- Story Atual: **EPIC-01-S03 — Enforce por studio_id** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
+- Último concluído: EPIC-01-S02 — Eliminar findAll() sem filtro
+- Itens pendentes: 3 stories de EPIC-01 (S04, S05, S06), 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-01
 
 ---
@@ -46,4 +46,4 @@
 - Épicos concluídos: EPIC 00 (AI Governance); baseline de plataforma e domínios
 - Épicos pendentes: EPIC-01 (Multi-Tenant — em andamento), EPIC-02 (Segurança), EPIC-03 (Financeiro), EPIC-04 (Booking), EPIC-05 (Comunicação), EPIC-06 (Observabilidade), EPIC-07 (DevOps), EPIC-08 (Performance), EPIC-09 (Testes)
 - Principais bloqueadores: EPIC-01 e EPIC-02 (críticos para Go Live)
-- Próximo objetivo: concluir EPIC-01 — Multi-Tenant (EPIC-01-S02)
+- Próximo objetivo: concluir EPIC-01 — Multi-Tenant (EPIC-01-S04: Dashboard sem studioId vindo da URL)

@@ -19,6 +19,31 @@ public interface MakeupRequestRepository extends JpaRepository<MakeupRequest, UU
     List<MakeupRequest> findByStatus(MakeupRequestStatus status);
 
     @Query("SELECT mr FROM MakeupRequest mr " +
+           "JOIN mr.attendance a " +
+           "JOIN a.enrollment e " +
+           "WHERE mr.attendance.id = :attendanceId " +
+           "AND e.studio.id = :studioId")
+    Optional<MakeupRequest> findByAttendanceIdAndStudioId(
+            @Param("attendanceId") UUID attendanceId,
+            @Param("studioId") UUID studioId);
+
+    @Query("SELECT CASE WHEN COUNT(mr) > 0 THEN true ELSE false END FROM MakeupRequest mr " +
+           "JOIN mr.attendance a " +
+           "JOIN a.enrollment e " +
+           "WHERE mr.attendance.id = :attendanceId " +
+           "AND e.studio.id = :studioId")
+    boolean existsByAttendanceIdAndStudioId(
+            @Param("attendanceId") UUID attendanceId,
+            @Param("studioId") UUID studioId);
+
+    @Query("SELECT mr FROM MakeupRequest mr " +
+           "JOIN mr.attendance a " +
+           "JOIN a.enrollment e " +
+           "WHERE mr.id = :id " +
+           "AND e.studio.id = :studioId")
+    Optional<MakeupRequest> findByIdAndStudioId(@Param("id") UUID id, @Param("studioId") UUID studioId);
+
+    @Query("SELECT mr FROM MakeupRequest mr " +
            "JOIN FETCH mr.attendance a " +
            "JOIN FETCH a.enrollment e " +
            "WHERE e.studio.id = :studioId")

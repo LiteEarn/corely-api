@@ -13,10 +13,16 @@ import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +53,12 @@ class ClassSessionServiceTest {
 
     @Autowired
     private InstructorRepository instructorRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Studio studio;
     private Instructor instructor;
@@ -85,6 +97,22 @@ class ClassSessionServiceTest {
         classGroup.setMonday(true);
         classGroup.setActive(true);
         classGroup = classGroupRepository.save(classGroup);
+
+        authenticateAs(studio, UserRole.ADMIN);
+    }
+
+    private void authenticateAs(Studio studio, UserRole role) {
+        var user = new User();
+        user.setStudio(studio);
+        user.setName("Test User");
+        user.setEmail("test@corely.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user = userRepository.save(user);
+
+        var auth = UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test

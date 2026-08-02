@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import br.com.corely.auth.authorization.Permission;
 import br.com.corely.auth.authorization.RolePermissions;
+import org.hibernate.annotations.Filter;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Getter
 @Setter
+@Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class User extends BaseEntity implements UserDetails {
 
     @Column(name = "name", nullable = false)

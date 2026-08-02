@@ -40,7 +40,8 @@ public class MakeupRequestService {
 
     @Transactional
     public MakeupRequestResponse request(UUID attendanceId, MakeupRequestRequest request) {
-        Attendance attendance = attendanceRepository.findById(attendanceId)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        Attendance attendance = attendanceRepository.findByIdAndStudioId(attendanceId, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found"));
 
         if (attendance.getStatus() != AttendanceStatus.ABSENT) {
@@ -49,7 +50,7 @@ public class MakeupRequestService {
             );
         }
 
-        if (makeupRequestRepository.existsByAttendanceId(attendanceId)) {
+        if (makeupRequestRepository.existsByAttendanceIdAndStudioId(attendanceId, studioId)) {
             throw new ConflictException("A makeup request already exists for this attendance");
         }
 
@@ -65,11 +66,12 @@ public class MakeupRequestService {
 
     @Transactional(readOnly = true)
     public MakeupRequestResponse findByAttendanceId(UUID attendanceId) {
-        if (!attendanceRepository.existsById(attendanceId)) {
+        UUID studioId = tenantContext.getCurrentStudioId();
+        if (!attendanceRepository.findByIdAndStudioId(attendanceId, studioId).isPresent()) {
             throw new ResourceNotFoundException("Attendance not found");
         }
 
-        return makeupRequestRepository.findByAttendanceId(attendanceId)
+        return makeupRequestRepository.findByAttendanceIdAndStudioId(attendanceId, studioId)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Makeup request not found for this attendance"));
     }
@@ -91,14 +93,15 @@ public class MakeupRequestService {
 
     @Transactional
     public MakeupRequestResponse approve(UUID id, MakeupApproveRequest request) {
-        MakeupRequest makeupRequest = makeupRequestRepository.findById(id)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        MakeupRequest makeupRequest = makeupRequestRepository.findByIdAndStudioId(id, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Makeup request not found"));
 
         if (makeupRequest.getStatus() != MakeupRequestStatus.REQUESTED) {
             throw new ConflictException("A reposição já foi processada.");
         }
 
-        ClassSession targetSession = classSessionRepository.findById(request.getTargetSessionId())
+        ClassSession targetSession = classSessionRepository.findByIdAndStudioId(request.getTargetSessionId(), studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class session not found"));
 
         validateTargetSession(targetSession);
@@ -111,7 +114,7 @@ public class MakeupRequestService {
 
         if (targetEnrollment.isPresent() && targetEnrollment.get().getActive()) {
             boolean alreadyAttending = attendanceRepository
-                    .existsByClassSessionIdAndEnrollmentId(targetSession.getId(), targetEnrollment.get().getId());
+                    .existsByClassSessionIdAndEnrollmentIdAndStudioId(targetSession.getId(), targetEnrollment.get().getId(), studioId);
             if (alreadyAttending) {
                 throw new ConflictException("O aluno já participa desta aula.");
             }
@@ -132,7 +135,8 @@ public class MakeupRequestService {
 
     @Transactional
     public MakeupRequestResponse reject(UUID id, MakeupRejectRequest request) {
-        MakeupRequest makeupRequest = makeupRequestRepository.findById(id)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        MakeupRequest makeupRequest = makeupRequestRepository.findByIdAndStudioId(id, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Makeup request not found"));
 
         if (makeupRequest.getStatus() != MakeupRequestStatus.REQUESTED) {
