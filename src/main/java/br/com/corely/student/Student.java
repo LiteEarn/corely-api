@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
+@Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class Student extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,5 +1,6 @@
 package br.com.corely.objective;
 
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.objective.dto.ObjectiveRequest;
 import br.com.corely.objective.dto.ObjectiveResponse;
 import br.com.corely.shared.exception.BusinessException;
@@ -24,6 +25,7 @@ public class ObjectiveService {
     private final ObjectiveRepository objectiveRepository;
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public ObjectiveResponse create(ObjectiveRequest request) {
@@ -50,7 +52,8 @@ public class ObjectiveService {
 
     @Transactional(readOnly = true)
     public List<ObjectiveResponse> findAll(UUID studentId, ObjectiveStatus status, String search) {
-        return objectiveRepository.findAllWithFilters(studentId, status, search).stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return objectiveRepository.findAllWithFilters(studioId, studentId, status, search).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

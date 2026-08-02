@@ -15,6 +15,9 @@ import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +25,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +74,12 @@ class AttendanceControllerTest {
 
     @Autowired
     private StudioRepository studioRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Studio studio;
     private Instructor instructor;
@@ -132,10 +143,25 @@ class AttendanceControllerTest {
         session.setEndTime(LocalTime.of(11, 0));
         session.setStatus(ClassSessionStatus.IN_PROGRESS);
         session = classSessionRepository.save(session);
+
+        authenticateAs(studio, UserRole.ADMIN);
+    }
+
+    private void authenticateAs(Studio studio, UserRole role) {
+        var user = new User();
+        user.setStudio(studio);
+        user.setName("Test User");
+        user.setEmail("test@corely.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user = userRepository.save(user);
+
+        var auth = UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void findByClassGroupAndDate_returnsAttendances() throws Exception {
         AttendanceRequest request = new AttendanceRequest(
                 enrollment.getId(),
@@ -160,7 +186,6 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void findByClassGroupAndDate_whenNoAttendance_returnsEmptyList() throws Exception {
         mockMvc.perform(get("/attendance/class-group/{classGroupId}/date/{date}",
                         classGroup.getId(), LocalDate.now().toString()))
@@ -169,7 +194,6 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void findByClassGroupAndDate_whenClassGroupNotFound_returnsNotFound() throws Exception {
         mockMvc.perform(get("/attendance/class-group/{classGroupId}/date/{date}",
                         java.util.UUID.randomUUID(), LocalDate.now().toString()))
@@ -177,7 +201,6 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void saveSessionAttendances_createsAttendance() throws Exception {
         SessionBulkAttendanceRequest request = new SessionBulkAttendanceRequest();
         var item = new SessionBulkAttendanceRequest.AttendanceItem();
@@ -197,7 +220,6 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void saveSessionAttendances_multipleStudents() throws Exception {
         Student student2 = new Student();
         student2.setStudio(studio);

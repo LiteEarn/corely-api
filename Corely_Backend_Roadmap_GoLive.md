@@ -91,7 +91,7 @@ stories:
   - id: EPIC-01-S02
     title: Eliminar findAll() sem filtro
     description: Auditar e eliminar consultas findAll() sem filtro de tenant nas entidades multi-tenant.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: L
     dependsOn: [EPIC-01-S01]
@@ -118,7 +118,7 @@ stories:
   - id: EPIC-01-S03
     title: Enforce por studio_id
     description: Garantir enforcement de studio_id em todas as consultas JPQL e filtros Hibernate.
-    status: TODO
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: M
     dependsOn: [EPIC-01-S01]
@@ -126,7 +126,35 @@ stories:
       - Toda consulta respeita o isolamento por studio_id.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/comercial/tenant/TenantInterceptor.java
+      - src/main/java/br/com/corely/comercial/tenant/ComercialTenantContext.java
+      - src/main/java/br/com/corely/shared/tenant/TenantContext.java
+      - src/main/java/br/com/corely/student/Student.java
+      - src/main/java/br/com/corely/instructor/Instructor.java
+      - src/main/java/br/com/corely/classgroup/ClassGroup.java
+      - src/main/java/br/com/corely/enrollment/Enrollment.java
+      - src/main/java/br/com/corely/evaluation/Evaluation.java
+      - src/main/java/br/com/corely/evolution/Evolution.java
+      - src/main/java/br/com/corely/objective/Objective.java
+      - src/main/java/br/com/corely/objective/ObjectiveRepository.java
+      - src/main/java/br/com/corely/objective/ObjectiveService.java
+      - src/main/java/br/com/corely/booking/Booking.java
+      - src/main/java/br/com/corely/booking/BookingRepository.java
+      - src/main/java/br/com/corely/booking/BookingService.java
+      - src/main/java/br/com/corely/booking/TimeBlock.java
+      - src/main/java/br/com/corely/user/User.java
+      - src/main/java/br/com/corely/classsession/ClassSessionRepository.java
+      - src/main/java/br/com/corely/classsession/ClassSessionSpecification.java
+      - src/main/java/br/com/corely/classsession/ClassSessionService.java
+      - src/main/java/br/com/corely/attendance/AttendanceRepository.java
+      - src/main/java/br/com/corely/attendance/AttendanceService.java
+      - src/main/java/br/com/corely/makeup/MakeupRequestRepository.java
+      - src/main/java/br/com/corely/makeup/MakeupRequestService.java
+      - src/test/java/br/com/corely/attendance/AttendanceControllerTest.java
+      - src/test/java/br/com/corely/attendance/AttendanceServiceTest.java
+      - src/test/java/br/com/corely/classsession/ClassSessionServiceTest.java
+      - src/test/java/br/com/corely/dashboard/DashboardControllerTest.java
   - id: EPIC-01-S04
     title: Dashboard sem studioId vindo da URL
     description: Remover dependência de studioId informado na URL; derivar do contexto autenticado.

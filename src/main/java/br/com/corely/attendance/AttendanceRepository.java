@@ -22,6 +22,55 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     boolean existsByClassSessionIdAndEnrollmentId(UUID classSessionId, UUID enrollmentId);
 
     @Query("SELECT a FROM Attendance a " +
+           "JOIN a.classSession cs " +
+           "JOIN cs.classGroup cg " +
+           "WHERE a.classSession.id = :classSessionId " +
+           "AND cg.studio.id = :studioId")
+    List<Attendance> findByClassSessionIdAndStudioId(
+            @Param("classSessionId") UUID classSessionId,
+            @Param("studioId") UUID studioId
+    );
+
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN a.enrollment e " +
+           "WHERE a.enrollment.id = :enrollmentId " +
+           "AND e.studio.id = :studioId")
+    List<Attendance> findByEnrollmentIdAndStudioId(
+            @Param("enrollmentId") UUID enrollmentId,
+            @Param("studioId") UUID studioId
+    );
+
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN a.classSession cs " +
+           "JOIN cs.classGroup cg " +
+           "WHERE a.classSession.id = :classSessionId " +
+           "AND a.enrollment.id = :enrollmentId " +
+           "AND cg.studio.id = :studioId")
+    Optional<Attendance> findByClassSessionIdAndEnrollmentIdAndStudioId(
+            @Param("classSessionId") UUID classSessionId,
+            @Param("enrollmentId") UUID enrollmentId,
+            @Param("studioId") UUID studioId
+    );
+
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Attendance a " +
+           "JOIN a.classSession cs " +
+           "JOIN cs.classGroup cg " +
+           "WHERE a.classSession.id = :classSessionId " +
+           "AND a.enrollment.id = :enrollmentId " +
+           "AND cg.studio.id = :studioId")
+    boolean existsByClassSessionIdAndEnrollmentIdAndStudioId(
+            @Param("classSessionId") UUID classSessionId,
+            @Param("enrollmentId") UUID enrollmentId,
+            @Param("studioId") UUID studioId
+    );
+
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN a.enrollment e " +
+           "WHERE a.id = :id " +
+           "AND e.studio.id = :studioId")
+    Optional<Attendance> findByIdAndStudioId(@Param("id") UUID id, @Param("studioId") UUID studioId);
+
+    @Query("SELECT a FROM Attendance a " +
            "JOIN FETCH a.enrollment e " +
            "JOIN FETCH e.student s " +
            "JOIN a.classSession cs " +

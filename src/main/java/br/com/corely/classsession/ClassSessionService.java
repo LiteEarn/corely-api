@@ -13,6 +13,7 @@ import br.com.corely.makeup.MakeupEligibilityRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ConflictException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
+import br.com.corely.shared.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +33,11 @@ public class ClassSessionService {
     private final ClassGroupRepository classGroupRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final MakeupEligibilityRepository makeupEligibilityRepository;
+    private final TenantContext tenantContext;
 
     @Transactional
     public ClassSessionResponse create(ClassSessionRequest request) {
+        UUID studioId = tenantContext.getCurrentStudioId();
         ClassGroup classGroup = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> new ResourceNotFoundException("Turma inexistente"));
 
@@ -70,7 +73,8 @@ public class ClassSessionService {
 
     @Transactional(readOnly = true)
     public ClassSessionResponse findById(UUID id) {
-        ClassSession classSession = classSessionRepository.findById(id)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        ClassSession classSession = classSessionRepository.findByIdAndStudioId(id, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
         return toResponse(classSession);
     }
@@ -78,7 +82,8 @@ public class ClassSessionService {
     @Transactional(readOnly = true)
     public List<ClassSessionResponse> findAll(UUID classGroupId, UUID instructorId,
                                                ClassSessionStatus status, LocalDate sessionDate) {
-        var spec = ClassSessionSpecification.withFilters(classGroupId, instructorId, status, sessionDate);
+        UUID studioId = tenantContext.getCurrentStudioId();
+        var spec = ClassSessionSpecification.withFilters(studioId, classGroupId, instructorId, status, sessionDate);
         return classSessionRepository.findAll(spec).stream()
                 .map(this::toResponse)
                 .toList();
@@ -86,7 +91,8 @@ public class ClassSessionService {
 
     @Transactional
     public void start(UUID id) {
-        ClassSession classSession = classSessionRepository.findById(id)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        ClassSession classSession = classSessionRepository.findByIdAndStudioId(id, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
         if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
@@ -104,7 +110,8 @@ public class ClassSessionService {
 
     @Transactional
     public void complete(UUID id) {
-        ClassSession classSession = classSessionRepository.findById(id)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        ClassSession classSession = classSessionRepository.findByIdAndStudioId(id, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
         if (classSession.getStatus() == ClassSessionStatus.CANCELLED) {
@@ -122,7 +129,8 @@ public class ClassSessionService {
 
     @Transactional
     public void cancel(UUID id, CancelSessionRequest request, UUID userId) {
-        ClassSession classSession = classSessionRepository.findById(id)
+        UUID studioId = tenantContext.getCurrentStudioId();
+        ClassSession classSession = classSessionRepository.findByIdAndStudioId(id, studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sessão inexistente"));
 
         if (classSession.getStatus() != ClassSessionStatus.SCHEDULED) {

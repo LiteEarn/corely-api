@@ -19,10 +19,16 @@ import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +68,12 @@ class AttendanceServiceTest {
 
     @Autowired
     private StudioRepository studioRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Studio studio;
     private Instructor instructor;
@@ -147,6 +159,22 @@ class AttendanceServiceTest {
         inProgressSession.setEndTime(LocalTime.of(11, 0));
         inProgressSession.setStatus(ClassSessionStatus.IN_PROGRESS);
         inProgressSession = classSessionRepository.save(inProgressSession);
+
+        authenticateAs(studio, UserRole.ADMIN);
+    }
+
+    private void authenticateAs(Studio studio, UserRole role) {
+        var user = new User();
+        user.setStudio(studio);
+        user.setName("Test User");
+        user.setEmail("test@corely.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user = userRepository.save(user);
+
+        var auth = UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test

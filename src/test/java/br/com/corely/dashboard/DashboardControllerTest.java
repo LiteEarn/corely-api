@@ -35,8 +35,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +56,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@WithMockUser(roles = "ADMIN")
 class DashboardControllerTest {
 
     @Autowired
@@ -188,6 +188,24 @@ class DashboardControllerTest {
         user.setActive(true);
         user.setStudio(studio);
         user = userRepository.save(user);
+
+        authenticateAs(user);
+    }
+
+    private void authenticateAs(User user) {
+        var auth = UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    private User createUser(UserRole role) {
+        var u = new User();
+        u.setStudio(studio);
+        u.setName("Test User");
+        u.setEmail(role.name().toLowerCase() + "@test.com");
+        u.setPassword(passwordEncoder.encode("password"));
+        u.setRole(role);
+        u.setActive(true);
+        return userRepository.save(u);
     }
 
     @Test
@@ -637,38 +655,38 @@ class DashboardControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "RECEPTIONIST")
     void testGetOperationalDashboardAsReceptionist() throws Exception {
+        authenticateAs(createUser(UserRole.RECEPTIONIST));
         mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.kpis.classesToday").value(1));
     }
 
     @Test
-    @WithMockUser(roles = "INSTRUCTOR")
     void testGetOperationalDashboardAsInstructor() throws Exception {
+        authenticateAs(createUser(UserRole.INSTRUCTOR));
         mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.kpis.classesToday").value(1));
     }
 
     @Test
-    @WithMockUser(roles = "FINANCIAL")
     void testGetOperationalDashboardAsFinancialReturnsForbidden() throws Exception {
+        authenticateAs(createUser(UserRole.FINANCIAL));
         mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "RECEPTIONIST")
     void testGetDashboardAsReceptionistReturnsForbidden() throws Exception {
+        authenticateAs(createUser(UserRole.RECEPTIONIST));
         mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "INSTRUCTOR")
     void testGetDashboardAsInstructorReturnsForbidden() throws Exception {
+        authenticateAs(createUser(UserRole.INSTRUCTOR));
         mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
                 .andExpect(status().isForbidden());
     }

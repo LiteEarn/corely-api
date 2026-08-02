@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 @Entity
 @Table(name = "instructors")
@@ -14,6 +15,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@Filter(name = "comercialTenantFilter", condition = "studio_id = :studioId")
 public class Instructor extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

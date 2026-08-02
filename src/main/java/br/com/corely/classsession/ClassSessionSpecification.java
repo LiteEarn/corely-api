@@ -8,10 +8,11 @@ import java.util.UUID;
 
 public class ClassSessionSpecification {
 
-    public static Specification<ClassSession> withFilters(UUID classGroupId, UUID instructorId, 
+    public static Specification<ClassSession> withFilters(UUID studioId, UUID classGroupId, UUID instructorId,
                                                            ClassSessionStatus status, LocalDate sessionDate) {
         return (root, query, cb) -> {
             Predicate predicate = cb.conjunction();
+            predicate = cb.and(predicate, cb.equal(root.get("classGroup").get("studio").get("id"), studioId));
 
             if (classGroupId != null) {
                 predicate = cb.and(predicate, cb.equal(root.get("classGroup").get("id"), classGroupId));

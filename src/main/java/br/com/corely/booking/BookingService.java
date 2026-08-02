@@ -1,6 +1,7 @@
 package br.com.corely.booking;
 
 import br.com.corely.booking.dto.*;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.instructor.InstructorRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -28,6 +29,7 @@ public class BookingService {
     private final StudioRepository studioRepository;
     private final StudentRepository studentRepository;
     private final InstructorRepository instructorRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public BookingResponse create(BookingRequest request) {
@@ -109,13 +111,13 @@ public class BookingService {
                 reason = "Horário passado";
             }
 
-            if (available && !bookingRepository.findConflictingByInstructor(instructorId, cursor, slotEnd).isEmpty()) {
+            if (available && !bookingRepository.findConflictingByInstructor(instructorId, studioId, cursor, slotEnd).isEmpty()) {
                 available = false;
                 reason = "Instrutor indisponível";
             }
 
             if (available && roomId != null
-                    && !bookingRepository.findConflictingByRoom(roomId, cursor, slotEnd).isEmpty()) {
+                    && !bookingRepository.findConflictingByRoom(roomId, studioId, cursor, slotEnd).isEmpty()) {
                 available = false;
                 reason = "Sala indisponível";
             }
@@ -247,7 +249,7 @@ public class BookingService {
         }
 
         var studentConflicts = bookingRepository
-                .findConflictingByStudent(booking.getStudent().getId(),
+                .findConflictingByStudent(booking.getStudent().getId(), booking.getStudio().getId(),
                         booking.getStartDateTime(), booking.getEndDateTime())
                 .stream().filter(b -> !b.getId().equals(excludeBookingId)).toList();
         if (!studentConflicts.isEmpty()) {
@@ -255,7 +257,7 @@ public class BookingService {
         }
 
         var instructorConflicts = bookingRepository
-                .findConflictingByInstructor(booking.getInstructor().getId(),
+                .findConflictingByInstructor(booking.getInstructor().getId(), booking.getStudio().getId(),
                         booking.getStartDateTime(), booking.getEndDateTime())
                 .stream().filter(b -> !b.getId().equals(excludeBookingId)).toList();
         if (!instructorConflicts.isEmpty()) {
@@ -264,7 +266,7 @@ public class BookingService {
 
         if (booking.getRoomId() != null) {
             var roomConflicts = bookingRepository
-                    .findConflictingByRoom(booking.getRoomId(),
+                    .findConflictingByRoom(booking.getRoomId(), booking.getStudio().getId(),
                             booking.getStartDateTime(), booking.getEndDateTime())
                     .stream().filter(b -> !b.getId().equals(excludeBookingId)).toList();
             if (!roomConflicts.isEmpty()) {
@@ -287,18 +289,18 @@ public class BookingService {
     private List<ConflictDTO> findConflicts(Booking booking) {
         List<ConflictDTO> conflicts = new ArrayList<>();
 
-        bookingRepository.findConflictingByStudent(booking.getStudent().getId(),
+        bookingRepository.findConflictingByStudent(booking.getStudent().getId(), booking.getStudio().getId(),
                         booking.getStartDateTime(), booking.getEndDateTime())
                 .forEach(b -> conflicts.add(new ConflictDTO("STUDENT",
                         "Student has another booking at this time", b.getId())));
 
-        bookingRepository.findConflictingByInstructor(booking.getInstructor().getId(),
+        bookingRepository.findConflictingByInstructor(booking.getInstructor().getId(), booking.getStudio().getId(),
                         booking.getStartDateTime(), booking.getEndDateTime())
                 .forEach(b -> conflicts.add(new ConflictDTO("INSTRUCTOR",
                         "Instructor has another booking at this time", b.getId())));
 
         if (booking.getRoomId() != null) {
-            bookingRepository.findConflictingByRoom(booking.getRoomId(),
+            bookingRepository.findConflictingByRoom(booking.getRoomId(), booking.getStudio().getId(),
                             booking.getStartDateTime(), booking.getEndDateTime())
                     .forEach(b -> conflicts.add(new ConflictDTO("ROOM",
                             "Room has another booking at this time", b.getId())));
