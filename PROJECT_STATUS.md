@@ -10,11 +10,11 @@
 
 # Backend
 
-- Percentual: **87%** (baseline concluído; épicos de Go Live em andamento)
+- Percentual: **89%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-01 — Multi-Tenant**
-- Story Atual: **EPIC-01-S03 — Enforce por studio_id** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
-- Último concluído: EPIC-01-S02 — Eliminar findAll() sem filtro
-- Itens pendentes: 3 stories de EPIC-01 (S04, S05, S06), 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
+- Story Atual: **EPIC-01-S04 — Dashboard sem studioId vindo da URL** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
+- Último concluído: EPIC-01-S03 — Enforce por studio_id
+- Itens pendentes: 2 stories de EPIC-01 (S05, S06), 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-01
 
 ---

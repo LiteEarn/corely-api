@@ -46,7 +46,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -198,6 +197,10 @@ class DashboardControllerTest {
     }
 
     private User createUser(UserRole role) {
+        return createUserForStudio(studio, role);
+    }
+
+    private User createUserForStudio(Studio studio, UserRole role) {
         var u = new User();
         u.setStudio(studio);
         u.setName("Test User");
@@ -253,7 +256,7 @@ class DashboardControllerTest {
         evolution.setCreatedBy("Test User");
         evolutionRepository.save(evolution);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeStudents").value(1))
                 .andExpect(jsonPath("$.activeInstructors").value(1))
@@ -276,7 +279,7 @@ class DashboardControllerTest {
 
     @Test
     void testGetDashboardWithoutData() throws Exception {
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeStudents").value(1))
                 .andExpect(jsonPath("$.activeInstructors").value(1))
@@ -296,8 +299,10 @@ class DashboardControllerTest {
     }
 
     @Test
-    void testGetDashboardByStudioIdEmptyStudio() throws Exception {
-        mockMvc.perform(get("/dashboard").param("studioId", emptyStudio.getId().toString()))
+    void testGetDashboardForEmptyStudio() throws Exception {
+        authenticateAs(createUserForStudio(emptyStudio, UserRole.ADMIN));
+
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeStudents").value(0))
                 .andExpect(jsonPath("$.activeInstructors").value(0))
@@ -314,14 +319,6 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.recentEvaluations", hasSize(0)))
                 .andExpect(jsonPath("$.recentEvolutions").isArray())
                 .andExpect(jsonPath("$.recentEvolutions", hasSize(0)));
-    }
-
-    @Test
-    void testGetDashboardByStudioIdNotFound() throws Exception {
-        UUID nonExistentId = UUID.randomUUID();
-
-        mockMvc.perform(get("/dashboard").param("studioId", nonExistentId.toString()))
-                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -345,7 +342,7 @@ class DashboardControllerTest {
             evolutionRepository.save(evolution);
         }
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.recentEvaluations").isArray())
                 .andExpect(jsonPath("$.recentEvaluations", hasSize(5)))
@@ -358,7 +355,7 @@ class DashboardControllerTest {
         classGroup.setCapacity(0);
         classGroupRepository.save(classGroup);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.occupancyRate").value(0.00));
     }
@@ -396,7 +393,7 @@ class DashboardControllerTest {
         int expectedThisWeek = canDistinguishMonthFromWeek ? 1 : 2;
         int expectedThisMonth = 2;
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attendanceThisWeek").value(expectedThisWeek))
                 .andExpect(jsonPath("$.attendanceThisMonth").value(expectedThisMonth));
@@ -412,7 +409,7 @@ class DashboardControllerTest {
         inactiveStudent.setActive(false);
         inactiveStudent = studentRepository.save(inactiveStudent);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeStudents").value(1));
     }
@@ -428,7 +425,7 @@ class DashboardControllerTest {
         inactiveInstructor.setActive(false);
         inactiveInstructor = instructorRepository.save(inactiveInstructor);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeInstructors").value(1));
     }
@@ -447,7 +444,7 @@ class DashboardControllerTest {
         inactiveClassGroup.setActive(false);
         inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeClassGroups").value(1));
     }
@@ -462,7 +459,7 @@ class DashboardControllerTest {
         inactiveEnrollment.setActive(false);
         inactiveEnrollment = enrollmentRepository.save(inactiveEnrollment);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalEnrollments").value(1));
     }
@@ -489,7 +486,7 @@ class DashboardControllerTest {
         inactiveEnrollment.setActive(false);
         inactiveEnrollment = enrollmentRepository.save(inactiveEnrollment);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalEnrollments").value(1))
                 .andExpect(jsonPath("$.activeClassGroups").value(1))
@@ -510,7 +507,7 @@ class DashboardControllerTest {
         enrollment.setActive(false);
         enrollmentRepository.save(enrollment);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeStudents").value(0))
                 .andExpect(jsonPath("$.activeInstructors").value(0))
@@ -603,7 +600,7 @@ class DashboardControllerTest {
         inactiveEnrollment2.setActive(false);
         inactiveEnrollment2 = enrollmentRepository.save(inactiveEnrollment2);
 
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeStudents").value(2))
                 .andExpect(jsonPath("$.activeInstructors").value(2))
@@ -614,7 +611,7 @@ class DashboardControllerTest {
 
     @Test
     void testGetOperationalDashboard() throws Exception {
-        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard/operational"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.kpis.classesToday").value(1))
                 .andExpect(jsonPath("$.summary.kpis.activeStudents").value(1))
@@ -628,7 +625,9 @@ class DashboardControllerTest {
 
     @Test
     void testGetOperationalDashboardEmpty() throws Exception {
-        mockMvc.perform(get("/dashboard/operational").param("studioId", emptyStudio.getId().toString()))
+        authenticateAs(createUserForStudio(emptyStudio, UserRole.ADMIN));
+
+        mockMvc.perform(get("/dashboard/operational"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.kpis.classesToday").value(0))
                 .andExpect(jsonPath("$.summary.kpis.activeStudents").value(0))
@@ -657,7 +656,7 @@ class DashboardControllerTest {
     @Test
     void testGetOperationalDashboardAsReceptionist() throws Exception {
         authenticateAs(createUser(UserRole.RECEPTIONIST));
-        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard/operational"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.kpis.classesToday").value(1));
     }
@@ -665,7 +664,7 @@ class DashboardControllerTest {
     @Test
     void testGetOperationalDashboardAsInstructor() throws Exception {
         authenticateAs(createUser(UserRole.INSTRUCTOR));
-        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard/operational"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.kpis.classesToday").value(1));
     }
@@ -673,21 +672,21 @@ class DashboardControllerTest {
     @Test
     void testGetOperationalDashboardAsFinancialReturnsForbidden() throws Exception {
         authenticateAs(createUser(UserRole.FINANCIAL));
-        mockMvc.perform(get("/dashboard/operational").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard/operational"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void testGetDashboardAsReceptionistReturnsForbidden() throws Exception {
         authenticateAs(createUser(UserRole.RECEPTIONIST));
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void testGetDashboardAsInstructorReturnsForbidden() throws Exception {
         authenticateAs(createUser(UserRole.INSTRUCTOR));
-        mockMvc.perform(get("/dashboard").param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isForbidden());
     }
 }

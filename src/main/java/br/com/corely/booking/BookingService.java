@@ -190,7 +190,8 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public DashboardBookingMetricsResponse getDashboardMetrics(UUID studioId) {
+    public DashboardBookingMetricsResponse getDashboardMetrics() {
+        UUID studioId = tenantContext.getCurrentStudioId();
         LocalDate today = LocalDate.now();
         LocalDateTime todayStart = today.atStartOfDay();
         LocalDateTime todayEnd = today.atTime(LocalTime.MAX);

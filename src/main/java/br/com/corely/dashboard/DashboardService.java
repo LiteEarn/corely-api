@@ -2,6 +2,7 @@ package br.com.corely.dashboard;
 
 import br.com.corely.attendance.AttendanceRepository;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.dashboard.dto.DashboardResponse;
 import br.com.corely.dashboard.dto.RecentEvaluationDTO;
 import br.com.corely.dashboard.dto.RecentEvolutionDTO;
@@ -47,24 +48,17 @@ public class DashboardService {
     private final ObjectiveRepository objectiveRepository;
     private final EvaluationRepository evaluationRepository;
     private final EvolutionRepository evolutionRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional(readOnly = true)
-    public DashboardOperationalResponse getOperationalDashboard(UUID studioId) {
-        UUID resolvedStudioId = resolveStudioId(studioId);
-        return dashboardOperationalService.getOperationalDashboard(resolvedStudioId);
-    }
-
-    private UUID resolveStudioId(UUID studioId) {
-        if (studioId != null) {
-            return studioId;
-        }
-        return studioRepository.findFirstByActiveTrueOrderByName()
-                .orElseThrow(() -> new ResourceNotFoundException("Nenhum studio ativo encontrado"))
-                .getId();
+    public DashboardOperationalResponse getOperationalDashboard() {
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return dashboardOperationalService.getOperationalDashboard(studioId);
     }
 
     @Transactional(readOnly = true)
-    public DashboardResponse getDashboard(UUID studioId) {
+    public DashboardResponse getDashboard() {
+        UUID studioId = tenantContext.getCurrentStudioId();
         Studio studio = studioRepository.findById(studioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 

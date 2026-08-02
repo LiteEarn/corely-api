@@ -129,9 +129,8 @@ public class BookingController {
     @GetMapping("/dashboard")
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST})
     @Operation(summary = "Get booking dashboard metrics")
-    public ResponseEntity<DashboardBookingMetricsResponse> getDashboardMetrics(
-            @RequestParam UUID studioId) {
-        var response = bookingService.getDashboardMetrics(studioId);
+    public ResponseEntity<DashboardBookingMetricsResponse> getDashboardMetrics() {
+        var response = bookingService.getDashboardMetrics();
         return ResponseEntity.ok(response);
     }
 

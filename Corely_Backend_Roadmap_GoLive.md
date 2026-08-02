@@ -118,7 +118,7 @@ stories:
   - id: EPIC-01-S03
     title: Enforce por studio_id
     description: Garantir enforcement de studio_id em todas as consultas JPQL e filtros Hibernate.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: M
     dependsOn: [EPIC-01-S01]
@@ -158,7 +158,7 @@ stories:
   - id: EPIC-01-S04
     title: Dashboard sem studioId vindo da URL
     description: Remover dependência de studioId informado na URL; derivar do contexto autenticado.
-    status: TODO
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-01-S01]
@@ -166,7 +166,14 @@ stories:
       - Dashboards usam o studioId do contexto, nunca da URL.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/dashboard/DashboardController.java
+      - src/main/java/br/com/corely/dashboard/DashboardService.java
+      - src/main/java/br/com/corely/booking/BookingController.java
+      - src/main/java/br/com/corely/booking/BookingService.java
+      - src/test/java/br/com/corely/dashboard/DashboardControllerTest.java
+      - src/test/java/br/com/corely/booking/BookingServiceTest.java
+      - src/test/java/br/com/corely/auth/authorization/AuthorizationInterceptorTest.java
   - id: EPIC-01-S05
     title: DTOs sem studioId client-controlled
     description: Garantir que DTOs de request não aceitem studioId controlado pelo client.
