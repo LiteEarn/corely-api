@@ -244,7 +244,7 @@ class BookingServiceTest {
     void getDashboardMetrics_shouldReturnMetrics() {
         bookingService.create(buildRequest());
 
-        var metrics = bookingService.getDashboardMetrics(studio.getId());
+        var metrics = bookingService.getDashboardMetrics();
 
         assertThat(metrics.getTodayClasses()).isGreaterThanOrEqualTo(0);
         assertThat(metrics.getWeekClasses()).isGreaterThanOrEqualTo(0);

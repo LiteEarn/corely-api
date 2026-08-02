@@ -62,16 +62,14 @@ class AuthorizationInterceptorTest {
     @Test
     void admin_shouldAccessDashboard() throws Exception {
         authenticateAs(adminUser);
-        mockMvc.perform(get("/dashboard")
-                        .param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void instructor_shouldNotAccessDashboard() throws Exception {
         authenticateAs(instructorUser);
-        mockMvc.perform(get("/dashboard")
-                        .param("studioId", studio.getId().toString()))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isForbidden());
     }
 
