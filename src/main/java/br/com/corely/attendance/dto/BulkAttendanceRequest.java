@@ -13,9 +13,6 @@ import java.util.UUID;
 public class BulkAttendanceRequest {
 
     @NotNull
-    private UUID studioId;
-
-    @NotNull
     private UUID classGroupId;
 
     @NotNull

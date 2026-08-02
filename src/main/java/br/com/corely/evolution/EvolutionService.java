@@ -36,7 +36,7 @@ public class EvolutionService {
 
     @Transactional
     public EvolutionResponse create(EvolutionRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Student student = studentRepository.findById(request.getStudentId())
@@ -91,7 +91,7 @@ public class EvolutionService {
         Evolution evolution = evolutionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evolution not found"));
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Student student = studentRepository.findById(request.getStudentId())

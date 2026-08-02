@@ -158,7 +158,7 @@ stories:
   - id: EPIC-01-S04
     title: Dashboard sem studioId vindo da URL
     description: Remover dependência de studioId informado na URL; derivar do contexto autenticado.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-01-S01]
@@ -177,7 +177,7 @@ stories:
   - id: EPIC-01-S05
     title: DTOs sem studioId client-controlled
     description: Garantir que DTOs de request não aceitem studioId controlado pelo client.
-    status: TODO
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-01-S01]
@@ -185,7 +185,37 @@ stories:
       - Nenhum DTO de request aceita studioId controlado pelo client.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/student/dto/StudentRequest.java
+      - src/main/java/br/com/corely/instructor/dto/InstructorRequest.java
+      - src/main/java/br/com/corely/classgroup/dto/ClassGroupRequest.java
+      - src/main/java/br/com/corely/objective/dto/ObjectiveRequest.java
+      - src/main/java/br/com/corely/evaluation/dto/EvaluationRequest.java
+      - src/main/java/br/com/corely/evolution/dto/EvolutionRequest.java
+      - src/main/java/br/com/corely/booking/dto/BookingRequest.java
+      - src/main/java/br/com/corely/booking/dto/TimeBlockRequest.java
+      - src/main/java/br/com/corely/enrollment/dto/EnrollmentRequest.java
+      - src/main/java/br/com/corely/attendance/dto/BulkAttendanceRequest.java
+      - src/main/java/br/com/corely/student/StudentService.java
+      - src/main/java/br/com/corely/instructor/InstructorService.java
+      - src/main/java/br/com/corely/classgroup/ClassGroupService.java
+      - src/main/java/br/com/corely/objective/ObjectiveService.java
+      - src/main/java/br/com/corely/evaluation/EvaluationService.java
+      - src/main/java/br/com/corely/evolution/EvolutionService.java
+      - src/main/java/br/com/corely/booking/BookingService.java
+      - src/main/java/br/com/corely/booking/TimeBlockService.java
+      - src/main/java/br/com/corely/enrollment/EnrollmentService.java
+      - src/main/java/br/com/corely/attendance/AttendanceService.java
+      - src/main/java/br/com/corely/attendance/AttendanceController.java
+      - src/main/java/br/com/corely/dev/seed/SeedService.java
+      - src/test/java/br/com/corely/student/StudentServiceTest.java
+      - src/test/java/br/com/corely/instructor/InstructorServiceTest.java
+      - src/test/java/br/com/corely/classgroup/ClassGroupServiceTest.java
+      - src/test/java/br/com/corely/enrollment/EnrollmentServiceTest.java
+      - src/test/java/br/com/corely/evolution/EvolutionControllerTest.java
+      - src/test/java/br/com/corely/booking/BookingServiceTest.java
+      - src/test/java/br/com/corely/booking/BookingControllerTest.java
+      - src/test/java/br/com/corely/attendance/AttendanceServiceTest.java
   - id: EPIC-01-S06
     title: Testes de isolamento entre tenants
     description: Criar testes que comprovam que um studio não acessa dados de outro.

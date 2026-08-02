@@ -43,7 +43,7 @@ public class ClassGroupService {
         validateAtLeastOneDay(request);
         validateTimeRange(request.getStartTime(), request.getEndTime());
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Instructor instructor = instructorRepository.findById(request.getInstructorId())
@@ -129,7 +129,7 @@ public class ClassGroupService {
             }
         }
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Instructor instructor = instructorRepository.findById(request.getInstructorId())

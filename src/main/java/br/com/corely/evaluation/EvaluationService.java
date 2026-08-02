@@ -28,7 +28,7 @@ public class EvaluationService {
 
     @Transactional
     public EvaluationResponse create(EvaluationRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Student student = studentRepository.findById(request.getStudentId())
@@ -66,7 +66,7 @@ public class EvaluationService {
         Evaluation evaluation = evaluationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluation not found"));
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Student student = studentRepository.findById(request.getStudentId())

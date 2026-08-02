@@ -7,11 +7,9 @@ import br.com.corely.attendance.dto.BulkAttendanceResponse;
 import br.com.corely.attendance.dto.SessionAttendanceResponse;
 import br.com.corely.attendance.dto.SessionBulkAttendanceRequest;
 import br.com.corely.auth.authorization.RequireRole;
-import br.com.corely.user.User;
 import br.com.corely.user.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,9 +36,7 @@ public class AttendanceController {
     @PostMapping("/attendance/bulk")
     @RequireRole({UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.RECEPTIONIST})
     public ResponseEntity<BulkAttendanceResponse> bulkSave(
-            @AuthenticationPrincipal User user,
             @Valid @RequestBody BulkAttendanceRequest request) {
-        request.setStudioId(user.getStudio().getId());
         BulkAttendanceResponse response = attendanceService.bulkSave(request);
         return ResponseEntity.ok(response);
     }

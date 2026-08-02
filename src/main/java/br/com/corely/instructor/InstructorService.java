@@ -33,7 +33,7 @@ public class InstructorService {
 
     @Transactional
     public InstructorResponse create(InstructorRequest request) {
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         Instructor instructor = new Instructor();
@@ -68,7 +68,7 @@ public class InstructorService {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
-        Studio studio = studioRepository.findById(request.getStudioId())
+        Studio studio = studioRepository.findById(tenantContext.getCurrentStudioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Studio not found"));
 
         instructor.setStudio(studio);

@@ -10,10 +10,16 @@ import br.com.corely.instructor.dto.ReassignResponse;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +47,12 @@ class InstructorServiceTest {
     @Autowired
     private ClassGroupRepository classGroupRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private Studio studio;
     private Instructor instructor;
     private ClassGroup classGroup;
@@ -51,6 +63,8 @@ class InstructorServiceTest {
         studio.setName("Test Studio");
         studio.setActive(true);
         studio = studioRepository.save(studio);
+
+        authenticateAs(studio, UserRole.ADMIN);
 
         instructor = new Instructor();
         instructor.setStudio(studio);
@@ -75,7 +89,6 @@ class InstructorServiceTest {
     void update_whenInstructorHasActiveClassGroups_throwsBusinessException() {
         // Given
         InstructorRequest request = new InstructorRequest();
-        request.setStudioId(studio.getId());
         request.setFullName("Test Instructor");
         request.setEmail("test@example.com");
         request.setActive(false);
@@ -95,7 +108,6 @@ class InstructorServiceTest {
         classGroupRepository.save(classGroup);
 
         InstructorRequest request = new InstructorRequest();
-        request.setStudioId(studio.getId());
         request.setFullName("Test Instructor");
         request.setEmail("test@example.com");
         request.setActive(false);
@@ -111,7 +123,6 @@ class InstructorServiceTest {
     void update_whenInstructorIsActive_doesNotThrowException() {
         // Given
         InstructorRequest request = new InstructorRequest();
-        request.setStudioId(studio.getId());
         request.setFullName("Updated Instructor");
         request.setEmail("updated@example.com");
         request.setActive(true);
@@ -139,7 +150,6 @@ class InstructorServiceTest {
         classGroup2 = classGroupRepository.save(classGroup2);
 
         InstructorRequest request = new InstructorRequest();
-        request.setStudioId(studio.getId());
         request.setFullName("Test Instructor");
         request.setEmail("test@example.com");
         request.setActive(false);
@@ -167,7 +177,6 @@ class InstructorServiceTest {
         inactiveClassGroup = classGroupRepository.save(inactiveClassGroup);
 
         InstructorRequest request = new InstructorRequest();
-        request.setStudioId(studio.getId());
         request.setFullName("Test Instructor");
         request.setEmail("test@example.com");
         request.setActive(false);
@@ -518,5 +527,19 @@ class InstructorServiceTest {
 
         assertThat(response2).hasSize(1);
         assertThat(response2.get(0).getName()).isEqualTo("Instructor 2 Class Group");
+    }
+
+    private void authenticateAs(Studio studio, UserRole role) {
+        var user = new User();
+        user.setStudio(studio);
+        user.setName("Test User");
+        user.setEmail("test@corely.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user = userRepository.save(user);
+
+        var auth = UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }

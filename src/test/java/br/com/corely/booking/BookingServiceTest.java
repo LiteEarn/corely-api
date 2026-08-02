@@ -131,16 +131,6 @@ class BookingServiceTest {
     }
 
     @Test
-    void create_shouldThrowException_whenStudioNotFound() {
-        var request = buildRequest();
-        request.setStudioId(UUID.randomUUID());
-
-        assertThatThrownBy(() -> bookingService.create(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Studio not found");
-    }
-
-    @Test
     void findById_shouldReturnBooking() {
         var created = bookingService.create(buildRequest());
 
@@ -266,7 +256,6 @@ class BookingServiceTest {
 
     private BookingRequest buildRequest() {
         var request = new BookingRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setInstructorId(instructor.getId());
         request.setClassType("Pilates");

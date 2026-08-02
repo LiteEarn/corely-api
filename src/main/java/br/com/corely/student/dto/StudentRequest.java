@@ -17,9 +17,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class StudentRequest {
 
-    @NotNull(message = "Studio ID is required")
-    private UUID studioId;
-
     @NotBlank(message = "Full name is required")
     private String fullName;
 

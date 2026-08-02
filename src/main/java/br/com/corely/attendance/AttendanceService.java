@@ -128,7 +128,7 @@ public class AttendanceService {
                 throw new ConflictException("Matrícula inativa.");
             }
 
-            if (!enrollment.getStudio().getId().equals(request.getStudioId())) {
+            if (!enrollment.getStudio().getId().equals(studioId)) {
                 throw new ConflictException("Matrícula não pertence ao studio informado.");
             }
 

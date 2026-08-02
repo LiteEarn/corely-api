@@ -126,7 +126,6 @@ class EvolutionControllerTest {
     @Test
     void testCreateEvolution() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setObjectiveId(objective.getId());
         request.setEvaluationId(evaluation.getId());
@@ -153,7 +152,6 @@ class EvolutionControllerTest {
     @Test
     void testCreateEvolutionWithoutObjectiveAndEvaluation() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setEvolutionDate(LocalDate.now());
         request.setTitle("Test Evolution");
@@ -171,7 +169,6 @@ class EvolutionControllerTest {
     @Test
     void testCreateEvolutionValidation() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setEvolutionDate(LocalDate.now());
         request.setTitle("ab"); // Less than 3 characters
@@ -306,7 +303,6 @@ class EvolutionControllerTest {
         evolution = evolutionRepository.save(evolution);
 
         EvolutionRequest request = new EvolutionRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setObjectiveId(objective.getId());
         request.setEvolutionDate(LocalDate.now());
@@ -327,7 +323,6 @@ class EvolutionControllerTest {
         UUID nonExistentId = UUID.randomUUID();
 
         EvolutionRequest request = new EvolutionRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setEvolutionDate(LocalDate.now());
         request.setTitle("Updated Title");

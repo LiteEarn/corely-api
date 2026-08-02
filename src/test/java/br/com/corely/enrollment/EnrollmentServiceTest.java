@@ -13,10 +13,16 @@ import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +57,12 @@ class EnrollmentServiceTest {
     @Autowired
     private ClassGroupRepository classGroupRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private Studio studio;
     private Instructor instructor;
     private ClassGroup classGroup;
@@ -62,11 +74,14 @@ class EnrollmentServiceTest {
         classGroupRepository.deleteAll();
         instructorRepository.deleteAll();
         studentRepository.deleteAll();
+        userRepository.deleteAll();
         studioRepository.deleteAll();
 
         studio = new Studio();
         studio.setName("Test Studio");
         studio = studioRepository.save(studio);
+
+        authenticateAs(studio, UserRole.ADMIN);
 
         instructor = new Instructor();
         instructor.setStudio(studio);
@@ -177,7 +192,6 @@ class EnrollmentServiceTest {
         classGroupRepository.save(classGroup);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -193,7 +207,6 @@ class EnrollmentServiceTest {
     void create_whenClassGroupActive_succeeds() {
         // Given
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -233,7 +246,6 @@ class EnrollmentServiceTest {
 
         // Given - try to move enrollment to inactive class group
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(inactiveClassGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -249,7 +261,6 @@ class EnrollmentServiceTest {
     void create_whenStudentNotFound_throwsResourceNotFoundException() {
         // Given
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(UUID.randomUUID());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -265,7 +276,6 @@ class EnrollmentServiceTest {
     void create_whenClassGroupNotFound_throwsResourceNotFoundException() {
         // Given
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(UUID.randomUUID());
         request.setEnrollmentDate(LocalDate.now());
@@ -301,7 +311,6 @@ class EnrollmentServiceTest {
         anotherStudent = studentRepository.save(anotherStudent);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(anotherStudent.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -325,7 +334,6 @@ class EnrollmentServiceTest {
         enrollmentRepository.save(existingEnrollment);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -344,7 +352,6 @@ class EnrollmentServiceTest {
         studentRepository.save(student);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -363,7 +370,6 @@ class EnrollmentServiceTest {
         classGroupRepository.save(classGroup);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -382,7 +388,6 @@ class EnrollmentServiceTest {
         instructorRepository.save(instructor);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -398,7 +403,6 @@ class EnrollmentServiceTest {
     void create_whenEnrollmentDateFuture_throwsBusinessException() {
         // Given
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now().plusDays(1));
@@ -451,7 +455,6 @@ class EnrollmentServiceTest {
         enrollment = enrollmentRepository.save(enrollment);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now().minusDays(1));
@@ -482,7 +485,6 @@ class EnrollmentServiceTest {
         studentRepository.save(student);
 
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(classGroup.getId());
         request.setEnrollmentDate(LocalDate.now());
@@ -535,7 +537,6 @@ class EnrollmentServiceTest {
 
         // Given - try to move enrollment to the full class group
         EnrollmentRequest request = new EnrollmentRequest();
-        request.setStudioId(studio.getId());
         request.setStudentId(student.getId());
         request.setClassGroupId(targetClassGroupId);
         request.setEnrollmentDate(LocalDate.now());
@@ -545,6 +546,20 @@ class EnrollmentServiceTest {
         assertThatThrownBy(() -> enrollmentService.update(enrollmentId, request))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Turma cheia");
+    }
+
+    private void authenticateAs(Studio studio, UserRole role) {
+        var user = new User();
+        user.setStudio(studio);
+        user.setName("Test User");
+        user.setEmail("test@corely.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user = userRepository.save(user);
+
+        var auth = UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
 }
