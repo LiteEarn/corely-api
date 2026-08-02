@@ -1,5 +1,6 @@
 package br.com.corely.evolution;
 
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.evaluation.Evaluation;
 import br.com.corely.evaluation.EvaluationRepository;
 import br.com.corely.evolution.dto.EvolutionRequest;
@@ -31,6 +32,7 @@ public class EvolutionService {
     private final StudentRepository studentRepository;
     private final ObjectiveRepository objectiveRepository;
     private final EvaluationRepository evaluationRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public EvolutionResponse create(EvolutionRequest request) {
@@ -71,7 +73,8 @@ public class EvolutionService {
 
     @Transactional(readOnly = true)
     public List<EvolutionResponse> findAll() {
-        return evolutionRepository.findAll().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return evolutionRepository.findByStudioIdOrderByCreatedAtDesc(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

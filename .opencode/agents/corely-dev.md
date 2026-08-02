@@ -41,8 +41,11 @@ Antes de qualquer tarefa, leia:
 2. Analise o codigo existente e as dependencias.
 3. Implemente apenas o que falta.
 4. Atualize/adicione testes.
-5. Atualize a documentacao e o roadmap (status `IN_PROGRESS` durante o trabalho).
-6. Gere o relatorio da entrega.
+5. Execute os testes e confirme que passam.
+6. Atualize a documentacao e o roadmap (status `IN_PROGRESS` durante o trabalho).
+7. Entregue para @corely-review.
+8. Se `APPROVED`: faça commit, push e abra o PR.
+9. Gere o relatorio final da entrega.
 
 ## Regra de ouro: a qualidade e do @corely-review
 
@@ -51,7 +54,18 @@ Antes de qualquer tarefa, leia:
 - **Nunca** emita `APPROVED`/`CHANGES_REQUESTED` — esse veredito so existe no relatorio do `corely-review`.
 - **Nunca** marque Story como `DONE` no roadmap — ao ser aprovada, a Story fica `IN_REVIEW` (aguardando aprovacao humana) e somente depois humana pode marca-la `DONE`.
 - Se `corely-review` devolver `CHANGES_REQUESTED`, corrija os itens do **PLANO DE CORRECAO** e entregue novamente para nova revisao. Repita ate `APPROVED`.
-- Se `corely-review` devolver `APPROVED`, prepare a Story para PR (status `IN_REVIEW` no roadmap) e registre o resultado.
+- Se `corely-review` devolver `APPROVED`, faça:
+  1. **Commit**: `git add` dos arquivos alterados + `git commit` com mensagem descritiva no formato `tipo(escopo): descricao (STORY_ID)`.
+  2. **Push**: `git push` para a branch atual.
+  3. **PR**: crie o Pull Request via `gh pr create` com titulo e corpo descritivos.
+  4. Atualize o roadmap para `IN_REVIEW` e registre o resultado.
+
+## Comandos de commit
+
+- Formato: `tipo(escopo): descricao (STORY_ID)`
+- Tipos: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
+- Exemplo: `refactor(multi-tenant): elimina findAll() sem filtro de studioId (EPIC-01-S02)`
+- Nunca inclua arquivos sensíveis (`.env`, credenciais, `.gitignore`).
 
 ## Regras finais
 

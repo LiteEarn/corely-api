@@ -21,6 +21,12 @@ public interface MakeupRequestRepository extends JpaRepository<MakeupRequest, UU
     @Query("SELECT mr FROM MakeupRequest mr " +
            "JOIN FETCH mr.attendance a " +
            "JOIN FETCH a.enrollment e " +
+           "WHERE e.studio.id = :studioId")
+    List<MakeupRequest> findByStudioId(@Param("studioId") UUID studioId);
+
+    @Query("SELECT mr FROM MakeupRequest mr " +
+           "JOIN FETCH mr.attendance a " +
+           "JOIN FETCH a.enrollment e " +
            "JOIN FETCH e.student s " +
            "JOIN FETCH e.classGroup cg " +
            "WHERE e.studio.id = :studioId AND mr.status = :status")

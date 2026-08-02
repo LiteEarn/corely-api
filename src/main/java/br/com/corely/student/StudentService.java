@@ -53,7 +53,8 @@ public class StudentService {
 
     @Transactional(readOnly = true)
     public List<StudentResponse> findAll() {
-        return studentRepository.findAll().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return studentRepository.findByStudioIdAndActiveTrue(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

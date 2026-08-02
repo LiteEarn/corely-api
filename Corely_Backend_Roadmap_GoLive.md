@@ -91,7 +91,7 @@ stories:
   - id: EPIC-01-S02
     title: Eliminar findAll() sem filtro
     description: Auditar e eliminar consultas findAll() sem filtro de tenant nas entidades multi-tenant.
-    status: TODO
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: L
     dependsOn: [EPIC-01-S01]
@@ -99,7 +99,22 @@ stories:
       - Nenhuma consulta findAll() sem filtro permanece em entidades multi-tenant.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/instructor/InstructorRepository.java
+      - src/main/java/br/com/corely/instructor/InstructorService.java
+      - src/main/java/br/com/corely/enrollment/EnrollmentRepository.java
+      - src/main/java/br/com/corely/enrollment/EnrollmentService.java
+      - src/main/java/br/com/corely/makeup/MakeupRequestRepository.java
+      - src/main/java/br/com/corely/makeup/MakeupRequestService.java
+      - src/main/java/br/com/corely/student/StudentService.java
+      - src/main/java/br/com/corely/classgroup/ClassGroupRepository.java
+      - src/main/java/br/com/corely/classgroup/ClassGroupService.java
+      - src/main/java/br/com/corely/evaluation/EvaluationService.java
+      - src/main/java/br/com/corely/evolution/EvolutionService.java
+      - src/test/java/br/com/corely/classgroup/ClassGroupServiceTest.java
+      - src/test/java/br/com/corely/makeup/MakeupRequestServiceTest.java
+      - src/test/java/br/com/corely/auth/authorization/AuthorizationInterceptorTest.java
+      - src/test/java/br/com/corely/evolution/EvolutionControllerTest.java
   - id: EPIC-01-S03
     title: Enforce por studio_id
     description: Garantir enforcement de studio_id em todas as consultas JPQL e filtros Hibernate.

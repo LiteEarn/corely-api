@@ -188,7 +188,11 @@ Entregar para revisão (@corely-review)
 
 ↓
 
-Aplicar veredito (CHANGES_REQUESTED → corrigir e re-entregar; APPROVED → Story IN_REVIEW)
+Aplicar veredito (CHANGES_REQUESTED → corrigir e re-entregar; APPROVED → próximo passo)
+
+↓
+
+Commit, Push e PR (`git add` → `git commit` → `git push` → `gh pr create`)
 
 ↓
 
@@ -210,8 +214,9 @@ Gerar relatório
 
 - `corely-dev` **implementa, testa e entrega**; nunca decide que a entrega está pronta.
 - `corely-review` é a **autoridade máxima de qualidade**: audita (checklist de 11
-  seções), emite `APPROVED` ou `CHANGES_REQUESTED` e prepara o PR. Nunca implementa.
+  seções), emite `APPROVED` ou `CHANGES_REQUESTED`. Nunca implementa.
 - Nenhum código chega a PR sem `APPROVED` do `corely-review`.
+- Após `APPROVED`, `corely-dev` faz commit, push e abre o PR.
 - Nenhuma Story vira `DONE` sem aprovação humana (após `IN_REVIEW`).
 
 ---

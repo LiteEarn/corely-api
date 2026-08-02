@@ -1,5 +1,6 @@
 package br.com.corely.evaluation;
 
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.evaluation.dto.EvaluationRequest;
 import br.com.corely.evaluation.dto.EvaluationResponse;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -23,6 +24,7 @@ public class EvaluationService {
     private final EvaluationRepository evaluationRepository;
     private final StudioRepository studioRepository;
     private final StudentRepository studentRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public EvaluationResponse create(EvaluationRequest request) {
@@ -46,7 +48,8 @@ public class EvaluationService {
 
     @Transactional(readOnly = true)
     public List<EvaluationResponse> findAll() {
-        return evaluationRepository.findAll().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return evaluationRepository.findByStudioIdOrderByCreatedAtDesc(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
