@@ -26,6 +26,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
     List<Enrollment> findByClassGroupIdAndActiveTrue(UUID classGroupId);
 
+    List<Enrollment> findByStudioId(UUID studioId);
+
     @Query("SELECT COUNT(DISTINCT e.id) FROM Enrollment e " +
            "JOIN ClassSession cs ON cs.classGroup = e.classGroup " +
            "WHERE e.studio.id = :studioId AND cs.sessionDate = :date AND e.active = true")

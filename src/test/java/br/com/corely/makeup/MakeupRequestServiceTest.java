@@ -21,16 +21,23 @@ import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -67,6 +74,12 @@ class MakeupRequestServiceTest {
     @Autowired
     private StudioRepository studioRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private Studio studio;
     private Instructor instructor;
     private ClassGroup classGroup;
@@ -89,6 +102,8 @@ class MakeupRequestServiceTest {
         studio = new Studio();
         studio.setName("Test Studio");
         studio = studioRepository.save(studio);
+
+        authenticateAs(studio, UserRole.ADMIN);
 
         instructor = new Instructor();
         instructor.setStudio(studio);
@@ -508,5 +523,19 @@ class MakeupRequestServiceTest {
         assertThatThrownBy(() -> makeupRequestService.reject(requested.id(), new MakeupRejectRequest("Reason")))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("A reposição já foi processada.");
+    }
+
+    private void authenticateAs(Studio studio, UserRole role) {
+        var user = new User();
+        user.setName(role.name() + " User");
+        user.setEmail(role.name().toLowerCase() + "_" + UUID.randomUUID() + "@test.com");
+        user.setPassword(passwordEncoder.encode("password"));
+        user.setRole(role);
+        user.setActive(true);
+        user.setStudio(studio);
+        user = userRepository.save(user);
+
+        var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }

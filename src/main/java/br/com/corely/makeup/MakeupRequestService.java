@@ -8,6 +8,7 @@ import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classsession.ClassSession;
 import br.com.corely.classsession.ClassSessionRepository;
 import br.com.corely.classsession.ClassSessionStatus;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.student.Student;
@@ -35,6 +36,7 @@ public class MakeupRequestService {
     private final AttendanceRepository attendanceRepository;
     private final ClassSessionRepository classSessionRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public MakeupRequestResponse request(UUID attendanceId, MakeupRequestRequest request) {
@@ -74,13 +76,15 @@ public class MakeupRequestService {
 
     @Transactional(readOnly = true)
     public List<MakeupRequestResponse> findAll(MakeupRequestStatus status, UUID studentId, UUID classGroupId) {
+        UUID studioId = tenantContext.getCurrentStudioId();
+
         if (status != null) {
-            return makeupRequestRepository.findByStatus(status).stream()
+            return makeupRequestRepository.findByStudioIdAndStatus(studioId, status).stream()
                     .map(this::toResponse)
                     .toList();
         }
 
-        return makeupRequestRepository.findAll().stream()
+        return makeupRequestRepository.findByStudioId(studioId).stream()
                 .map(this::toResponse)
                 .toList();
     }

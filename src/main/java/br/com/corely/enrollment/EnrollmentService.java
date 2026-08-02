@@ -2,6 +2,7 @@ package br.com.corely.enrollment;
 
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.enrollment.dto.EnrollmentRequest;
 import br.com.corely.enrollment.dto.EnrollmentResponse;
 import br.com.corely.shared.exception.BusinessException;
@@ -25,6 +26,7 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final StudentRepository studentRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public EnrollmentResponse create(EnrollmentRequest request) {
@@ -94,7 +96,8 @@ public class EnrollmentService {
 
     @Transactional(readOnly = true)
     public List<EnrollmentResponse> findAll() {
-        return enrollmentRepository.findAll().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return enrollmentRepository.findByStudioId(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

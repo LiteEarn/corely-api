@@ -11,6 +11,9 @@ import br.com.corely.student.Student;
 import br.com.corely.student.StudentRepository;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
+import br.com.corely.user.User;
+import br.com.corely.user.UserRepository;
+import br.com.corely.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,10 +63,17 @@ class EvolutionControllerTest {
     @Autowired
     private EvaluationRepository evaluationRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private Studio studio;
     private Student student;
     private Objective objective;
     private Evaluation evaluation;
+    private User adminUser;
 
     @BeforeEach
     void setUp() {
@@ -74,6 +86,18 @@ class EvolutionControllerTest {
         studio = new Studio();
         studio.setName("Test Studio");
         studio = studioRepository.save(studio);
+
+        adminUser = new User();
+        adminUser.setName("Admin User");
+        adminUser.setEmail("admin_" + UUID.randomUUID() + "@test.com");
+        adminUser.setPassword(passwordEncoder.encode("password"));
+        adminUser.setRole(UserRole.ADMIN);
+        adminUser.setActive(true);
+        adminUser.setStudio(studio);
+        adminUser = userRepository.save(adminUser);
+
+        var auth = new UsernamePasswordAuthenticationToken(adminUser, null, adminUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
 
         student = new Student();
         student.setStudio(studio);
@@ -100,7 +124,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testCreateEvolution() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
         request.setStudioId(studio.getId());
@@ -124,11 +147,10 @@ class EvolutionControllerTest {
                 .andExpect(jsonPath("$.evaluationId").value(evaluation.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Test Evolution"))
                 .andExpect(jsonPath("$.description").value("Test Description"))
-                .andExpect(jsonPath("$.createdBy").value("user"));
+                .andExpect(jsonPath("$.createdBy").exists());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testCreateEvolutionWithoutObjectiveAndEvaluation() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
         request.setStudioId(studio.getId());
@@ -147,7 +169,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testCreateEvolutionValidation() throws Exception {
         EvolutionRequest request = new EvolutionRequest();
         request.setStudioId(studio.getId());
@@ -163,7 +184,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testFindAllEvolutions() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -183,7 +203,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testFindEvolutionById() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -203,7 +222,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testFindEvolutionByIdNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
@@ -212,7 +230,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testFindByStudentId() throws Exception {
         Evolution evolution1 = new Evolution();
         evolution1.setStudio(studio);
@@ -238,7 +255,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testFindByObjectiveId() throws Exception {
         Evolution evolution1 = new Evolution();
         evolution1.setStudio(studio);
@@ -257,7 +273,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testFindByEvolutionDateBetween() throws Exception {
         LocalDate startDate = LocalDate.now().minusDays(5);
         LocalDate endDate = LocalDate.now().plusDays(5);
@@ -279,7 +294,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testUpdateEvolution() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -309,7 +323,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testUpdateEvolutionNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
@@ -327,7 +340,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testDeleteEvolution() throws Exception {
         Evolution evolution = new Evolution();
         evolution.setStudio(studio);
@@ -346,7 +358,6 @@ class EvolutionControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testDeleteEvolutionNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
@@ -356,6 +367,7 @@ class EvolutionControllerTest {
 
     @Test
     void testUnauthorizedAccess() throws Exception {
+        SecurityContextHolder.clearContext();
         mockMvc.perform(get("/evolutions"))
                 .andExpect(status().isForbidden());
     }

@@ -5,6 +5,7 @@ import br.com.corely.classgroup.dto.ClassGroupResponse;
 import br.com.corely.classgroup.dto.ConfirmInactivationRequest;
 import br.com.corely.classgroup.dto.InactivationResponse;
 import br.com.corely.classsession.ClassSessionService;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.enrollment.Enrollment;
 import br.com.corely.enrollment.EnrollmentRepository;
 import br.com.corely.instructor.Instructor;
@@ -35,6 +36,7 @@ public class ClassGroupService {
     private final EnrollmentRepository enrollmentRepository;
     private final ClassSessionService classSessionService;
     private final SessionGenerationService sessionGenerationService;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public ClassGroupResponse create(ClassGroupRequest request) {
@@ -79,14 +81,16 @@ public class ClassGroupService {
 
     @Transactional(readOnly = true)
     public List<ClassGroupResponse> findAll() {
-        return classGroupRepository.findAll().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return classGroupRepository.findByStudioId(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<ClassGroupResponse> findActive() {
-        return classGroupRepository.findByActiveTrue().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return classGroupRepository.findByStudioIdAndActiveTrue(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

@@ -3,6 +3,7 @@ package br.com.corely.instructor;
 import br.com.corely.classgroup.ClassGroup;
 import br.com.corely.classgroup.ClassGroupRepository;
 import br.com.corely.classgroup.dto.ClassGroupResponse;
+import br.com.corely.comercial.tenant.ComercialTenantContext;
 import br.com.corely.instructor.dto.InstructorRequest;
 import br.com.corely.instructor.dto.InstructorResponse;
 import br.com.corely.instructor.dto.TransferClassGroupsRequest;
@@ -28,6 +29,7 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
     private final StudioRepository studioRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final ComercialTenantContext tenantContext;
 
     @Transactional
     public InstructorResponse create(InstructorRequest request) {
@@ -48,7 +50,8 @@ public class InstructorService {
 
     @Transactional(readOnly = true)
     public List<InstructorResponse> findAll() {
-        return instructorRepository.findAll().stream()
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return instructorRepository.findByStudioIdAndActiveTrue(studioId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
