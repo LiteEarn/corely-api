@@ -278,7 +278,7 @@ stories:
   - id: EPIC-02-S01
     title: JWT Secret via variável de ambiente
     description: Mover o JWT secret para variável de ambiente.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: S
     dependsOn: []
