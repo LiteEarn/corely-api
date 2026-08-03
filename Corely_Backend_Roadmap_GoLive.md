@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** DONE · **Priority:** CRITICAL · **Progress:** 100%
+**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 11%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -262,9 +262,9 @@ Endurecimento de segurança da plataforma para produção.
 id: EPIC-02
 title: Segurança
 description: Endurecimento de segurança para produção.
-status: DONE
+status: IN_PROGRESS
 priority: CRITICAL
-progress: 100
+progress: 11
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
