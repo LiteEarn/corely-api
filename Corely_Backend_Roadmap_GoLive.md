@@ -46,7 +46,7 @@
 
 # EPIC 01 — Multi-Tenant (Bloqueador Go Live)
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 17%
+**Status:** DONE · **Priority:** CRITICAL · **Progress:** 100%
 
 Isolamento total de dados por Studio. Nenhum usuário acessa dados de outro studio.
 
@@ -54,9 +54,9 @@ Isolamento total de dados por Studio. Nenhum usuário acessa dados de outro stud
 id: EPIC-01
 title: Multi-Tenant
 description: Isolamento completo de dados por Studio. Nenhum usuário acessa dados de outro studio.
-status: IN_PROGRESS
+status: DONE
 priority: CRITICAL
-progress: 17
+progress: 100
 dependsOn: []
 acceptanceCriteria:
   - Nenhum usuário acessa dados de outro studio.
@@ -219,7 +219,7 @@ stories:
   - id: EPIC-01-S06
     title: Testes de isolamento entre tenants
     description: Criar testes que comprovam que um studio não acessa dados de outro.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: L
     dependsOn: [EPIC-01-S01, EPIC-01-S02, EPIC-01-S03]
@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** TODO · **Priority:** CRITICAL · **Progress:** 0%
+**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 0%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -262,7 +262,7 @@ Endurecimento de segurança da plataforma para produção.
 id: EPIC-02
 title: Segurança
 description: Endurecimento de segurança para produção.
-status: TODO
+status: IN_PROGRESS
 priority: CRITICAL
 progress: 0
 dependsOn: [EPIC-01]
@@ -278,7 +278,7 @@ stories:
   - id: EPIC-02-S01
     title: JWT Secret via variável de ambiente
     description: Mover o JWT secret para variável de ambiente.
-    status: TODO
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: S
     dependsOn: []
@@ -286,7 +286,12 @@ stories:
       - JWT secret nunca aparece em configuração versionada.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/application.yaml
+      - src/main/resources/application-dev.yaml
+      - src/test/resources/application-test.properties
+      - src/test/java/br/com/corely/auth/security/jwt/JwtSecretConfigTest.java
+      - README.md
   - id: EPIC-02-S02
     title: Rotação de segredo
     description: Suportar rotação do segredo JWT sem downtime.

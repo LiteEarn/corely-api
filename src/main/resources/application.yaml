@@ -26,6 +26,6 @@ corely:
     expiration-days: 30
 
 jwt:
-  secret: my-secret-key-for-corely-application-2024
+  secret: ${JWT_SECRET}
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
