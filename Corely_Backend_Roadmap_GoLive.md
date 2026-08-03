@@ -295,7 +295,7 @@ stories:
   - id: EPIC-02-S02
     title: Rotação de segredo
     description: Suportar rotação do segredo JWT sem downtime.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-02-S01]
