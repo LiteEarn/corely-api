@@ -10,11 +10,11 @@
 
 # Backend
 
-- Percentual: **91%** (baseline concluído; épicos de Go Live em andamento)
+- Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-01 — Multi-Tenant**
-- Story Atual: **EPIC-01-S05 — DTOs sem studioId client-controlled** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
-- Último concluído: EPIC-01-S04 — Dashboard sem studioId vindo da URL
-- Itens pendentes: 1 story de EPIC-01 (S06), 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
+- Story Atual: **EPIC-01-S06 — Testes de isolamento entre tenants**
+- Último concluído: EPIC-01-S05 — DTOs sem studioId client-controlled
+- Itens pendentes: 0 stories de EPIC-01 (S06 em andamento), 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-01
 
 ---
@@ -46,4 +46,4 @@
 - Épicos concluídos: EPIC 00 (AI Governance); baseline de plataforma e domínios
 - Épicos pendentes: EPIC-01 (Multi-Tenant — em andamento), EPIC-02 (Segurança), EPIC-03 (Financeiro), EPIC-04 (Booking), EPIC-05 (Comunicação), EPIC-06 (Observabilidade), EPIC-07 (DevOps), EPIC-08 (Performance), EPIC-09 (Testes)
 - Principais bloqueadores: EPIC-01 e EPIC-02 (críticos para Go Live)
-- Próximo objetivo: concluir EPIC-01 — Multi-Tenant (EPIC-01-S05: DTOs sem studioId client-controlled)
+- Próximo objetivo: concluir EPIC-01 — Multi-Tenant (EPIC-01-S06: Testes de isolamento entre tenants)

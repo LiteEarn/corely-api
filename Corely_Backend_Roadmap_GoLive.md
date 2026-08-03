@@ -177,7 +177,7 @@ stories:
   - id: EPIC-01-S05
     title: DTOs sem studioId client-controlled
     description: Garantir que DTOs de request não aceitem studioId controlado pelo client.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-01-S01]
@@ -219,7 +219,7 @@ stories:
   - id: EPIC-01-S06
     title: Testes de isolamento entre tenants
     description: Criar testes que comprovam que um studio não acessa dados de outro.
-    status: TODO
+    status: IN_PROGRESS
     priority: CRITICAL
     estimate: L
     dependsOn: [EPIC-01-S01, EPIC-01-S02, EPIC-01-S03]
@@ -227,7 +227,27 @@ stories:
       - Testes de isolamento entre tenants passando para todos os módulos multi-tenant.
     definitionOfDone:
       - Testes verdes e documentação atualizada.
-    files: []
+    files:
+      - src/main/java/br/com/corely/student/StudentRepository.java
+      - src/main/java/br/com/corely/instructor/InstructorRepository.java
+      - src/main/java/br/com/corely/classgroup/ClassGroupRepository.java
+      - src/main/java/br/com/corely/objective/ObjectiveRepository.java
+      - src/main/java/br/com/corely/evaluation/EvaluationRepository.java
+      - src/main/java/br/com/corely/evolution/EvolutionRepository.java
+      - src/main/java/br/com/corely/enrollment/EnrollmentRepository.java
+      - src/main/java/br/com/corely/booking/BookingRepository.java
+      - src/main/java/br/com/corely/booking/TimeBlockRepository.java
+      - src/test/java/br/com/corely/student/TenantIsolationTest.java
+      - src/test/java/br/com/corely/instructor/TenantIsolationTest.java
+      - src/test/java/br/com/corely/classgroup/TenantIsolationTest.java
+      - src/test/java/br/com/corely/objective/TenantIsolationTest.java
+      - src/test/java/br/com/corely/evaluation/TenantIsolationTest.java
+      - src/test/java/br/com/corely/evolution/TenantIsolationTest.java
+      - src/test/java/br/com/corely/enrollment/TenantIsolationTest.java
+      - src/test/java/br/com/corely/classsession/TenantIsolationTest.java
+      - src/test/java/br/com/corely/attendance/TenantIsolationTest.java
+      - src/test/java/br/com/corely/makeup/TenantIsolationTest.java
+      - src/test/java/br/com/corely/booking/TenantIsolationTest.java
 ```
 
 ---

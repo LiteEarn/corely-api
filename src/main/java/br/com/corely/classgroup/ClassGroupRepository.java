@@ -6,11 +6,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ClassGroupRepository extends JpaRepository<ClassGroup, UUID> {
     long countByStudioIdAndActiveTrue(UUID studioId);
+
+    @Override
+    @Query("SELECT cg FROM ClassGroup cg WHERE cg.id = :id")
+    Optional<ClassGroup> findById(@Param("id") UUID id);
 
     @Query("SELECT COALESCE(SUM(cg.capacity), 0) FROM ClassGroup cg WHERE cg.studio.id = :studioId AND cg.active = true")
     long sumCapacityByStudioIdAndActiveTrue(@Param("studioId") UUID studioId);

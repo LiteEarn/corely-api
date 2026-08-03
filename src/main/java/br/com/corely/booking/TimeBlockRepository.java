@@ -7,10 +7,15 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface TimeBlockRepository extends JpaRepository<TimeBlock, UUID> {
+
+    @Override
+    @Query("SELECT tb FROM TimeBlock tb WHERE tb.id = :id")
+    Optional<TimeBlock> findById(@Param("id") UUID id);
 
     @Query("SELECT tb FROM TimeBlock tb WHERE tb.studio.id = :studioId "
             + "AND tb.startDate < :endDate AND tb.endDate > :startDate")
