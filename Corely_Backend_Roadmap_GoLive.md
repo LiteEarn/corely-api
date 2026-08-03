@@ -219,7 +219,7 @@ stories:
   - id: EPIC-01-S06
     title: Testes de isolamento entre tenants
     description: Criar testes que comprovam que um studio não acessa dados de outro.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: L
     dependsOn: [EPIC-01-S01, EPIC-01-S02, EPIC-01-S03]

@@ -12,7 +12,7 @@
 
 - Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-01 — Multi-Tenant**
-- Story Atual: **EPIC-01-S06 — Testes de isolamento entre tenants**
+- Story Atual: **EPIC-01-S06 — Testes de isolamento entre tenants** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
 - Último concluído: EPIC-01-S05 — DTOs sem studioId client-controlled
 - Itens pendentes: 0 stories de EPIC-01 (S06 em andamento), 9 de EPIC-02, 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-01
