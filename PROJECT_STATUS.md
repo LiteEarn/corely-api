@@ -12,9 +12,9 @@
 
 - Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-02 — Segurança**
-- Story Atual: **EPIC-02-S02 — Rotação de segredo** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
-- Último concluído: EPIC-02-S01 — JWT Secret via variável de ambiente
-- Itens pendentes: 0 stories de EPIC-01, 8 de EPIC-02 (S02 em andamento), 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
+- Story Atual: **EPIC-02-S03 — Profile production** (em `IN_PROGRESS`)
+- Último concluído: EPIC-02-S02 — Rotação de segredo
+- Itens pendentes: 0 stories de EPIC-01, 7 de EPIC-02 (S03 em andamento), 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-02
 
 ---
@@ -46,4 +46,4 @@
 - Épicos concluídos: EPIC 00 (AI Governance); EPIC-01 (Multi-Tenant); baseline de plataforma e domínios
 - Épicos pendentes: EPIC-02 (Segurança — em andamento), EPIC-03 (Financeiro), EPIC-04 (Booking), EPIC-05 (Comunicação), EPIC-06 (Observabilidade), EPIC-07 (DevOps), EPIC-08 (Performance), EPIC-09 (Testes)
 - Principais bloqueadores: EPIC-02 (crítico para Go Live)
-- Próximo objetivo: concluir EPIC-02 — Segurança (EPIC-02-S02: Rotação de segredo)
+- Próximo objetivo: concluir EPIC-02 — Segurança (EPIC-02-S03: Profile production)
