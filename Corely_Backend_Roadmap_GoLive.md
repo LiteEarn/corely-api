@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 0%
+**Status:** DONE · **Priority:** CRITICAL · **Progress:** 100%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -262,9 +262,9 @@ Endurecimento de segurança da plataforma para produção.
 id: EPIC-02
 title: Segurança
 description: Endurecimento de segurança para produção.
-status: IN_PROGRESS
+status: DONE
 priority: CRITICAL
-progress: 0
+progress: 100
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -278,7 +278,7 @@ stories:
   - id: EPIC-02-S01
     title: JWT Secret via variável de ambiente
     description: Mover o JWT secret para variável de ambiente.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: S
     dependsOn: []
@@ -295,7 +295,7 @@ stories:
   - id: EPIC-02-S02
     title: Rotação de segredo
     description: Suportar rotação do segredo JWT sem downtime.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-02-S01]
