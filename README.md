@@ -16,6 +16,9 @@ A API resolve segredos e configurações por **variáveis de ambiente**. Nenhum 
 |---|---|---|
 | `JWT_SECRET` | **Sim** (fora do profile `dev`) | Chave de assinatura HMAC-SHA dos tokens JWT (min. 32 bytes). Em produção deve ser definida explicitamente — a aplicação falha ao iniciar sem ela. |
 | `JWT_PREVIOUS_SECRETS` | Não | Lista separada por vírgula de segredos JWT anteriores (rotação). Tokens assinados com esses segredos continuam válidos até expirarem. |
+| `DATABASE_URL` | **Sim** (profile `prod`) | URL JDBC do PostgreSQL com schema (ex.: `jdbc:postgresql://host:5432/corely?currentSchema=corely`). O profile `prod` falha ao iniciar sem ela. |
+| `DATABASE_USERNAME` | **Sim** (profile `prod`) | Usuário do banco de produção. |
+| `DATABASE_PASSWORD` | **Sim** (profile `prod`) | Senha do banco de produção. |
 
 ### JWT
 
@@ -44,6 +47,36 @@ Para rotacionar o segredo sem derrubar a aplicação nem invalidar tokens ativos
 3. **Após o período de expiração dos tokens antigos** (ver `jwt.refresh-token-expiration`), remova o segredo anterior de `JWT_PREVIOUS_SECRETS` e faça novo deploy.
 
 O `JwtService` assina novos tokens apenas com `JWT_SECRET` (atual) e valida tokens usando o segredo atual **e** os anteriores — garantindo transição suave.
+
+## Perfis de execução
+
+| Profile | Uso | Características |
+|---|---|---|
+| (nenhum) | Desenvolvimento base | `application.yaml` — datasource local com defaults (`localhost:5432`), sem SQL logging. |
+| `dev` | Desenvolvimento local | `application-dev.yaml` — seed habilitado, porta `8081`. |
+| `test` | Testes automatizados | `application-test.properties` — H2 em memória. |
+| `prod` | Produção | `application-prod.yaml` — **isolado e seguro** (detalhes abaixo). |
+
+### Profile `prod` (produção)
+
+Configuração dedicada e segura para produção em `application-prod.yaml`:
+
+- **Datasource via variáveis de ambiente** (`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`) — **sem credenciais embutidas** e **fail-fast** se ausentes (a aplicação não inicia com banco local por engano).
+- **SQL logging desabilitado**: `show-sql: false` e `format_sql: false`; nível `org.hibernate.SQL: WARN`.
+- **Schema validado, nunca alterado**: `ddl-auto: validate` (migrations via Flyway).
+- **Seed desabilitado**: `corely.seed.enabled: false`.
+- **Stacktraces não expostos** em respostas de erro (`server.error.include-stacktrace: never`).
+- **JWT fail-fast**: `JWT_SECRET` obrigatório sem default.
+
+Execução em produção:
+
+```bash
+export DATABASE_URL="jdbc:postgresql://<host>:5432/corely?currentSchema=corely"
+export DATABASE_USERNAME="<user>"
+export DATABASE_PASSWORD="<password>"
+export JWT_SECRET="$(openssl rand -base64 48)"
+./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+```
 
 ## Testes
 
