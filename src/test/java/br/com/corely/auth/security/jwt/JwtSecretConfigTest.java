@@ -57,6 +57,24 @@ class JwtSecretConfigTest {
                 .doesNotContain(LEGACY_SECRET);
     }
 
+    @Test
+    void applicationYaml_shouldSupportSecretRotationViaEnvironmentVariable() throws IOException {
+        String applicationYaml = readClasspathResource("/application.yaml");
+
+        assertThat(applicationYaml)
+                .as("jwt.previous-secrets deve ser resolvido de JWT_PREVIOUS_SECRETS")
+                .contains("previous-secrets: ${JWT_PREVIOUS_SECRETS:}");
+    }
+
+    @Test
+    void devProfile_shouldSupportSecretRotationViaEnvironmentVariable() throws IOException {
+        String applicationDevYaml = readClasspathResource("/application-dev.yaml");
+
+        assertThat(applicationDevYaml)
+                .as("application-dev.yaml deve expor jwt.previous-secrets sem default versionado")
+                .contains("previous-secrets: ${JWT_PREVIOUS_SECRETS:}");
+    }
+
     private String readClasspathResource(String path) throws IOException {
         try (InputStream in = getClass().getResourceAsStream(path)) {
             assertThat(in).as("recurso %s deve existir no classpath", path).isNotNull();

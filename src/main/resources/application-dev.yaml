@@ -15,3 +15,4 @@ corely:
 # (application.yaml resolve ${JWT_SECRET} sem default, falhando se ausente).
 jwt:
   secret: ${JWT_SECRET:dev-only-secret-not-for-production-corely}
+  previous-secrets: ${JWT_PREVIOUS_SECRETS:}

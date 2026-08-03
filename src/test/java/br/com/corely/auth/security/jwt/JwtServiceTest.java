@@ -95,4 +95,34 @@ class JwtServiceTest {
     void getRefreshTokenExpiration_shouldReturnPositiveValue() {
         assertThat(jwtService.getRefreshTokenExpiration()).isPositive();
     }
+
+    @Test
+    void tokenSignedWithPreviousSecret_shouldStillBeValidAfterRotation() {
+        // Token assinado com o segredo anterior (simula token emitido antes da rotação)
+        String oldSecret = "previous-test-secret-key-for-corely-2024";
+        String oldToken = io.jsonwebtoken.Jwts.builder()
+                .subject(user.getEmail())
+                .issuedAt(new java.util.Date())
+                .expiration(new java.util.Date(System.currentTimeMillis() + 900000))
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                        oldSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .compact();
+
+        assertThat(jwtService.isTokenValid(oldToken)).isTrue();
+        assertThat(jwtService.extractUsername(oldToken)).isEqualTo(user.getEmail());
+    }
+
+    @Test
+    void tokenSignedWithUnknownSecret_shouldBeRejected() {
+        String unknownSecret = "some-random-unknown-secret-key-2024";
+        String token = io.jsonwebtoken.Jwts.builder()
+                .subject(user.getEmail())
+                .issuedAt(new java.util.Date())
+                .expiration(new java.util.Date(System.currentTimeMillis() + 900000))
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                        unknownSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .compact();
+
+        assertThat(jwtService.isTokenValid(token)).isFalse();
+    }
 }
