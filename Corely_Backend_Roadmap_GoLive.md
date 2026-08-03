@@ -303,7 +303,15 @@ stories:
       - Rotação de segredo documentada e funcional.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/auth/security/jwt/JwtProperties.java
+      - src/main/java/br/com/corely/auth/security/jwt/JwtService.java
+      - src/main/resources/application.yaml
+      - src/main/resources/application-dev.yaml
+      - src/test/resources/application-test.properties
+      - src/test/java/br/com/corely/auth/security/jwt/JwtServiceTest.java
+      - src/test/java/br/com/corely/auth/security/jwt/JwtSecretConfigTest.java
+      - README.md
   - id: EPIC-02-S03
     title: Profile production
     description: Configuração dedicada para o perfil de produção.

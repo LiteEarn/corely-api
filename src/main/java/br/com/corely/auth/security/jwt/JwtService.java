@@ -5,11 +5,11 @@ import br.com.corely.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -20,16 +20,35 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    private final JwtProperties properties;
 
-    @Value("${jwt.access-token-expiration}")
-    private long accessTokenExpiration;
+    private final List<SecretKey> verificationKeys;
 
-    @Value("${jwt.refresh-token-expiration}")
-    private long refreshTokenExpiration;
+    public JwtService(JwtProperties properties) {
+        this.properties = properties;
+        this.verificationKeys = buildVerificationKeys();
+    }
 
-    private SecretKey getSigningKey() {
+    /**
+     * Constrói as chaves de verificação: a chave atual (assinatura) primeiro,
+     * seguidas das chaves anteriores aceitas durante a rotação de segredo.
+     */
+    private List<SecretKey> buildVerificationKeys() {
+        List<SecretKey> keys = new ArrayList<>();
+        keys.add(signingKey());
+        for (String previous : properties.getPreviousSecrets()) {
+            if (previous != null && !previous.isBlank() && !previous.equals(properties.getSecret())) {
+                keys.add(hmacKey(previous));
+            }
+        }
+        return List.copyOf(keys);
+    }
+
+    private SecretKey signingKey() {
+        return hmacKey(properties.getSecret());
+    }
+
+    private SecretKey hmacKey(String secret) {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -48,8 +67,8 @@ public class JwtService {
                 .claims(claims)
                 .subject(user.getEmail())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
-                .signWith(getSigningKey())
+                .expiration(new Date(System.currentTimeMillis() + properties.getAccessTokenExpiration()))
+                .signWith(signingKey())
                 .compact();
     }
 
@@ -63,8 +82,8 @@ public class JwtService {
                 .claims(claims)
                 .subject(user.getEmail())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
-                .signWith(getSigningKey())
+                .expiration(new Date(System.currentTimeMillis() + properties.getRefreshTokenExpiration()))
+                .signWith(signingKey())
                 .compact();
     }
 
@@ -108,11 +127,18 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        for (SecretKey key : verificationKeys) {
+            try {
+                return Jwts.parser()
+                        .verifyWith(key)
+                        .build()
+                        .parseSignedClaims(token)
+                        .getPayload();
+            } catch (Exception ignored) {
+                // tenta a próxima chave (rotação de segredo)
+            }
+        }
+        throw new io.jsonwebtoken.JwtException("JWT não pôde ser verificado com nenhuma chave");
     }
 
     public boolean isTokenValid(String token, String username) {
@@ -138,10 +164,10 @@ public class JwtService {
     }
 
     public long getAccessTokenExpiration() {
-        return accessTokenExpiration;
+        return properties.getAccessTokenExpiration();
     }
 
     public long getRefreshTokenExpiration() {
-        return refreshTokenExpiration;
+        return properties.getRefreshTokenExpiration();
     }
 }
