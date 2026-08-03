@@ -7,10 +7,15 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
+
+    @Override
+    @Query("SELECT b FROM Booking b WHERE b.id = :id")
+    Optional<Booking> findById(@Param("id") UUID id);
 
     @Query("SELECT b FROM Booking b WHERE b.studio.id = :studioId "
             + "AND b.startDateTime >= :startDate AND b.endDateTime <= :endDate "

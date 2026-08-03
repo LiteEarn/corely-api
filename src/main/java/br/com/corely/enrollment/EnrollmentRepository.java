@@ -12,6 +12,11 @@ import java.util.UUID;
 
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
+
+    @Override
+    @Query("SELECT e FROM Enrollment e WHERE e.id = :id")
+    Optional<Enrollment> findById(@Param("id") UUID id);
+
     Optional<Enrollment> findByStudentIdAndClassGroupId(UUID studentId, UUID classGroupId);
 
     long countByStudioIdAndActiveTrue(UUID studioId);
