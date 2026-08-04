@@ -315,7 +315,7 @@ stories:
   - id: EPIC-02-S03
     title: Profile production
     description: Configuração dedicada para o perfil de produção.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: M
     dependsOn: []
