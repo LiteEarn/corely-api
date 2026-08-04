@@ -350,7 +350,7 @@ stories:
   - id: EPIC-02-S05
     title: Seed apenas em dev
     description: Garantir que o seed de dados ocorra apenas no perfil dev.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-02-S03]
