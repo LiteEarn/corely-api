@@ -315,7 +315,7 @@ stories:
   - id: EPIC-02-S03
     title: Profile production
     description: Configuração dedicada para o perfil de produção.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: M
     dependsOn: []
@@ -323,7 +323,11 @@ stories:
       - Profile production isolado e seguro.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/application-prod.yaml
+      - src/main/resources/application.yaml
+      - src/test/java/br/com/corely/auth/security/jwt/ProdProfileConfigTest.java
+      - README.md
   - id: EPIC-02-S04
     title: Swagger protegido
     description: Proteger o Swagger/OpenAPI em produção.

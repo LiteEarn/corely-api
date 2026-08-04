@@ -1,10 +1,8 @@
 spring:
-  application:
-    name: corely-api
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/corely?currentSchema=corely}
-    username: ${DATABASE_USERNAME:corely}
-    password: ${DATABASE_PASSWORD:corely}
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -13,20 +11,32 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+        format_sql: false
   flyway:
     enabled: true
     baseline-on-migrate: true
     out-of-order: true
 
 corely:
+  seed:
+    enabled: false
   scheduler:
     session-generation-days: 90
   makeup:
     expiration-days: 30
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.web: INFO
 
 jwt:
   secret: ${JWT_SECRET}
   previous-secrets: ${JWT_PREVIOUS_SECRETS:}
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
+
+server:
+  error:
+    include-stacktrace: never
