@@ -264,7 +264,7 @@ title: Segurança
 description: Endurecimento de segurança para produção.
 status: IN_PROGRESS
 priority: CRITICAL
-progress: 33
+progress: 44
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -331,7 +331,7 @@ stories:
   - id: EPIC-02-S04
     title: Swagger protegido
     description: Proteger o Swagger/OpenAPI em produção.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]
@@ -350,7 +350,7 @@ stories:
   - id: EPIC-02-S05
     title: Seed apenas em dev
     description: Garantir que o seed de dados ocorra apenas no perfil dev.
-    status: TODO
+    status: IN_PROGRESS
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-02-S03]
