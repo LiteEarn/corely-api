@@ -17,6 +17,12 @@ spring:
     baseline-on-migrate: true
     out-of-order: true
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 corely:
   seed:
     enabled: false
@@ -24,6 +30,8 @@ corely:
     session-generation-days: 90
   makeup:
     expiration-days: 30
+  swagger:
+    enabled: false
 
 logging:
   level:
