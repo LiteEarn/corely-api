@@ -331,7 +331,7 @@ stories:
   - id: EPIC-02-S04
     title: Swagger protegido
     description: Proteger o Swagger/OpenAPI em produção.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]

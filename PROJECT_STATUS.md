@@ -12,7 +12,7 @@
 
 - Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-02 — Segurança**
-- Story Atual: **EPIC-02-S04 — Swagger protegido** (em `IN_PROGRESS`)
+- Story Atual: **EPIC-02-S04 — Swagger protegido** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
 - Último concluído: EPIC-02-S03 — Profile production
 - Itens pendentes: 0 stories de EPIC-01, 6 de EPIC-02 (S04 em andamento), 24 de EPIC-03, 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-02
