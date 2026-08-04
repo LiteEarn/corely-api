@@ -331,7 +331,7 @@ stories:
   - id: EPIC-02-S04
     title: Swagger protegido
     description: Proteger o Swagger/OpenAPI em produção.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]
@@ -339,7 +339,14 @@ stories:
       - Swagger inacessível em produção sem autenticação/autorização.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/auth/config/SecurityConfiguration.java
+      - src/main/resources/application.yaml
+      - src/main/resources/application-prod.yaml
+      - src/test/java/br/com/corely/auth/security/SwaggerSecurityTest.java
+      - src/test/java/br/com/corely/auth/security/SwaggerSecurityDisabledTest.java
+      - src/test/java/br/com/corely/auth/security/jwt/ProdProfileConfigTest.java
+      - README.md
   - id: EPIC-02-S05
     title: Seed apenas em dev
     description: Garantir que o seed de dados ocorra apenas no perfil dev.

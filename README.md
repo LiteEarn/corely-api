@@ -65,6 +65,7 @@ Configuração dedicada e segura para produção em `application-prod.yaml`:
 - **SQL logging desabilitado**: `show-sql: false` e `format_sql: false`; nível `org.hibernate.SQL: WARN`.
 - **Schema validado, nunca alterado**: `ddl-auto: validate` (migrations via Flyway).
 - **Seed desabilitado**: `corely.seed.enabled: false`.
+- **Swagger/OpenAPI desabilitado**: `springdoc.api-docs.enabled: false` e `springdoc.swagger-ui.enabled: false`, e `corely.swagger.enabled: false` (a segurança deixa de permitir acesso público aos paths de documentação — mesmo que a documentação seja re-habilitada, o Swagger exige autenticação).
 - **Stacktraces não expostos** em respostas de erro (`server.error.include-stacktrace: never`).
 - **JWT fail-fast**: `JWT_SECRET` obrigatório sem default.
 
@@ -77,6 +78,14 @@ export DATABASE_PASSWORD="<password>"
 export JWT_SECRET="$(openssl rand -base64 48)"
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 ```
+
+## Swagger / OpenAPI
+
+A documentação da API fica disponível em `/swagger-ui` e `/v3/api-docs` por padrão (perfil `dev` e demais, via `corely.swagger.enabled: true`).
+
+No profile `prod` o Swagger é **protegido**:
+- A geração da documentação e da UI é **desabilitada** (`springdoc.api-docs.enabled: false`, `springdoc.swagger-ui.enabled: false`) — os endpoints não existem.
+- A camada de segurança deixa de liberar os paths (`corely.swagger.enabled: false`) — mesmo que a documentação seja re-habilitada, os endpoints exigem autenticação (requisições sem token são rejeitadas).
 
 ## Testes
 

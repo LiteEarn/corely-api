@@ -24,6 +24,8 @@ corely:
     session-generation-days: 90
   makeup:
     expiration-days: 30
+  swagger:
+    enabled: true
 
 jwt:
   secret: ${JWT_SECRET}

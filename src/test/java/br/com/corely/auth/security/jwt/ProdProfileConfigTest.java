@@ -9,12 +9,12 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Testes de segurança da configuração do profile de produção (EPIC-02-S03).
+ * Testes de segurança da configuração do profile de produção (EPIC-02-S03/S04).
  *
  * Garantem que o profile {@code prod} é isolado e seguro: datasource via
  * variáveis de ambiente (sem credenciais embutidas), SQL logging desabilitado,
- * seed de dados desabilitado, schema validado (nunca alterado) e stacktraces
- * não expostos em respostas de erro.
+ * seed de dados desabilitado, Swagger/OpenAPI desabilitado, schema validado
+ * (nunca alterado) e stacktraces não expostos em respostas de erro.
  */
 class ProdProfileConfigTest {
 
@@ -69,6 +69,33 @@ class ProdProfileConfigTest {
         assertThat(prodYaml)
                 .as("corely.seed.enabled deve estar desabilitado no profile prod")
                 .containsPattern("(?s)corely:\\s*\\n\\s*seed:\\s*\\n\\s*enabled: false");
+    }
+
+    @Test
+    void prodProfile_shouldDisableSpringdocApiDocs() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("springdoc api-docs deve estar desabilitado no profile prod")
+                .containsPattern("(?s)springdoc:\\s*\\n\\s*api-docs:\\s*\\n\\s*enabled: false");
+    }
+
+    @Test
+    void prodProfile_shouldDisableSpringdocSwaggerUi() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("springdoc swagger-ui deve estar desabilitado no profile prod")
+                .containsPattern("(?s)springdoc:\\s*\\n\\s*api-docs:\\s*\\n\\s*enabled: false[\\s\\S]*?swagger-ui:\\s*\\n\\s*enabled: false");
+    }
+
+    @Test
+    void prodProfile_shouldRequireAuthForSwaggerPaths() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("corely.swagger.enabled deve estar desabilitado no profile prod")
+                .containsPattern("(?m)^\\s*swagger:\\s*\\n\\s*enabled: false$");
     }
 
     @Test
