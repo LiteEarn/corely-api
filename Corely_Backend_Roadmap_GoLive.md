@@ -350,7 +350,7 @@ stories:
   - id: EPIC-02-S05
     title: Seed apenas em dev
     description: Garantir que o seed de dados ocorra apenas no perfil dev.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: CRITICAL
     estimate: S
     dependsOn: [EPIC-02-S03]
@@ -358,7 +358,11 @@ stories:
       - Seed desabilitado em produção.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/dev/seed/SeedConfiguration.java
+      - src/main/java/br/com/corely/dev/seed/SeedController.java
+      - src/test/java/br/com/corely/dev/seed/SeedConfigurationTest.java
+      - README.md
   - id: EPIC-02-S06
     title: Rate limiting
     description: Adicionar rate limiting na API.
