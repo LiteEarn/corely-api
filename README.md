@@ -64,7 +64,7 @@ Configuração dedicada e segura para produção em `application-prod.yaml`:
 - **Datasource via variáveis de ambiente** (`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`) — **sem credenciais embutidas** e **fail-fast** se ausentes (a aplicação não inicia com banco local por engano).
 - **SQL logging desabilitado**: `show-sql: false` e `format_sql: false`; nível `org.hibernate.SQL: WARN`.
 - **Schema validado, nunca alterado**: `ddl-auto: validate` (migrations via Flyway).
-- **Seed desabilitado**: `corely.seed.enabled: false`.
+- **Seed desabilitado em produção**: além de `corely.seed.enabled: false`, o seed automático e o endpoint `/dev/seed/**` são **exclusivos do perfil `dev`** — em qualquer outro ambiente o seed nunca é criado nem exposto, mesmo que a flag seja definida como `true`.
 - **Swagger/OpenAPI desabilitado**: `springdoc.api-docs.enabled: false` e `springdoc.swagger-ui.enabled: false`, e `corely.swagger.enabled: false` (a segurança deixa de permitir acesso público aos paths de documentação — mesmo que a documentação seja re-habilitada, o Swagger exige autenticação).
 - **Stacktraces não expostos** em respostas de erro (`server.error.include-stacktrace: never`).
 - **JWT fail-fast**: `JWT_SECRET` obrigatório sem default.
@@ -86,6 +86,14 @@ A documentação da API fica disponível em `/swagger-ui` e `/v3/api-docs` por p
 No profile `prod` o Swagger é **protegido**:
 - A geração da documentação e da UI é **desabilitada** (`springdoc.api-docs.enabled: false`, `springdoc.swagger-ui.enabled: false`) — os endpoints não existem.
 - A camada de segurança deixa de liberar os paths (`corely.swagger.enabled: false`) — mesmo que a documentação seja re-habilitada, os endpoints exigem autenticação (requisições sem token são rejeitadas).
+
+## Seed de dados
+
+O seed de dados é **exclusivo do desenvolvimento**:
+- **Seed automático** (`SeedRunner`): executado no boot apenas quando o perfil ativo é `dev` **e** `corely.seed.enabled=true` — condição fail-closed no `SeedConfiguration` (o perfil é o gate obrigatório).
+- **Endpoint `/dev/seed/**`** (`SeedController`): registrado apenas no perfil `dev` (`@Profile("dev")`) — fora do dev o endpoint não existe.
+
+Em produção, portanto, o seed **nunca** é executado nem exposto, independentemente de `corely.seed.enabled` — garantido estruturalmente.
 
 ## Testes
 
