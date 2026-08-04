@@ -264,7 +264,7 @@ title: Segurança
 description: Endurecimento de segurança para produção.
 status: IN_PROGRESS
 priority: CRITICAL
-progress: 22
+progress: 33
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -315,7 +315,7 @@ stories:
   - id: EPIC-02-S03
     title: Profile production
     description: Configuração dedicada para o perfil de produção.
-    status: IN_REVIEW
+    status: DONE
     priority: CRITICAL
     estimate: M
     dependsOn: []
@@ -331,7 +331,7 @@ stories:
   - id: EPIC-02-S04
     title: Swagger protegido
     description: Proteger o Swagger/OpenAPI em produção.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]
