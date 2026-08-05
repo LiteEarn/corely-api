@@ -486,7 +486,7 @@ stories:
   - id: EPIC-03-S01
     title: Contas a Receber — Recebíveis
     description: Modelar e expor recebíveis.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: M
     dependsOn: []
