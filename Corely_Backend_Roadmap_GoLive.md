@@ -366,7 +366,7 @@ stories:
   - id: EPIC-02-S06
     title: Rate limiting
     description: Adicionar rate limiting na API.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: []
@@ -374,7 +374,19 @@ stories:
       - Rate limiting aplicado em endpoints sensíveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/auth/security/ratelimit/RateLimitProperties.java
+      - src/main/java/br/com/corely/auth/security/ratelimit/RateLimiter.java
+      - src/main/java/br/com/corely/auth/security/ratelimit/RateLimitFilter.java
+      - src/main/java/br/com/corely/auth/config/SecurityConfiguration.java
+      - src/main/resources/application.yaml
+      - src/main/resources/application-prod.yaml
+      - src/test/java/br/com/corely/auth/security/ratelimit/RateLimiterTest.java
+      - src/test/java/br/com/corely/auth/security/ratelimit/RateLimitFilterTest.java
+      - src/test/java/br/com/corely/auth/security/ratelimit/RateLimitIntegrationTest.java
+      - src/test/java/br/com/corely/auth/security/jwt/ProdProfileConfigTest.java
+      - src/test/resources/application-test.properties
+      - README.md
   - id: EPIC-02-S07
     title: Lockout login
     description: Implementar bloqueio após tentativas de login inválidas.

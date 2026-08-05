@@ -32,6 +32,13 @@ corely:
     expiration-days: 30
   swagger:
     enabled: false
+  rate-limit:
+    enabled: true
+    requests-per-window: 100
+    window-seconds: 60
+    sensitive-paths:
+      - /auth/**
+    sensitive-requests-per-window: 5
 
 logging:
   level:

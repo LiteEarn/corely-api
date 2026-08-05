@@ -1,8 +1,10 @@
 package br.com.corely.auth.config;
 
 import br.com.corely.auth.security.jwt.JwtAuthenticationFilter;
+import br.com.corely.auth.security.ratelimit.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,6 +35,7 @@ import java.util.List;
 public class SecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFilter rateLimitFilter;
     private final UserDetailsService userDetailsService;
 
     /**
@@ -79,9 +82,21 @@ public class SecurityConfiguration {
                     auth.anyRequest().authenticated();
                 })
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
+    }
+    /**
+     * Desabilita o registro automático do {@link RateLimitFilter} no container
+     * servlet: o filtro é registrado apenas na chain do Spring Security (via
+     * {@link #securityFilterChain}), evitando dupla execução.
+     */
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter rateLimitFilter) {
+        FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(rateLimitFilter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
