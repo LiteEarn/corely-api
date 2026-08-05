@@ -99,6 +99,15 @@ class ProdProfileConfigTest {
     }
 
     @Test
+    void prodProfile_shouldEnableRateLimit() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("corely.rate-limit.enabled deve estar habilitado no profile prod")
+                .containsPattern("(?s)rate-limit:\\s*\\n\\s*enabled: true");
+    }
+
+    @Test
     void prodProfile_shouldNotExposeStacktraces() throws IOException {
         String prodYaml = readClasspathResource("/application-prod.yaml");
 

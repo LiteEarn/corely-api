@@ -95,6 +95,20 @@ O seed de dados é **exclusivo do desenvolvimento**:
 
 Em produção, portanto, o seed **nunca** é executado nem exposto, independentemente de `corely.seed.enabled` — garantido estruturalmente.
 
+## Rate limiting
+
+A API aplica **rate limiting por endereço IP** para proteger endpoints sensíveis contra brute force e abuso (EPIC-02-S06):
+
+- **Limite global**: todas as rotas (exceto as sensíveis) são limitadas por `corely.rate-limit.requests-per-window` requisições por janela de `corely.rate-limit.window-seconds` segundos (padrão: 100 requisições / 60s).
+- **Endpoints sensíveis**: rotas listadas em `corely.rate-limit.sensitive-paths` (padrão: `/auth/**`) recebem um limite mais restrito via `corely.rate-limit.sensitive-requests-per-window` (padrão: 5 requisições / 60s).
+- **Escopos independentes**: os limites global e sensível possuem buckets separados por IP — tráfego global não "reabastece" o limite de login, e esgotar as tentativas de login não bloqueia os demais endpoints.
+- **Resposta**: quando o limite é excedido, a API responde `429 Too Many Requests` com o header `Retry-After`.
+- **Preflight OPTIONS (CORS)**: requisições `OPTIONS` não consomem tokens (consistentes com o `permitAll` existente).
+- **Identificação do cliente**: por padrão usa o `remoteAddr`. Se houver um proxy de ingresso **confiável que sobrescreva** o header `X-Forwarded-For` (nunca apenas anexe), defina `corely.rate-limit.trust-forwarded-header: true` para usar o primeiro valor do header. Não habilite essa flag sem o proxy sanitizando o header — caso contrário o cliente pode forjar o IP e contornar o limite.
+- **Desabilitação**: `corely.rate-limit.enabled: false` desativa o filtro (usado no profile de teste, onde os testes de integração executam muitas requisições do mesmo IP).
+
+No profile `prod` o rate limiting está **habilitado** com os limites padrão. O rate limiter é in-memory (token bucket), o que é adequado para uma instância única; para múltiplas instâncias em cluster, uma solução distribuída (ex.: Redis) é recomendada.
+
 ## Testes
 
 ```bash
