@@ -1,5 +1,6 @@
 package br.com.corely.shared.exception;
 
+import br.com.corely.auth.security.lockout.LoginLockoutException;
 import br.com.corely.shared.dto.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -72,6 +73,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_CREDENTIALS", "Invalid email or password");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(LoginLockoutException.class)
+    public ResponseEntity<ErrorResponse> handleLoginLockoutException(LoginLockoutException ex) {
+        ErrorResponse error = new ErrorResponse("LOGIN_LOCKED", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(error);
     }
 
     @ExceptionHandler(AuthenticationException.class)

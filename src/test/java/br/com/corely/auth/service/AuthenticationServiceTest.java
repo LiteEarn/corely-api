@@ -6,6 +6,8 @@ import br.com.corely.auth.dto.RefreshTokenRequest;
 import br.com.corely.auth.dto.RefreshTokenResponse;
 import br.com.corely.auth.entity.RefreshToken;
 import br.com.corely.auth.repository.RefreshTokenRepository;
+import br.com.corely.auth.security.lockout.LoginAttemptTracker;
+import br.com.corely.auth.security.lockout.LoginLockoutException;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import br.com.corely.user.User;
@@ -45,6 +47,9 @@ class AuthenticationServiceTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private LoginAttemptTracker loginAttemptTracker;
+
     private User user;
     private String rawPassword = "correctPassword123";
 
@@ -53,6 +58,8 @@ class AuthenticationServiceTest {
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
         studioRepository.deleteAll();
+        loginAttemptTracker.reset("test@test.com");
+        loginAttemptTracker.reset("nonexistent@test.com");
 
         Studio studio = new Studio();
         studio.setName("Test Studio");
@@ -231,5 +238,54 @@ class AuthenticationServiceTest {
         SecurityContextHolder.clearContext();
         assertThatThrownBy(() -> authenticationService.me())
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void login_afterMaxFailedAttempts_shouldBeLocked() {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password("wrongPassword")
+                .build();
+
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authenticationService.login(badRequest))
+                    .isInstanceOf(BadCredentialsException.class);
+        }
+
+        // A 5ª tentativa inválida dispara o lockout.
+        assertThatThrownBy(() -> authenticationService.login(badRequest))
+                .isInstanceOf(LoginLockoutException.class)
+                .hasMessageContaining("Too many failed login attempts");
+
+        // Tentativas seguintes permanecem bloqueadas.
+        assertThatThrownBy(() -> authenticationService.login(badRequest))
+                .isInstanceOf(LoginLockoutException.class)
+                .hasMessageContaining("Too many failed login attempts");
+    }
+
+    @Test
+    void login_withValidCredentials_shouldResetFailures() {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password("wrongPassword")
+                .build();
+        LoginRequest goodRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authenticationService.login(badRequest))
+                    .isInstanceOf(BadCredentialsException.class);
+        }
+
+        // Login bem-sucedido reseta as tentativas.
+        LoginResponse response = authenticationService.login(goodRequest);
+        assertThat(response.getAccessToken()).isNotNull();
+
+        // Nova falha não dispara lockout (contagem recomeçou).
+        assertThatThrownBy(() -> authenticationService.login(badRequest))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThat(loginAttemptTracker.isLocked(user.getEmail())).isFalse();
     }
 }

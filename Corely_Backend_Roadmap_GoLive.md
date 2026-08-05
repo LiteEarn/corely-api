@@ -390,7 +390,7 @@ stories:
   - id: EPIC-02-S07
     title: Lockout login
     description: Implementar bloqueio após tentativas de login inválidas.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: []
@@ -398,7 +398,19 @@ stories:
       - Lockout de login após tentativas consecutivas.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/auth/security/lockout/LoginLockoutProperties.java
+      - src/main/java/br/com/corely/auth/security/lockout/LoginAttemptTracker.java
+      - src/main/java/br/com/corely/auth/security/lockout/LoginLockoutException.java
+      - src/main/java/br/com/corely/auth/service/AuthenticationService.java
+      - src/main/java/br/com/corely/shared/exception/GlobalExceptionHandler.java
+      - src/main/resources/application.yaml
+      - src/main/resources/application-prod.yaml
+      - src/test/java/br/com/corely/auth/security/lockout/LoginAttemptTrackerTest.java
+      - src/test/java/br/com/corely/auth/service/AuthenticationServiceTest.java
+      - src/test/java/br/com/corely/auth/controller/AuthControllerTest.java
+      - src/test/java/br/com/corely/auth/security/jwt/ProdProfileConfigTest.java
+      - README.md
   - id: EPIC-02-S08
     title: CORS por ambiente
     description: Configurar CORS específico por ambiente.
