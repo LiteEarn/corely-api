@@ -390,7 +390,7 @@ stories:
   - id: EPIC-02-S07
     title: Lockout login
     description: Implementar bloqueio após tentativas de login inválidas.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: M
     dependsOn: []
