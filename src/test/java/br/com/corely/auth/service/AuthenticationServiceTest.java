@@ -1,5 +1,6 @@
 package br.com.corely.auth.service;
 
+import br.com.corely.audit.AuditLogRepository;
 import br.com.corely.auth.dto.LoginRequest;
 import br.com.corely.auth.dto.LoginResponse;
 import br.com.corely.auth.dto.RefreshTokenRequest;
@@ -50,12 +51,16 @@ class AuthenticationServiceTest {
     @Autowired
     private LoginAttemptTracker loginAttemptTracker;
 
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+
     private User user;
     private String rawPassword = "correctPassword123";
 
     @BeforeEach
     void setUp() {
         refreshTokenRepository.deleteAll();
+        auditLogRepository.deleteAll();
         userRepository.deleteAll();
         studioRepository.deleteAll();
         loginAttemptTracker.reset("test@test.com");
@@ -287,5 +292,104 @@ class AuthenticationServiceTest {
         assertThatThrownBy(() -> authenticationService.login(badRequest))
                 .isInstanceOf(BadCredentialsException.class);
         assertThat(loginAttemptTracker.isLocked(user.getEmail())).isFalse();
+    }
+
+    @Test
+    void login_shouldAuditSuccessAndFailureEvents() {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password("wrongPassword")
+                .build();
+        LoginRequest goodRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+
+        assertThatThrownBy(() -> authenticationService.login(badRequest))
+                .isInstanceOf(BadCredentialsException.class);
+
+        authenticationService.login(goodRequest);
+
+        var events = auditLogRepository.findAll()
+                .stream()
+                .map(log -> log.getAction())
+                .toList();
+
+        assertThat(events)
+                .as("login deve auditar LOGIN_FAILED e LOGIN_SUCCESS")
+                .contains(
+                        br.com.corely.audit.AuditEvent.LOGIN_FAILED,
+                        br.com.corely.audit.AuditEvent.LOGIN_SUCCESS
+                );
+    }
+
+    @Test
+    void logout_shouldAuditEvent() {
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+        LoginResponse loginResponse = authenticationService.login(loginRequest);
+
+        authenticationService.logout(loginResponse.getRefreshToken());
+
+        var events = auditLogRepository.findAll()
+                .stream()
+                .map(log -> log.getAction())
+                .toList();
+
+        assertThat(events)
+                .as("logout deve auditar LOGOUT")
+                .contains(br.com.corely.audit.AuditEvent.LOGOUT);
+    }
+
+    @Test
+    void refresh_shouldAuditEvent() {
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+        LoginResponse loginResponse = authenticationService.login(loginRequest);
+
+        RefreshTokenRequest refreshRequest = RefreshTokenRequest.builder()
+                .refreshToken(loginResponse.getRefreshToken())
+                .build();
+        authenticationService.refresh(refreshRequest);
+
+        var events = auditLogRepository.findAll()
+                .stream()
+                .map(log -> log.getAction())
+                .toList();
+
+        assertThat(events)
+                .as("refresh de token deve auditar TOKEN_REFRESH")
+                .contains(br.com.corely.audit.AuditEvent.TOKEN_REFRESH);
+    }
+
+    @Test
+    void login_reachingLockout_shouldAuditLockoutTriggered() {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password("wrongPassword")
+                .build();
+
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authenticationService.login(badRequest))
+                    .isInstanceOf(BadCredentialsException.class);
+        }
+
+        // A 5ª falha dispara o lockout e deve auditar LOCKOUT_TRIGGERED.
+        assertThatThrownBy(() -> authenticationService.login(badRequest))
+                .isInstanceOf(LoginLockoutException.class);
+
+        var events = auditLogRepository.findAll()
+                .stream()
+                .map(log -> log.getAction())
+                .toList();
+
+        assertThat(events)
+                .as("lockout deve auditar LOCKOUT_TRIGGERED e LOGIN_FAILED")
+                .contains(br.com.corely.audit.AuditEvent.LOCKOUT_TRIGGERED)
+                .contains(br.com.corely.audit.AuditEvent.LOGIN_FAILED);
     }
 }

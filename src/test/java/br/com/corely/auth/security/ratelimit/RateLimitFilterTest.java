@@ -1,5 +1,6 @@
 package br.com.corely.auth.security.ratelimit;
 
+import br.com.corely.auth.security.ClientIpResolver;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class RateLimitFilterTest {
     void setUp() {
         rateLimiter = new RateLimiter();
         properties = new RateLimitProperties();
-        filter = new RateLimitFilter(rateLimiter, properties);
+        filter = new RateLimitFilter(rateLimiter, properties, new ClientIpResolver(properties));
         filterChain = mock(FilterChain.class);
     }
 

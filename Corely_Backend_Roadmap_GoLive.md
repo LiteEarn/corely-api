@@ -441,7 +441,22 @@ stories:
       - Eventos relevantes auditados e rastreáveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V2__audit_log.sql
+      - src/main/java/br/com/corely/audit/AuditEvent.java
+      - src/main/java/br/com/corely/audit/AuditLog.java
+      - src/main/java/br/com/corely/audit/AuditLogRepository.java
+      - src/main/java/br/com/corely/audit/AuditLogResponse.java
+      - src/main/java/br/com/corely/audit/AuditService.java
+      - src/main/java/br/com/corely/audit/AuditLogController.java
+      - src/main/java/br/com/corely/auth/security/ClientIpResolver.java
+      - src/main/java/br/com/corely/auth/security/ratelimit/RateLimitFilter.java
+      - src/main/java/br/com/corely/auth/service/AuthenticationService.java
+      - src/test/java/br/com/corely/audit/AuditServiceTest.java
+      - src/test/java/br/com/corely/audit/AuditLogControllerTest.java
+      - src/test/java/br/com/corely/auth/service/AuthenticationServiceTest.java
+      - src/test/java/br/com/corely/auth/security/ratelimit/RateLimitFilterTest.java
+      - README.md
 ```
 
 ---
