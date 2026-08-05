@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 67%
+**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 78%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -264,7 +264,7 @@ title: Segurança
 description: Endurecimento de segurança para produção.
 status: IN_PROGRESS
 priority: CRITICAL
-progress: 67
+progress: 78
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -414,7 +414,7 @@ stories:
   - id: EPIC-02-S08
     title: CORS por ambiente
     description: Configurar CORS específico por ambiente.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]
