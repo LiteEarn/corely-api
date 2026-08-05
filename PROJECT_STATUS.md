@@ -12,7 +12,7 @@
 
 - Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-03 — Financeiro**
-- Story Atual: **EPIC-03-S01 — Contas a Receber — Recebíveis** (em `IN_PROGRESS`)
+- Story Atual: **EPIC-03-S01 — Contas a Receber — Recebíveis** (em `IN_REVIEW`, aguardando aprovação humana para `DONE`)
 - Último concluído: EPIC-02-S09 — Auditoria LGPD (EPIC-02 — Segurança **concluído**)
 - Itens pendentes: 0 stories de EPIC-01, 0 de EPIC-02 (concluído), 23 de EPIC-03 (S01 em andamento), 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-03
@@ -46,4 +46,4 @@
 - Épicos concluídos: EPIC 00 (AI Governance); EPIC-01 (Multi-Tenant); EPIC-02 (Segurança); baseline de plataforma e domínios
 - Épicos pendentes: EPIC-03 (Financeiro — em andamento), EPIC-04 (Booking), EPIC-05 (Comunicação), EPIC-06 (Observabilidade), EPIC-07 (DevOps), EPIC-08 (Performance), EPIC-09 (Testes)
 - Principais bloqueadores: nenhum (EPIC-02 concluído)
-- Próximo objetivo: concluir EPIC-03 — Financeiro (EPIC-03-S01: Contas a Receber — Recebíveis)
+- Próximo objetivo: concluir EPIC-03 — Financeiro (EPIC-03-S01: Contas a Receber — Recebíveis — aprovação humana pendente)
