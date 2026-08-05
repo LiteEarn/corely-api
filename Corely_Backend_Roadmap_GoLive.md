@@ -366,7 +366,7 @@ stories:
   - id: EPIC-02-S06
     title: Rate limiting
     description: Adicionar rate limiting na API.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: []
