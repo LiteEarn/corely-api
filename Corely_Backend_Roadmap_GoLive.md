@@ -433,7 +433,7 @@ stories:
   - id: EPIC-02-S09
     title: Auditoria LGPD
     description: Implementar trilha de auditoria conforme requisitos LGPD.
-    status: IN_REVIEW
+    status: DONE
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-02-S01]
