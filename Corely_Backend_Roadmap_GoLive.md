@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 100%
+**Status:** DONE · **Priority:** CRITICAL · **Progress:** 100%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -262,7 +262,7 @@ Endurecimento de segurança da plataforma para produção.
 id: EPIC-02
 title: Segurança
 description: Endurecimento de segurança para produção.
-status: IN_PROGRESS
+status: DONE
 priority: CRITICAL
 progress: 100
 dependsOn: [EPIC-01]
@@ -463,7 +463,7 @@ stories:
 
 # EPIC 03 — Financeiro
 
-**Status:** TODO · **Priority:** HIGH · **Progress:** 0%
+**Status:** IN_PROGRESS · **Priority:** HIGH · **Progress:** 0%
 
 Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inadimplência e dashboard financeiro.
 
@@ -471,7 +471,7 @@ Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inad
 id: EPIC-03
 title: Financeiro
 description: "Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inadimplência e dashboard financeiro."
-status: TODO
+status: IN_PROGRESS
 priority: HIGH
 progress: 0
 dependsOn: [EPIC-01, EPIC-02]
@@ -486,7 +486,7 @@ stories:
   - id: EPIC-03-S01
     title: Contas a Receber — Recebíveis
     description: Modelar e expor recebíveis.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: M
     dependsOn: []
