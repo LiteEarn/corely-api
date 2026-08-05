@@ -414,7 +414,7 @@ stories:
   - id: EPIC-02-S08
     title: CORS por ambiente
     description: Configurar CORS específico por ambiente.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]
