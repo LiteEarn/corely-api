@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 56%
+**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 67%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -264,7 +264,7 @@ title: Segurança
 description: Endurecimento de segurança para produção.
 status: IN_PROGRESS
 priority: CRITICAL
-progress: 56
+progress: 67
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -390,7 +390,7 @@ stories:
   - id: EPIC-02-S07
     title: Lockout login
     description: Implementar bloqueio após tentativas de login inválidas.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: M
     dependsOn: []
