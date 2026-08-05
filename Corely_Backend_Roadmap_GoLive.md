@@ -494,7 +494,18 @@ stories:
       - Recebíveis criados e consultáveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V3__receivables.sql
+      - src/main/java/br/com/corely/finance/receivable/Receivable.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableStatus.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableRepository.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableService.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableController.java
+      - src/main/java/br/com/corely/finance/receivable/dto/ReceivableRequest.java
+      - src/main/java/br/com/corely/finance/receivable/dto/ReceivableResponse.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableServiceTest.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableControllerTest.java
+      - README.md
   - id: EPIC-03-S02
     title: Contas a Receber — Parcelas
     description: Geração e gestão de parcelas.
