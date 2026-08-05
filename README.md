@@ -19,6 +19,7 @@ A API resolve segredos e configurações por **variáveis de ambiente**. Nenhum 
 | `DATABASE_URL` | **Sim** (profile `prod`) | URL JDBC do PostgreSQL com schema (ex.: `jdbc:postgresql://host:5432/corely?currentSchema=corely`). O profile `prod` falha ao iniciar sem ela. |
 | `DATABASE_USERNAME` | **Sim** (profile `prod`) | Usuário do banco de produção. |
 | `DATABASE_PASSWORD` | **Sim** (profile `prod`) | Senha do banco de produção. |
+| `CORS_ALLOWED_ORIGINS` | **Sim** (profile `prod`) | Origens permitidas no CORS (separadas por vírgula). O profile `prod` falha ao iniciar sem ela. |
 
 ### JWT
 
@@ -120,6 +121,15 @@ A API **bloqueia temporariamente** o login de um e-mail após tentativas inváli
 - **Desabilitação**: `corely.login-lockout.enabled: false` desativa o lockout.
 
 No profile `prod` o lockout está **habilitado** com os limites padrão. Assim como o rate limiter, o rastreamento é in-memory (adequado para instância única; para cluster, uma solução distribuída é recomendada).
+
+## CORS por ambiente
+
+As **origens permitidas** no CORS são configuráveis por ambiente (EPIC-02-S08):
+
+- **Dev / demais profiles**: `corely.cors.allowed-origins` em `application.yaml` (padrão: `http://localhost:4200`).
+- **Produção**: `corely.cors.allowed-origins: ${CORS_ALLOWED_ORIGINS}` — **fail-fast** sem a variável, e **sem origens hardcoded**. Ex.: `CORS_ALLOWED_ORIGINS=https://app.corely.com.br,https://admin.corely.com.br`.
+
+Os métodos, headers e credenciais permanecem fixos: `GET/POST/PUT/DELETE/OPTIONS/PATCH`, headers liberados (`*`), header `Authorization` exposto e credenciais habilitadas.
 
 ## Testes
 

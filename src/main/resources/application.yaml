@@ -37,6 +37,9 @@ corely:
     enabled: true
     max-attempts: 5
     lockout-seconds: 900
+  cors:
+    allowed-origins:
+      - http://localhost:4200
 
 jwt:
   secret: ${JWT_SECRET}

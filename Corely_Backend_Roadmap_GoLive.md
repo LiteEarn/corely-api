@@ -414,7 +414,7 @@ stories:
   - id: EPIC-02-S08
     title: CORS por ambiente
     description: Configurar CORS específico por ambiente.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-02-S03]
@@ -422,7 +422,14 @@ stories:
       - CORS restrito por ambiente.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/auth/config/CorsProperties.java
+      - src/main/java/br/com/corely/auth/config/SecurityConfiguration.java
+      - src/main/resources/application.yaml
+      - src/main/resources/application-prod.yaml
+      - src/test/java/br/com/corely/auth/config/CorsConfigTest.java
+      - src/test/java/br/com/corely/auth/security/jwt/ProdProfileConfigTest.java
+      - README.md
   - id: EPIC-02-S09
     title: Auditoria LGPD
     description: Implementar trilha de auditoria conforme requisitos LGPD.

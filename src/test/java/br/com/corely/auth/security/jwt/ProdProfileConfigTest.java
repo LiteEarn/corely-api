@@ -117,6 +117,24 @@ class ProdProfileConfigTest {
     }
 
     @Test
+    void prodProfile_shouldResolveCorsOriginsFromEnvironmentVariable() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("corely.cors.allowed-origins deve vir de CORS_ALLOWED_ORIGINS (sem default)")
+                .contains("allowed-origins: ${CORS_ALLOWED_ORIGINS}");
+    }
+
+    @Test
+    void prodProfile_shouldNotHardcodeCorsOrigins() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("application-prod.yaml não deve conter origens CORS hardcoded")
+                .doesNotContain("localhost:4200");
+    }
+
+    @Test
     void prodProfile_shouldNotExposeStacktraces() throws IOException {
         String prodYaml = readClasspathResource("/application-prod.yaml");
 
