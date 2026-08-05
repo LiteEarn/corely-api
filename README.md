@@ -141,6 +141,15 @@ A API mantém uma **trilha de auditoria** com eventos relevantes para rastreabil
 - **Multi-tenant**: a consulta é sempre restrita ao estúdio corrente; nenhum estúdio enxerga logs de outro.
 - **Consulta**: `GET /audit-logs` — restrito a `OWNER` e `ADMIN`, com filtros por evento, usuário e intervalo de datas (paginado).
 
+## Contas a Receber — Recebíveis
+
+A API modela **recebíveis** (títulos a receber de alunos) no domínio financeiro (EPIC-03-S01):
+
+- **Criação**: `POST /finance/receivables` — cria um recebível em situação `OPEN` com aluno, valor e vencimento. Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+- **Consulta**: `GET /finance/receivables` — paginado, com filtros por situação (`OPEN`/`PAID`/`CANCELLED`), aluno e intervalo de vencimentos. `GET /finance/receivables/{id}` para detalhe. Acessível também a `RECEPTIONIST`.
+- **Multi-tenant**: recebíveis são sempre restritos ao estúdio corrente (filtro Hibernate + consulta explícita por `studioId`); um estúdio nunca enxerga títulos de outro.
+- **Persistência**: tabela `corely.receivables` (migration `V3__receivables.sql`).
+
 ## Testes
 
 ```bash
