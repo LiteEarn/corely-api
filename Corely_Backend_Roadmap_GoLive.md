@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 89%
+**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 100%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -264,7 +264,7 @@ title: Segurança
 description: Endurecimento de segurança para produção.
 status: IN_PROGRESS
 priority: CRITICAL
-progress: 89
+progress: 100
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -433,7 +433,7 @@ stories:
   - id: EPIC-02-S09
     title: Auditoria LGPD
     description: Implementar trilha de auditoria conforme requisitos LGPD.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-02-S01]
@@ -441,7 +441,22 @@ stories:
       - Eventos relevantes auditados e rastreáveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V2__audit_log.sql
+      - src/main/java/br/com/corely/audit/AuditEvent.java
+      - src/main/java/br/com/corely/audit/AuditLog.java
+      - src/main/java/br/com/corely/audit/AuditLogRepository.java
+      - src/main/java/br/com/corely/audit/AuditLogResponse.java
+      - src/main/java/br/com/corely/audit/AuditService.java
+      - src/main/java/br/com/corely/audit/AuditLogController.java
+      - src/main/java/br/com/corely/auth/security/ClientIpResolver.java
+      - src/main/java/br/com/corely/auth/security/ratelimit/RateLimitFilter.java
+      - src/main/java/br/com/corely/auth/service/AuthenticationService.java
+      - src/test/java/br/com/corely/audit/AuditServiceTest.java
+      - src/test/java/br/com/corely/audit/AuditLogControllerTest.java
+      - src/test/java/br/com/corely/auth/service/AuthenticationServiceTest.java
+      - src/test/java/br/com/corely/auth/security/ratelimit/RateLimitFilterTest.java
+      - README.md
 ```
 
 ---

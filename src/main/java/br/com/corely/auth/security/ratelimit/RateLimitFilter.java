@@ -1,5 +1,6 @@
 package br.com.corely.auth.security.ratelimit;
 
+import br.com.corely.auth.security.ClientIpResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,13 +35,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
 
-    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
     private static final String SCOPE_SEPARATOR = "|";
     private static final String SCOPE_GLOBAL = "global";
     private static final String SCOPE_SENSITIVE = "sensitive";
 
     private final RateLimiter rateLimiter;
     private final RateLimitProperties properties;
+    private final ClientIpResolver clientIpResolver;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
@@ -58,7 +59,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String clientIp = resolveClientIp(request);
+        String clientIp = clientIpResolver.resolve(request);
         String path = request.getRequestURI();
         boolean sensitive = isSensitivePath(path);
 
@@ -80,15 +81,5 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private boolean isSensitivePath(String path) {
         return properties.getSensitivePaths().stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
-    }
-
-    private String resolveClientIp(HttpServletRequest request) {
-        if (properties.isTrustForwardedHeader()) {
-            String forwarded = request.getHeader(X_FORWARDED_FOR);
-            if (forwarded != null && !forwarded.isBlank()) {
-                return forwarded.split(",")[0].trim();
-            }
-        }
-        return request.getRemoteAddr();
     }
 }

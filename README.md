@@ -131,6 +131,16 @@ As **origens permitidas** no CORS são configuráveis por ambiente (EPIC-02-S08)
 
 Os métodos, headers e credenciais permanecem fixos: `GET/POST/PUT/DELETE/OPTIONS/PATCH`, headers liberados (`*`), header `Authorization` exposto e credenciais habilitadas.
 
+## Auditoria LGPD
+
+A API mantém uma **trilha de auditoria** com eventos relevantes para rastreabilidade e conformidade LGPD (EPIC-02-S09):
+
+- **Eventos auditados**: `LOGIN_SUCCESS`, `LOGIN_FAILED`, `LOGOUT`, `TOKEN_REFRESH` e `LOCKOUT_TRIGGERED` (autenticação e segurança).
+- **Informações registradas** (tabela `corely.audit_logs`): quem (usuário), onde (estúdio), quando, de onde (IP), o que foi feito (evento + recurso + detalhes).
+- **Imutabilidade**: um log é criado uma única vez e nunca alterado — trilha confiável para auditoria.
+- **Multi-tenant**: a consulta é sempre restrita ao estúdio corrente; nenhum estúdio enxerga logs de outro.
+- **Consulta**: `GET /audit-logs` — restrito a `OWNER` e `ADMIN`, com filtros por evento, usuário e intervalo de datas (paginado).
+
 ## Testes
 
 ```bash
