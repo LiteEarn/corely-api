@@ -254,7 +254,7 @@ stories:
 
 # EPIC 02 — Segurança
 
-**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 89%
+**Status:** IN_PROGRESS · **Priority:** CRITICAL · **Progress:** 100%
 
 Endurecimento de segurança da plataforma para produção.
 
@@ -264,7 +264,7 @@ title: Segurança
 description: Endurecimento de segurança para produção.
 status: IN_PROGRESS
 priority: CRITICAL
-progress: 89
+progress: 100
 dependsOn: [EPIC-01]
 acceptanceCriteria:
   - Segredos fora de configuração versionada.
@@ -433,7 +433,7 @@ stories:
   - id: EPIC-02-S09
     title: Auditoria LGPD
     description: Implementar trilha de auditoria conforme requisitos LGPD.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-02-S01]
