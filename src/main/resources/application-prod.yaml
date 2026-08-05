@@ -39,6 +39,10 @@ corely:
     sensitive-paths:
       - /auth/**
     sensitive-requests-per-window: 5
+  login-lockout:
+    enabled: true
+    max-attempts: 5
+    lockout-seconds: 900
 
 logging:
   level:

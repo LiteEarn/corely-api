@@ -109,6 +109,18 @@ A API aplica **rate limiting por endereço IP** para proteger endpoints sensíve
 
 No profile `prod` o rate limiting está **habilitado** com os limites padrão. O rate limiter é in-memory (token bucket), o que é adequado para uma instância única; para múltiplas instâncias em cluster, uma solução distribuída (ex.: Redis) é recomendada.
 
+## Lockout de login
+
+A API **bloqueia temporariamente** o login de um e-mail após tentativas inválidas consecutivas, mitigando brute force sobre a autenticação (EPIC-02-S07):
+
+- **Limite**: `corely.login-lockout.max-attempts` tentativas inválidas (padrão: 5) em uma janela de `corely.login-lockout.lockout-seconds` segundos (padrão: 900 = 15 min).
+- **Resposta**: enquanto bloqueado, `POST /auth/login` responde `429 Too Many Requests` com código de erro `LOGIN_LOCKED` e o header `Retry-After` com o tempo restante.
+- **Reset**: um login bem-sucedido limpa as tentativas do e-mail; após a janela expirar, a contagem recomeça automaticamente.
+- **Identificação**: o rastreamento é por **e-mail** (normalizado em minúsculas), independente do IP — complementa o rate limiting por IP da S06.
+- **Desabilitação**: `corely.login-lockout.enabled: false` desativa o lockout.
+
+No profile `prod` o lockout está **habilitado** com os limites padrão. Assim como o rate limiter, o rastreamento é in-memory (adequado para instância única; para cluster, uma solução distribuída é recomendada).
+
 ## Testes
 
 ```bash

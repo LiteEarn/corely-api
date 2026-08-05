@@ -2,6 +2,7 @@ package br.com.corely.auth.controller;
 
 import br.com.corely.auth.dto.LoginRequest;
 import br.com.corely.auth.dto.LoginResponse;
+import br.com.corely.auth.security.lockout.LoginAttemptTracker;
 import br.com.corely.studio.Studio;
 import br.com.corely.studio.StudioRepository;
 import br.com.corely.user.User;
@@ -45,6 +46,9 @@ class AuthControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private LoginAttemptTracker loginAttemptTracker;
+
     private User user;
     private String rawPassword = "correctPassword123";
 
@@ -52,6 +56,8 @@ class AuthControllerTest {
     void setUp() {
         userRepository.deleteAll();
         studioRepository.deleteAll();
+        loginAttemptTracker.reset("test@test.com");
+        loginAttemptTracker.reset("nonexistent@test.com");
 
         Studio studio = new Studio();
         studio.setName("Test Studio");
@@ -242,6 +248,72 @@ class AuthControllerTest {
     void me_withoutToken_shouldReturn401() throws Exception {
         mockMvc.perform(get("/auth/me"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void login_afterMaxFailedAttempts_shouldReturn429WithLockedCodeAndRetryAfter() throws Exception {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password("wrongPassword")
+                .build();
+        String badBody = objectMapper.writeValueAsString(badRequest);
+
+        for (int i = 0; i < 4; i++) {
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(badBody))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        }
+
+        // A 5ª tentativa inválida dispara o lockout → 429 + LOGIN_LOCKED + Retry-After.
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(badBody))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("LOGIN_LOCKED"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("Retry-After", not("0")));
+
+        // Tentativa seguinte permanece bloqueada.
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(badBody))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("LOGIN_LOCKED"));
+    }
+
+    @Test
+    void login_withValidCredentialsAfterFailures_shouldResetLockoutAndReturn200() throws Exception {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password("wrongPassword")
+                .build();
+        LoginRequest goodRequest = LoginRequest.builder()
+                .email(user.getEmail())
+                .password(rawPassword)
+                .build();
+        String badBody = objectMapper.writeValueAsString(badRequest);
+
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(badBody))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Login válido reseta as tentativas.
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(goodRequest)))
+                .andExpect(status().isOk());
+
+        // Nova falha não dispara lockout (contagem recomeçou).
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(badBody))
+                .andExpect(status().isUnauthorized());
+        org.assertj.core.api.Assertions.assertThat(loginAttemptTracker.isLocked(user.getEmail())).isFalse();
     }
 
 

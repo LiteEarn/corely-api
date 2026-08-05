@@ -11,6 +11,8 @@ import br.com.corely.auth.entity.RefreshToken;
 import br.com.corely.auth.repository.RefreshTokenRepository;
 import br.com.corely.auth.security.AuthenticationFacade;
 import br.com.corely.auth.security.jwt.JwtService;
+import br.com.corely.auth.security.lockout.LoginAttemptTracker;
+import br.com.corely.auth.security.lockout.LoginLockoutException;
 import br.com.corely.user.User;
 import br.com.corely.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +38,34 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuthenticationFacade authenticationFacade;
+    private final LoginAttemptTracker loginAttemptTracker;
 
     public LoginResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        String email = request.getEmail();
 
-        User user = userRepository.findByEmail(request.getEmail())
+        if (loginAttemptTracker.isLocked(email)) {
+            int retryAfter = Math.max(1, loginAttemptTracker.getRemainingLockoutSeconds(email));
+            throw new LoginLockoutException(
+                    "Too many failed login attempts. Try again later.", retryAfter);
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            boolean locked = loginAttemptTracker.recordFailure(email);
+            if (locked) {
+                int retryAfter = Math.max(1, loginAttemptTracker.getRemainingLockoutSeconds(email));
+                throw new LoginLockoutException(
+                        "Too many failed login attempts. Try again later.", retryAfter);
+            }
+            throw e;
+        }
+
+        loginAttemptTracker.reset(email);
+
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         user.setLastLogin(LocalDateTime.now());

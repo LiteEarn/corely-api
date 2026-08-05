@@ -108,6 +108,15 @@ class ProdProfileConfigTest {
     }
 
     @Test
+    void prodProfile_shouldEnableLoginLockout() throws IOException {
+        String prodYaml = readClasspathResource("/application-prod.yaml");
+
+        assertThat(prodYaml)
+                .as("corely.login-lockout.enabled deve estar habilitado no profile prod")
+                .containsPattern("(?s)login-lockout:\\s*\\n\\s*enabled: true");
+    }
+
+    @Test
     void prodProfile_shouldNotExposeStacktraces() throws IOException {
         String prodYaml = readClasspathResource("/application-prod.yaml");
 
