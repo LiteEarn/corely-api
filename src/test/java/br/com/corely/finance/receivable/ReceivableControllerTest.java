@@ -149,6 +149,51 @@ class ReceivableControllerTest {
     }
 
     @Test
+    void findAll_shouldReturnSituationInResponse() throws Exception {
+        createAndSaveReceivable(student, "Open Receivable");
+
+        mockMvc.perform(get("/finance/receivables"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].status").value("OPEN"))
+                .andExpect(jsonPath("$.content[0].situation").value("OPEN"));
+    }
+
+    @Test
+    void findAll_shouldFilterByOverdueSituation() throws Exception {
+        createAndSaveReceivable(student, "Not Due Yet");
+        createAndSaveReceivable(student, "Overdue", LocalDate.now().minusDays(5));
+
+        mockMvc.perform(get("/finance/receivables").param("situation", "OVERDUE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].description").value("Overdue"))
+                .andExpect(jsonPath("$.content[0].situation").value("OVERDUE"));
+    }
+
+    @Test
+    void findAll_shouldFilterByOpenSituation() throws Exception {
+        createAndSaveReceivable(student, "Not Due Yet");
+        createAndSaveReceivable(student, "Overdue", LocalDate.now().minusDays(5));
+
+        mockMvc.perform(get("/finance/receivables").param("situation", "OPEN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].description").value("Not Due Yet"));
+    }
+
+    @Test
+    void findAll_shouldFilterByReversedSituation() throws Exception {
+        var cancelled = createAndSaveReceivable(student, "Cancelled One");
+        cancelled.setStatus(ReceivableStatus.CANCELLED);
+        receivableRepository.save(cancelled);
+
+        mockMvc.perform(get("/finance/receivables").param("situation", "REVERSED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].situation").value("REVERSED"));
+    }
+
+    @Test
     void create_shouldReturn400WhenAmountIsNegative() throws Exception {
         var request = new ReceivableRequest();
         request.setStudentId(student.getId());
@@ -239,12 +284,16 @@ class ReceivableControllerTest {
     }
 
     private Receivable createAndSaveReceivable(Student student, String description) {
+        return createAndSaveReceivable(student, description, LocalDate.now().plusDays(30));
+    }
+
+    private Receivable createAndSaveReceivable(Student student, String description, LocalDate dueDate) {
         var receivable = new Receivable();
         receivable.setStudio(student.getStudio());
         receivable.setStudent(student);
         receivable.setDescription(description);
         receivable.setAmount(BigDecimal.valueOf(100));
-        receivable.setDueDate(LocalDate.of(2026, 9, 10));
+        receivable.setDueDate(dueDate);
         receivable.setStatus(ReceivableStatus.OPEN);
         return receivableRepository.save(receivable);
     }

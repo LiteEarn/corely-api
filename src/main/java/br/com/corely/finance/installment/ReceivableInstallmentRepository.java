@@ -37,4 +37,26 @@ public interface ReceivableInstallmentRepository extends JpaRepository<Receivabl
                                               @Param("dueDateFrom") LocalDate dueDateFrom,
                                               @Param("dueDateTo") LocalDate dueDateTo,
                                               Pageable pageable);
+
+    @Query("""
+            SELECT i FROM ReceivableInstallment i
+            LEFT JOIN FETCH i.studentPlan sp
+            LEFT JOIN FETCH sp.student
+            WHERE i.studio.id = :studioId
+              AND (:status IS NULL OR i.status = :status)
+              AND (:overdue IS NULL OR (:overdue = true AND i.dueDate < :today)
+                    OR (:overdue = false AND i.dueDate >= :today))
+              AND (:studentPlanId IS NULL OR i.studentPlan.id = :studentPlanId)
+              AND (:dueDateFrom IS NULL OR i.dueDate >= :dueDateFrom)
+              AND (:dueDateTo IS NULL OR i.dueDate <= :dueDateTo)
+            ORDER BY i.dueDate ASC
+            """)
+    Page<ReceivableInstallment> findBySituation(@Param("studioId") UUID studioId,
+                                                @Param("status") InstallmentStatus status,
+                                                @Param("overdue") Boolean overdue,
+                                                @Param("studentPlanId") UUID studentPlanId,
+                                                @Param("dueDateFrom") LocalDate dueDateFrom,
+                                                @Param("dueDateTo") LocalDate dueDateTo,
+                                                @Param("today") LocalDate today,
+                                                Pageable pageable);
 }

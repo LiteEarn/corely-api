@@ -532,7 +532,7 @@ stories:
   - id: EPIC-03-S03
     title: Contas a Receber — Situação
     description: Situação financeira de cada parcela/recebível.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-03-S02]
@@ -540,7 +540,19 @@ stories:
       - Situação (em aberto, paga, vencida, estornada) disponível.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/finance/situation/Situation.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableRepository.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableService.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableController.java
+      - src/main/java/br/com/corely/finance/receivable/dto/ReceivableResponse.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentRepository.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentService.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentController.java
+      - src/main/java/br/com/corely/finance/installment/dto/InstallmentResponse.java
+      - src/test/java/br/com/corely/finance/situation/SituationTest.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableControllerTest.java
+      - README.md
   - id: EPIC-03-S04
     title: Contas a Receber — Vencimentos
     description: Controle de vencimentos.

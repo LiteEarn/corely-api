@@ -1,6 +1,7 @@
 package br.com.corely.finance.installment.dto;
 
 import br.com.corely.finance.installment.InstallmentStatus;
+import br.com.corely.finance.situation.Situation;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -8,7 +9,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Resposta de uma parcela de recebível (EPIC-03-S02).
+ * Resposta de uma parcela de recebível (EPIC-03-S02/S03).
+ *
+ * <p>Inclui a situação financeira calculada (EPIC-03-S03): em aberto, paga,
+ * vencida ou estornada — derivada do status e do vencimento.</p>
  */
 public class InstallmentResponse {
 
@@ -21,6 +25,7 @@ public class InstallmentResponse {
     private BigDecimal amount;
     private LocalDate dueDate;
     private InstallmentStatus status;
+    private Situation situation;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -29,7 +34,7 @@ public class InstallmentResponse {
 
     public InstallmentResponse(UUID id, UUID receivableId, UUID studentPlanId, UUID studentId,
                                String studentName, Integer installmentNumber, BigDecimal amount,
-                               LocalDate dueDate, InstallmentStatus status,
+                               LocalDate dueDate, InstallmentStatus status, Situation situation,
                                LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.receivableId = receivableId;
@@ -40,6 +45,7 @@ public class InstallmentResponse {
         this.amount = amount;
         this.dueDate = dueDate;
         this.status = status;
+        this.situation = situation;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -53,6 +59,7 @@ public class InstallmentResponse {
     public BigDecimal getAmount() { return amount; }
     public LocalDate getDueDate() { return dueDate; }
     public InstallmentStatus getStatus() { return status; }
+    public Situation getSituation() { return situation; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

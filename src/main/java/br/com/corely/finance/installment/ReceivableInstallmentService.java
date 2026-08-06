@@ -4,6 +4,7 @@ import br.com.corely.comercial.studentplan.StudentPlan;
 import br.com.corely.finance.installment.dto.InstallmentResponse;
 import br.com.corely.finance.receivable.Receivable;
 import br.com.corely.finance.receivable.ReceivableRepository;
+import br.com.corely.finance.situation.Situation;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.shared.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
@@ -116,14 +117,48 @@ public class ReceivableInstallmentService {
     public Page<InstallmentResponse> findAll(InstallmentStatus status, UUID studentPlanId,
                                              LocalDate dueDateFrom, LocalDate dueDateTo,
                                              Pageable pageable) {
-        if (dueDateFrom != null && dueDateTo != null && dueDateFrom.isAfter(dueDateTo)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "dueDateFrom must not be after dueDateTo");
-        }
+        validateDateRange(dueDateFrom, dueDateTo);
         UUID studioId = tenantContext.getCurrentStudioId();
         return installmentRepository
                 .findByFilters(studioId, status, studentPlanId, dueDateFrom, dueDateTo, pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<InstallmentResponse> findBySituation(Situation situation, UUID studentPlanId,
+                                                     LocalDate dueDateFrom, LocalDate dueDateTo,
+                                                     Pageable pageable) {
+        validateDateRange(dueDateFrom, dueDateTo);
+        UUID studioId = tenantContext.getCurrentStudioId();
+        var status = resolveStatus(situation);
+        var overdue = resolveOverdue(situation);
+        return installmentRepository
+                .findBySituation(studioId, status, overdue, studentPlanId, dueDateFrom, dueDateTo,
+                        LocalDate.now(), pageable)
+                .map(this::toResponse);
+    }
+
+    private InstallmentStatus resolveStatus(Situation situation) {
+        return switch (situation) {
+            case PAID -> InstallmentStatus.PAID;
+            case REVERSED -> InstallmentStatus.CANCELLED;
+            default -> InstallmentStatus.OPEN;
+        };
+    }
+
+    private Boolean resolveOverdue(Situation situation) {
+        return switch (situation) {
+            case OVERDUE -> true;
+            case OPEN -> false;
+            default -> null;
+        };
+    }
+
+    private void validateDateRange(LocalDate dueDateFrom, LocalDate dueDateTo) {
+        if (dueDateFrom != null && dueDateTo != null && dueDateFrom.isAfter(dueDateTo)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "dueDateFrom must not be after dueDateTo");
+        }
     }
 
     private InstallmentResponse toResponse(ReceivableInstallment installment) {
@@ -139,6 +174,7 @@ public class ReceivableInstallmentService {
                 installment.getAmount(),
                 installment.getDueDate(),
                 installment.getStatus(),
+                Situation.from(installment.getStatus().name(), installment.getDueDate()),
                 installment.getCreatedAt(),
                 installment.getUpdatedAt()
         );

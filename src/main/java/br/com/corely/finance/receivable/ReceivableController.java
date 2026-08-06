@@ -3,6 +3,7 @@ package br.com.corely.finance.receivable;
 import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
+import br.com.corely.finance.situation.Situation;
 import br.com.corely.user.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,7 +27,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Endpoints de contas a receber — recebíveis (EPIC-03-S01).
+ * Endpoints de contas a receber — recebíveis (EPIC-03-S01/S03).
  */
 @RestController("receivableController")
 @RequestMapping("/finance/receivables")
@@ -47,13 +48,18 @@ public class ReceivableController {
     @GetMapping
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL, UserRole.RECEPTIONIST})
     @Operation(summary = "Listar recebíveis",
-            description = "Lista recebíveis do estúdio corrente com filtros opcionais por situação, aluno e vencimento (paginado).")
+            description = "Lista recebíveis do estúdio corrente com filtros opcionais por situação (em aberto, paga, vencida, estornada), aluno e vencimento (paginado).")
     public ResponseEntity<Page<ReceivableResponse>> findAll(
-            @Parameter(description = "Filtro por situação") @RequestParam(required = false) ReceivableStatus status,
+            @Parameter(description = "Filtro por situação financeira") @RequestParam(required = false) Situation situation,
+            @Parameter(description = "Filtro por status persistido (backward compatible)") @RequestParam(required = false) ReceivableStatus status,
             @Parameter(description = "Filtro por aluno") @RequestParam(required = false) UUID studentId,
             @Parameter(description = "Vencimento inicial (ISO-8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateFrom,
             @Parameter(description = "Vencimento final (ISO-8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateTo,
             Pageable pageable) {
+        if (situation != null) {
+            return ResponseEntity.ok(
+                    receivableService.findBySituation(situation, studentId, dueDateFrom, dueDateTo, pageable));
+        }
         return ResponseEntity.ok(receivableService.findAll(status, studentId, dueDateFrom, dueDateTo, pageable));
     }
 
