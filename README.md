@@ -192,6 +192,17 @@ A **baixa manual** registra a liquidação de um recebível (ou de uma parcela e
 - **Multi-tenant**: pagamentos sempre restritos ao estúdio corrente.
 - **Persistência**: tabela `corely.payments` (migration `V6__payments.sql`).
 
+## Pagamentos — Pix
+
+A **cobrança Pix** gera um pagamento via Pix para um recebível em aberto e permite a **conciliação** (EPIC-03-S07):
+
+- **Geração**: `POST /finance/pix/payments` — body com `receivableId` (obrigatório) e `expiresAt` (opcional; padrão 24h). Retorna `txid` e código **copia-e-cola**. Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+- **Regras**: o recebível deve estar em aberto (`OPEN`), sem pagamento prévio e sem cobrança Pix pendente. O código copia-e-cola é um placeholder determinístico (integração com PSP fora do escopo), carregando o `txid` para conciliação.
+- **Conciliação**: `POST /finance/pix/payments/{txid}/confirm` — confirma o pagamento, registra a baixa (método `PIX`) via `POST /finance/payments`, liquida o recebível e registra a movimentação `PAYMENT` no histórico. Cobranças expiradas são rejeitadas (409) e marcadas como `EXPIRED`.
+- **Consulta**: `GET /finance/pix/payments` (paginado) e `GET /finance/pix/payments/{id}`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Multi-tenant**: cobranças Pix sempre restritas ao estúdio corrente.
+- **Persistência**: tabela `corely.pix_payments` (migration `V7__pix_payments.sql`).
+
 ## Testes
 
 ```bash
