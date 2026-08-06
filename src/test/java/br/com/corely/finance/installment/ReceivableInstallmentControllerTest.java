@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +30,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -236,6 +238,105 @@ class ReceivableInstallmentControllerTest {
         var otherInstallment = installmentRepository.findAll().get(0);
 
         mockMvc.perform(get("/finance/installments/{id}", otherInstallment.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn200AndUpdateInstallment() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.of(2026, 1, 15));
+        contractApplicationService.enroll(request);
+
+        var installment = installmentRepository.findAll().get(0);
+
+        mockMvc.perform(patch("/finance/installments/{id}/due-date", installment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(installment.getId().toString()))
+                .andExpect(jsonPath("$.dueDate").value("2026-12-10"));
+    }
+
+    @Test
+    void updateDueDate_shouldReturn400WhenDueDateMissing() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.of(2026, 1, 15));
+        contractApplicationService.enroll(request);
+
+        var installment = installmentRepository.findAll().get(0);
+
+        mockMvc.perform(patch("/finance/installments/{id}/due-date", installment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn409WhenInstallmentIsPaid() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.of(2026, 1, 15));
+        contractApplicationService.enroll(request);
+
+        var installment = installmentRepository.findAll().get(0);
+        installment.setStatus(InstallmentStatus.PAID);
+        installmentRepository.save(installment);
+
+        mockMvc.perform(patch("/finance/installments/{id}/due-date", installment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn409WhenInstallmentIsCancelled() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.of(2026, 1, 15));
+        contractApplicationService.enroll(request);
+
+        var installment = installmentRepository.findAll().get(0);
+        installment.setStatus(InstallmentStatus.CANCELLED);
+        installmentRepository.save(installment);
+
+        mockMvc.perform(patch("/finance/installments/{id}/due-date", installment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn404WhenInstallmentBelongsToOtherTenant() throws Exception {
+        Studio otherStudio = studioRepository.save(createStudio("Other Installment Studio"));
+        Student otherStudent = createAndSaveStudent(otherStudio, "Other Student");
+        var otherPlan = planRepository.save(createPlan("Other Plan", BigDecimal.valueOf(200), 30));
+        var otherRequest = new StudentPlanRequest();
+        otherRequest.setStudentId(otherStudent.getId());
+        otherRequest.setPlanId(otherPlan.getId());
+        otherRequest.setStartDate(LocalDate.of(2026, 1, 15));
+        createAndAuthenticateUser(otherStudio, UserRole.ADMIN);
+        contractApplicationService.enroll(otherRequest);
+        createAndAuthenticateUser(studio, UserRole.ADMIN);
+
+        var otherInstallment = installmentRepository.findAll().get(0);
+
+        mockMvc.perform(patch("/finance/installments/{id}/due-date", otherInstallment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
                 .andExpect(status().isNotFound());
     }
 

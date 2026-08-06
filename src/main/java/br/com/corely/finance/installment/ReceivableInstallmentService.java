@@ -5,6 +5,7 @@ import br.com.corely.finance.installment.dto.InstallmentResponse;
 import br.com.corely.finance.receivable.Receivable;
 import br.com.corely.finance.receivable.ReceivableRepository;
 import br.com.corely.finance.situation.Situation;
+import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.shared.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
@@ -110,6 +111,30 @@ public class ReceivableInstallmentService {
     public InstallmentResponse findById(UUID id) {
         var installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Installment not found"));
+        return toResponse(installment);
+    }
+
+    /**
+     * Atualiza (reagenda) a data de vencimento de uma parcela (EPIC-03-S04).
+     *
+     * <p>Não permite reagendar uma parcela já paga ou estornada.</p>
+     *
+     * @param id      identificador da parcela
+     * @param dueDate nova data de vencimento
+     * @return parcela atualizada
+     */
+    @Transactional
+    public InstallmentResponse updateDueDate(UUID id, LocalDate dueDate) {
+        var installment = installmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Installment not found"));
+        if (installment.getStatus() == InstallmentStatus.PAID) {
+            throw new BusinessException("Cannot change due date of a paid installment");
+        }
+        if (installment.getStatus() == InstallmentStatus.CANCELLED) {
+            throw new BusinessException("Cannot change due date of a cancelled installment");
+        }
+        installment.setDueDate(dueDate);
+        installment = installmentRepository.save(installment);
         return toResponse(installment);
     }
 

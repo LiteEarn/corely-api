@@ -1,6 +1,7 @@
 package br.com.corely.finance.receivable;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.finance.dto.DueDateRequest;
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
 import br.com.corely.finance.situation.Situation;
@@ -16,6 +17,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -68,5 +70,14 @@ public class ReceivableController {
     @Operation(summary = "Buscar recebível por ID")
     public ResponseEntity<ReceivableResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(receivableService.findById(id));
+    }
+
+    @PatchMapping("/{id}/due-date")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
+    @Operation(summary = "Reagendar vencimento de recebível",
+            description = "Atualiza a data de vencimento de um recebível em aberto (não é permitido em recebíveis pagos ou estornados).")
+    public ResponseEntity<ReceivableResponse> updateDueDate(@PathVariable UUID id,
+                                                            @Valid @RequestBody DueDateRequest request) {
+        return ResponseEntity.ok(receivableService.updateDueDate(id, request.getDueDate()));
     }
 }

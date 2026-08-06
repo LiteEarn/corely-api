@@ -167,6 +167,13 @@ A **situação financeira** de cada recebível e parcela é calculada a partir d
 - **Exposição**: o campo `situation` é incluído nas respostas de `GET /finance/receivables`, `GET /finance/installments` e nos detalhes por ID.
 - **Filtro por situação**: `GET /finance/receivables?situation=OVERDUE` e `GET /finance/installments?situation=OVERDUE` — filtram pela situação calculada (em aberto, paga, vencida ou estornada). O filtro por status persistido continua disponível (backward compatible).
 
+## Contas a Receber — Vencimentos
+
+As **datas de vencimento** são controladas e consultáveis (EPIC-03-S04):
+
+- **Consultáveis**: `GET /finance/receivables?dueDateFrom=...&dueDateTo=...` e `GET /finance/installments?dueDateFrom=...&dueDateTo=...` filtram por intervalo de vencimento (paginado).
+- **Reagendamento**: `PATCH /finance/receivables/{id}/due-date` e `PATCH /finance/installments/{id}/due-date` atualizam a data de vencimento de um título/parcela em aberto (body: `{"dueDate": "2026-12-10"}`). Não é permitido reagendar títulos **pagos** ou **estornados** (409). Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+
 ## Testes
 
 ```bash

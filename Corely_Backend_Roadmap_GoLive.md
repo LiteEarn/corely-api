@@ -564,7 +564,18 @@ stories:
       - Datas de vencimento controladas e consultáveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/finance/dto/DueDateRequest.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableService.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableController.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentService.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentController.java
+      - src/main/java/br/com/corely/shared/exception/GlobalExceptionHandler.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableServiceTest.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableControllerTest.java
+      - src/test/java/br/com/corely/finance/installment/ReceivableInstallmentServiceTest.java
+      - src/test/java/br/com/corely/finance/installment/ReceivableInstallmentControllerTest.java
+      - README.md
   - id: EPIC-03-S05
     title: Contas a Receber — Histórico
     description: Histórico de movimentações do recebível.

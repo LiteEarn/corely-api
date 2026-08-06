@@ -13,6 +13,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -40,6 +41,12 @@ public class GlobalExceptionHandler {
         FieldError fieldError = ex.getBindingResult().getFieldError();
         String message = fieldError != null ? fieldError.getDefaultMessage() : "Campo obrigatório.";
         ErrorResponse error = new ErrorResponse("VALIDATION_ERROR", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableMessage(HttpMessageNotReadableException ex) {
+        ErrorResponse error = new ErrorResponse("MALFORMED_REQUEST", "Malformed or unreadable request body");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
