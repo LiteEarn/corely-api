@@ -556,7 +556,7 @@ stories:
   - id: EPIC-03-S04
     title: Contas a Receber — Vencimentos
     description: Controle de vencimentos.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-03-S02]
