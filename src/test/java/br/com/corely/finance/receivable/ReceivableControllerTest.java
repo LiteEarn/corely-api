@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -265,6 +266,78 @@ class ReceivableControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn200AndUpdateReceivable() throws Exception {
+        var receivable = createAndSaveReceivable(student, "To Reschedule");
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", receivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(receivable.getId().toString()))
+                .andExpect(jsonPath("$.dueDate").value("2026-12-10"));
+    }
+
+    @Test
+    void updateDueDate_shouldReturn400WhenDueDateMissing() throws Exception {
+        var receivable = createAndSaveReceivable(student, "To Reschedule");
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", receivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn400WhenDueDateMalformed() throws Exception {
+        var receivable = createAndSaveReceivable(student, "To Reschedule");
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", receivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dueDate\": \"10-12-2026\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn409WhenReceivableIsPaid() throws Exception {
+        var receivable = createAndSaveReceivable(student, "Paid Receivable");
+        receivable.setStatus(ReceivableStatus.PAID);
+        receivableRepository.save(receivable);
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", receivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn409WhenReceivableIsCancelled() throws Exception {
+        var receivable = createAndSaveReceivable(student, "Cancelled Receivable");
+        receivable.setStatus(ReceivableStatus.CANCELLED);
+        receivableRepository.save(receivable);
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", receivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateDueDate_shouldReturn404WhenReceivableBelongsToOtherTenant() throws Exception {
+        Studio otherStudio = studioRepository.save(createStudio("Other"));
+        Student otherStudent = createAndSaveStudent(otherStudio, "Other Student");
+        var otherReceivable = createAndSaveReceivable(otherStudent, "Other");
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", otherReceivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isNotFound());
     }
 
     private Studio createStudio(String name) {

@@ -3,6 +3,7 @@ package br.com.corely.finance.receivable;
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
 import br.com.corely.finance.situation.Situation;
+import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.shared.tenant.TenantContext;
 import br.com.corely.student.StudentRepository;
@@ -58,6 +59,30 @@ public class ReceivableService {
     public ReceivableResponse findById(UUID id) {
         var receivable = receivableRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Receivable not found"));
+        return toResponse(receivable);
+    }
+
+    /**
+     * Atualiza (reagenda) a data de vencimento de um recebível (EPIC-03-S04).
+     *
+     * <p>Não permite reagendar um recebível já pago ou estornado.</p>
+     *
+     * @param id      identificador do recebível
+     * @param dueDate nova data de vencimento
+     * @return recebível atualizado
+     */
+    @Transactional
+    public ReceivableResponse updateDueDate(UUID id, LocalDate dueDate) {
+        var receivable = receivableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Receivable not found"));
+        if (receivable.getStatus() == ReceivableStatus.PAID) {
+            throw new BusinessException("Cannot change due date of a paid receivable");
+        }
+        if (receivable.getStatus() == ReceivableStatus.CANCELLED) {
+            throw new BusinessException("Cannot change due date of a cancelled receivable");
+        }
+        receivable.setDueDate(dueDate);
+        receivable = receivableRepository.save(receivable);
         return toResponse(receivable);
     }
 

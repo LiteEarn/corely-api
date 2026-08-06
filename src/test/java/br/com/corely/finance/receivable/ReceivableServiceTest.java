@@ -163,4 +163,62 @@ class ReceivableServiceTest {
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getStatus()).isEqualTo(ReceivableStatus.OPEN);
     }
+
+    @Test
+    void updateDueDate_shouldUpdateOpenReceivable() {
+        UUID id = UUID.randomUUID();
+        var receivable = new Receivable();
+        receivable.setId(id);
+        receivable.setStudio(studio);
+        receivable.setStudent(student);
+        receivable.setAmount(BigDecimal.valueOf(100));
+        receivable.setDueDate(LocalDate.of(2026, 1, 10));
+        receivable.setStatus(ReceivableStatus.OPEN);
+        when(receivableRepository.findById(id)).thenReturn(Optional.of(receivable));
+        when(receivableRepository.save(any(Receivable.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = service.updateDueDate(id, LocalDate.of(2026, 2, 10));
+
+        assertThat(response.getDueDate()).isEqualTo(LocalDate.of(2026, 2, 10));
+    }
+
+    @Test
+    void updateDueDate_shouldRejectPaidReceivable() {
+        UUID id = UUID.randomUUID();
+        var receivable = new Receivable();
+        receivable.setId(id);
+        receivable.setStudio(studio);
+        receivable.setStudent(student);
+        receivable.setAmount(BigDecimal.valueOf(100));
+        receivable.setDueDate(LocalDate.now());
+        receivable.setStatus(ReceivableStatus.PAID);
+        when(receivableRepository.findById(id)).thenReturn(Optional.of(receivable));
+
+        assertThatThrownBy(() -> service.updateDueDate(id, LocalDate.now().plusDays(5)))
+                .isInstanceOf(br.com.corely.shared.exception.BusinessException.class);
+    }
+
+    @Test
+    void updateDueDate_shouldRejectCancelledReceivable() {
+        UUID id = UUID.randomUUID();
+        var receivable = new Receivable();
+        receivable.setId(id);
+        receivable.setStudio(studio);
+        receivable.setStudent(student);
+        receivable.setAmount(BigDecimal.valueOf(100));
+        receivable.setDueDate(LocalDate.now());
+        receivable.setStatus(ReceivableStatus.CANCELLED);
+        when(receivableRepository.findById(id)).thenReturn(Optional.of(receivable));
+
+        assertThatThrownBy(() -> service.updateDueDate(id, LocalDate.now().plusDays(5)))
+                .isInstanceOf(br.com.corely.shared.exception.BusinessException.class);
+    }
+
+    @Test
+    void updateDueDate_shouldThrowWhenNotFound() {
+        when(receivableRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateDueDate(UUID.randomUUID(), LocalDate.now()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

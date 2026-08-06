@@ -1,19 +1,23 @@
 package br.com.corely.finance.installment;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.finance.dto.DueDateRequest;
 import br.com.corely.finance.installment.dto.InstallmentResponse;
 import br.com.corely.finance.situation.Situation;
 import br.com.corely.user.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,5 +60,14 @@ public class ReceivableInstallmentController {
     @Operation(summary = "Buscar parcela por ID")
     public ResponseEntity<InstallmentResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(installmentService.findById(id));
+    }
+
+    @PatchMapping("/{id}/due-date")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
+    @Operation(summary = "Reagendar vencimento de parcela",
+            description = "Atualiza a data de vencimento de uma parcela em aberto (não é permitido em parcelas pagas ou estornadas).")
+    public ResponseEntity<InstallmentResponse> updateDueDate(@PathVariable UUID id,
+                                                             @Valid @RequestBody DueDateRequest request) {
+        return ResponseEntity.ok(installmentService.updateDueDate(id, request.getDueDate()));
     }
 }

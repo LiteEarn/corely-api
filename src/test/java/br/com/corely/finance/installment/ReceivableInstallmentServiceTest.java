@@ -181,6 +181,47 @@ class ReceivableInstallmentServiceTest {
         assertThat(result.getContent().get(0).getStatus().name()).isEqualTo("OPEN");
     }
 
+    @Test
+    void updateDueDate_shouldUpdateOpenInstallment() {
+        var installment = buildInstallment(1);
+        when(installmentRepository.findById(installment.getId())).thenReturn(Optional.of(installment));
+        when(installmentRepository.save(any(ReceivableInstallment.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        var response = service.updateDueDate(installment.getId(), LocalDate.of(2026, 3, 10));
+
+        assertThat(response).isNotNull();
+        assertThat(response.getDueDate()).isEqualTo(LocalDate.of(2026, 3, 10));
+    }
+
+    @Test
+    void updateDueDate_shouldRejectPaidInstallment() {
+        var installment = buildInstallment(1);
+        installment.setStatus(InstallmentStatus.PAID);
+        when(installmentRepository.findById(installment.getId())).thenReturn(Optional.of(installment));
+
+        assertThatThrownBy(() -> service.updateDueDate(installment.getId(), LocalDate.of(2026, 3, 10)))
+                .isInstanceOf(br.com.corely.shared.exception.BusinessException.class);
+    }
+
+    @Test
+    void updateDueDate_shouldRejectCancelledInstallment() {
+        var installment = buildInstallment(1);
+        installment.setStatus(InstallmentStatus.CANCELLED);
+        when(installmentRepository.findById(installment.getId())).thenReturn(Optional.of(installment));
+
+        assertThatThrownBy(() -> service.updateDueDate(installment.getId(), LocalDate.of(2026, 3, 10)))
+                .isInstanceOf(br.com.corely.shared.exception.BusinessException.class);
+    }
+
+    @Test
+    void updateDueDate_shouldThrowWhenNotFound() {
+        when(installmentRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateDueDate(UUID.randomUUID(), LocalDate.of(2026, 3, 10)))
+                .isInstanceOf(br.com.corely.shared.exception.ResourceNotFoundException.class);
+    }
+
     private ReceivableInstallment buildInstallment(int number) {
         var installment = new ReceivableInstallment();
         installment.setId(UUID.randomUUID());
