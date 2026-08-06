@@ -1,5 +1,7 @@
 package br.com.corely.finance.receivable;
 
+import br.com.corely.finance.movement.MovementType;
+import br.com.corely.finance.movement.ReceivableMovementService;
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
 import br.com.corely.finance.situation.Situation;
@@ -34,6 +36,7 @@ public class ReceivableService {
     private final ReceivableRepository receivableRepository;
     private final StudentRepository studentRepository;
     private final StudioRepository studioRepository;
+    private final ReceivableMovementService movementService;
     private final TenantContext tenantContext;
 
     @Transactional
@@ -52,6 +55,10 @@ public class ReceivableService {
         receivable.setStatus(ReceivableStatus.OPEN);
 
         receivable = receivableRepository.save(receivable);
+
+        movementService.record(receivable.getId(), studio.getId(), MovementType.CREATED,
+                receivable.getAmount(), "Recebível criado");
+
         return toResponse(receivable);
     }
 
@@ -81,8 +88,14 @@ public class ReceivableService {
         if (receivable.getStatus() == ReceivableStatus.CANCELLED) {
             throw new BusinessException("Cannot change due date of a cancelled receivable");
         }
+        LocalDate previousDueDate = receivable.getDueDate();
         receivable.setDueDate(dueDate);
         receivable = receivableRepository.save(receivable);
+
+        movementService.record(receivable.getId(), receivable.getStudio().getId(),
+                MovementType.DUE_DATE_CHANGED, receivable.getAmount(),
+                "Vencimento alterado de " + previousDueDate + " para " + dueDate);
+
         return toResponse(receivable);
     }
 

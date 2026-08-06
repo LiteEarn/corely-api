@@ -2,6 +2,8 @@ package br.com.corely.finance.receivable;
 
 import br.com.corely.auth.authorization.RequireRole;
 import br.com.corely.finance.dto.DueDateRequest;
+import br.com.corely.finance.movement.ReceivableMovementService;
+import br.com.corely.finance.movement.dto.MovementResponse;
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
 import br.com.corely.finance.situation.Situation;
@@ -38,6 +40,7 @@ import java.util.UUID;
 public class ReceivableController {
 
     private final ReceivableService receivableService;
+    private final ReceivableMovementService movementService;
 
     @PostMapping
     @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL})
@@ -79,5 +82,13 @@ public class ReceivableController {
     public ResponseEntity<ReceivableResponse> updateDueDate(@PathVariable UUID id,
                                                             @Valid @RequestBody DueDateRequest request) {
         return ResponseEntity.ok(receivableService.updateDueDate(id, request.getDueDate()));
+    }
+
+    @GetMapping("/{id}/movements")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL, UserRole.RECEPTIONIST})
+    @Operation(summary = "Histórico de movimentações do recebível",
+            description = "Lista as movimentações (criação, pagamento, ajuste, cancelamento, mudança de vencimento) de um recebível do estúdio corrente (paginado, por data decrescente).")
+    public ResponseEntity<Page<MovementResponse>> findMovements(@PathVariable UUID id, Pageable pageable) {
+        return ResponseEntity.ok(movementService.findByReceivableId(id, pageable));
     }
 }

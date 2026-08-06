@@ -61,6 +61,9 @@ class ReceivableControllerTest {
     private ReceivableRepository receivableRepository;
 
     @Autowired
+    private br.com.corely.finance.movement.ReceivableMovementRepository movementRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private Studio studio;
@@ -68,6 +71,7 @@ class ReceivableControllerTest {
 
     @BeforeEach
     void setUp() {
+        movementRepository.deleteAll();
         receivableRepository.deleteAll();
         studentRepository.deleteAll();
         userRepository.deleteAll();
@@ -338,6 +342,52 @@ class ReceivableControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 java.util.Map.of("dueDate", "2026-12-10"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void findMovements_shouldReturnCreationHistory() throws Exception {
+        var receivable = createReceivableViaApi("With History");
+
+        mockMvc.perform(get("/finance/receivables/{id}/movements", receivable.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].movementType").value("CREATED"))
+                .andExpect(jsonPath("$.content[0].receivableId").value(receivable.getId().toString()));
+    }
+
+    @Test
+    void findMovements_shouldIncludeDueDateChangeAfterReschedule() throws Exception {
+        var receivable = createReceivableViaApi("Rescheduled History");
+
+        mockMvc.perform(patch("/finance/receivables/{id}/due-date", receivable.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                java.util.Map.of("dueDate", "2026-12-10"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/finance/receivables/{id}/movements", receivable.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].movementType").value("DUE_DATE_CHANGED"))
+                .andExpect(jsonPath("$.content[1].movementType").value("CREATED"));
+    }
+
+    private Receivable createReceivableViaApi(String description) throws Exception {
+        var request = new ReceivableRequest();
+        request.setStudentId(student.getId());
+        request.setDescription(description);
+        request.setAmount(BigDecimal.valueOf(150));
+        request.setDueDate(LocalDate.now().plusDays(30));
+
+        String body = mockMvc.perform(post("/finance/receivables")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        return receivableRepository.findById(
+                java.util.UUID.fromString(objectMapper.readTree(body).get("id").asText())).orElseThrow();
     }
 
     private Studio createStudio(String name) {
