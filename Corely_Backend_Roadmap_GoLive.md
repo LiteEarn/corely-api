@@ -579,7 +579,7 @@ stories:
   - id: EPIC-03-S05
     title: Contas a Receber — Histórico
     description: Histórico de movimentações do recebível.
-    status: IN_REVIEW
+    status: DONE
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S02]
@@ -603,7 +603,7 @@ stories:
   - id: EPIC-03-S06
     title: Pagamentos — Baixa manual
     description: Baixa manual de pagamento.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
@@ -611,7 +611,20 @@ stories:
       - Baixa manual registra o pagamento e atualiza a situação.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V6__payments.sql
+      - src/main/java/br/com/corely/finance/payment/PaymentMethod.java
+      - src/main/java/br/com/corely/finance/payment/Payment.java
+      - src/main/java/br/com/corely/finance/payment/PaymentRepository.java
+      - src/main/java/br/com/corely/finance/payment/PaymentService.java
+      - src/main/java/br/com/corely/finance/payment/PaymentController.java
+      - src/main/java/br/com/corely/finance/payment/dto/PaymentRequest.java
+      - src/main/java/br/com/corely/finance/payment/dto/PaymentResponse.java
+      - src/main/java/br/com/corely/finance/payment/dto/PaymentMethodDto.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentRepository.java
+      - src/test/java/br/com/corely/finance/payment/PaymentServiceTest.java
+      - src/test/java/br/com/corely/finance/payment/PaymentControllerTest.java
+      - README.md
   - id: EPIC-03-S07
     title: Pagamentos — Pix
     description: Integração/registro de pagamento via Pix.

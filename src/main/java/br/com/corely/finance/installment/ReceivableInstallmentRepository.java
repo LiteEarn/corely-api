@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,4 +60,14 @@ public interface ReceivableInstallmentRepository extends JpaRepository<Receivabl
                                                 @Param("dueDateTo") LocalDate dueDateTo,
                                                 @Param("today") LocalDate today,
                                                 Pageable pageable);
+
+    @Query("SELECT COUNT(i) FROM ReceivableInstallment i "
+            + "WHERE i.receivable.id = :receivableId AND i.status = :status")
+    long countByReceivableIdAndStatus(@Param("receivableId") UUID receivableId,
+                                      @Param("status") InstallmentStatus status);
+
+    @Query("SELECT i FROM ReceivableInstallment i "
+            + "WHERE i.receivable.id = :receivableId AND i.status = :status")
+    List<ReceivableInstallment> findByReceivableIdAndStatus(@Param("receivableId") UUID receivableId,
+                                                            @Param("status") InstallmentStatus status);
 }

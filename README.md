@@ -178,10 +178,19 @@ As **datas de vencimento** são controladas e consultáveis (EPIC-03-S04):
 
 O **histórico de movimentações** do recebível registra os eventos do seu ciclo de vida (EPIC-03-S05):
 
-- **Movimentações**: `CREATED` (criação), `DUE_DATE_CHANGED` (reagendamento), e futuramente `PAYMENT`, `ADJUSTMENT` e `CANCELLED` (S06+). Cada registro é imutável (valor, descrição e data).
-- **Consulta**: `GET /finance/receivables/{id}/movements` — paginado, por data decrescente. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
 - **Multi-tenant**: histórico sempre restrito ao estúdio corrente.
 - **Persistência**: tabela `corely.receivable_movements` (migration `V5__receivable_movements.sql`).
+
+## Pagamentos — Baixa manual
+
+A **baixa manual** registra a liquidação de um recebível (ou de uma parcela específica) e atualiza a situação para paga (EPIC-03-S06):
+
+- **Registro**: `POST /finance/payments` — body com `receivableId`, `paymentDate`, `amount`, `paymentMethod` (CASH, PIX, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, OTHER) e opcionais `installmentId`, `externalReference` e `notes`. Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+- **Regras**: o recebível deve estar em aberto (`OPEN`) e não ter pagamento prévio; o valor deve ser igual ao do recebível (ou da parcela); ao pagar uma parcela, o recebível só é liquidado quando não restam parcelas em aberto.
+- **Consulta**: `GET /finance/payments` (paginado, por data decrescente) e `GET /finance/payments/{id}`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Histórico**: a baixa registra uma movimentação `PAYMENT` no histórico do recebível (`GET /finance/receivables/{id}/movements`).
+- **Multi-tenant**: pagamentos sempre restritos ao estúdio corrente.
+- **Persistência**: tabela `corely.payments` (migration `V6__payments.sql`).
 
 ## Testes
 
