@@ -532,7 +532,7 @@ stories:
   - id: EPIC-03-S03
     title: Contas a Receber — Situação
     description: Situação financeira de cada parcela/recebível.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-03-S02]
