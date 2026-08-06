@@ -509,7 +509,7 @@ stories:
   - id: EPIC-03-S02
     title: Contas a Receber — Parcelas
     description: Geração e gestão de parcelas.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
