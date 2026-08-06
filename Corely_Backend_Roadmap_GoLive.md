@@ -463,7 +463,7 @@ stories:
 
 # EPIC 03 — Financeiro
 
-**Status:** IN_PROGRESS · **Priority:** HIGH · **Progress:** 13%
+**Status:** IN_PROGRESS · **Priority:** HIGH · **Progress:** 17%
 
 Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inadimplência e dashboard financeiro.
 
@@ -473,7 +473,7 @@ title: Financeiro
 description: "Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inadimplência e dashboard financeiro."
 status: IN_PROGRESS
 priority: HIGH
-progress: 13
+progress: 17
 dependsOn: [EPIC-01, EPIC-02]
 acceptanceCriteria:
   - Contas a receber, pagamentos, fluxo de caixa e inadimplência operacionais.
@@ -579,7 +579,7 @@ stories:
   - id: EPIC-03-S05
     title: Contas a Receber — Histórico
     description: Histórico de movimentações do recebível.
-    status: TODO
+    status: IN_PROGRESS
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S02]
