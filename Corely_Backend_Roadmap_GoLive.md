@@ -603,7 +603,7 @@ stories:
   - id: EPIC-03-S06
     title: Pagamentos — Baixa manual
     description: Baixa manual de pagamento.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
@@ -628,7 +628,7 @@ stories:
   - id: EPIC-03-S07
     title: Pagamentos — Pix
     description: Integração/registro de pagamento via Pix.
-    status: TODO
+    status: IN_PROGRESS
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-03-S06]
