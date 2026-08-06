@@ -174,6 +174,15 @@ As **datas de vencimento** são controladas e consultáveis (EPIC-03-S04):
 - **Consultáveis**: `GET /finance/receivables?dueDateFrom=...&dueDateTo=...` e `GET /finance/installments?dueDateFrom=...&dueDateTo=...` filtram por intervalo de vencimento (paginado).
 - **Reagendamento**: `PATCH /finance/receivables/{id}/due-date` e `PATCH /finance/installments/{id}/due-date` atualizam a data de vencimento de um título/parcela em aberto (body: `{"dueDate": "2026-12-10"}`). Não é permitido reagendar títulos **pagos** ou **estornados** (409). Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
 
+## Contas a Receber — Histórico
+
+O **histórico de movimentações** do recebível registra os eventos do seu ciclo de vida (EPIC-03-S05):
+
+- **Movimentações**: `CREATED` (criação), `DUE_DATE_CHANGED` (reagendamento), e futuramente `PAYMENT`, `ADJUSTMENT` e `CANCELLED` (S06+). Cada registro é imutável (valor, descrição e data).
+- **Consulta**: `GET /finance/receivables/{id}/movements` — paginado, por data decrescente. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Multi-tenant**: histórico sempre restrito ao estúdio corrente.
+- **Persistência**: tabela `corely.receivable_movements` (migration `V5__receivable_movements.sql`).
+
 ## Testes
 
 ```bash

@@ -579,7 +579,7 @@ stories:
   - id: EPIC-03-S05
     title: Contas a Receber — Histórico
     description: Histórico de movimentações do recebível.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S02]
@@ -587,7 +587,19 @@ stories:
       - Histórico de pagamentos e ajustes disponível.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V5__receivable_movements.sql
+      - src/main/java/br/com/corely/finance/movement/MovementType.java
+      - src/main/java/br/com/corely/finance/movement/ReceivableMovement.java
+      - src/main/java/br/com/corely/finance/movement/ReceivableMovementRepository.java
+      - src/main/java/br/com/corely/finance/movement/ReceivableMovementService.java
+      - src/main/java/br/com/corely/finance/movement/dto/MovementResponse.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableService.java
+      - src/main/java/br/com/corely/finance/receivable/ReceivableController.java
+      - src/test/java/br/com/corely/finance/movement/ReceivableMovementServiceTest.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableServiceTest.java
+      - src/test/java/br/com/corely/finance/receivable/ReceivableControllerTest.java
+      - README.md
   - id: EPIC-03-S06
     title: Pagamentos — Baixa manual
     description: Baixa manual de pagamento.

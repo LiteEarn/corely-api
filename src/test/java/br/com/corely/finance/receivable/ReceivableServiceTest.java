@@ -1,5 +1,6 @@
 package br.com.corely.finance.receivable;
 
+import br.com.corely.finance.movement.ReceivableMovementService;
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -47,6 +48,9 @@ class ReceivableServiceTest {
     @Mock
     private TenantContext tenantContext;
 
+    @Mock
+    private ReceivableMovementService movementService;
+
     private ReceivableService service;
 
     private UUID studioId;
@@ -55,7 +59,8 @@ class ReceivableServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ReceivableService(receivableRepository, studentRepository, studioRepository, tenantContext);
+        service = new ReceivableService(receivableRepository, studentRepository, studioRepository,
+                movementService, tenantContext);
 
         studioId = UUID.randomUUID();
         studio = new Studio();
