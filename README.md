@@ -150,6 +150,15 @@ A API modela **recebíveis** (títulos a receber de alunos) no domínio financei
 - **Multi-tenant**: recebíveis são sempre restritos ao estúdio corrente (filtro Hibernate + consulta explícita por `studioId`); um estúdio nunca enxerga títulos de outro.
 - **Persistência**: tabela `corely.receivables` (migration `V3__receivables.sql`).
 
+## Contas a Receber — Parcelas
+
+As **parcelas** são o desdobramento mensal de cobrança de um aluno matriculado em um plano (EPIC-03-S02):
+
+- **Geração automática**: ao matricular um aluno (`enroll`), o sistema cria o recebível mestre e as **parcelas mensais** — o número de parcelas deriva da duração do plano (30 dias por parcela) e o valor total é o preço mensal × número de parcelas.
+- **Consulta**: `GET /finance/installments` — paginado, com filtros por situação, matrícula/plano e intervalo de vencimentos. `GET /finance/installments/{id}` para detalhe. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Multi-tenant**: parcelas sempre restritas ao estúdio corrente.
+- **Persistência**: tabela `corely.receivable_installments` (migration `V4__receivable_installments.sql`).
+
 ## Testes
 
 ```bash
