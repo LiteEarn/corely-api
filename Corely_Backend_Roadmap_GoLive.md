@@ -579,7 +579,7 @@ stories:
   - id: EPIC-03-S05
     title: Contas a Receber — Histórico
     description: Histórico de movimentações do recebível.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S02]
