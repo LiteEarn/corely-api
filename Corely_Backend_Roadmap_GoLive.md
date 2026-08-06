@@ -603,7 +603,7 @@ stories:
   - id: EPIC-03-S06
     title: Pagamentos — Baixa manual
     description: Baixa manual de pagamento.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
