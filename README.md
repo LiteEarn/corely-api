@@ -159,6 +159,14 @@ As **parcelas** são o desdobramento mensal de cobrança de um aluno matriculado
 - **Multi-tenant**: parcelas sempre restritas ao estúdio corrente.
 - **Persistência**: tabela `corely.receivable_installments` (migration `V4__receivable_installments.sql`).
 
+## Contas a Receber — Situação
+
+A **situação financeira** de cada recebível e parcela é calculada a partir do status persistido e do vencimento (EPIC-03-S03):
+
+- **Situações**: `OPEN` (em aberto, não vencido), `PAID` (paga), `OVERDUE` (vencida — em aberto com vencimento no passado) e `REVERSED` (estornada/cancelada).
+- **Exposição**: o campo `situation` é incluído nas respostas de `GET /finance/receivables`, `GET /finance/installments` e nos detalhes por ID.
+- **Filtro por situação**: `GET /finance/receivables?situation=OVERDUE` e `GET /finance/installments?situation=OVERDUE` — filtram pela situação calculada (em aberto, paga, vencida ou estornada). O filtro por status persistido continua disponível (backward compatible).
+
 ## Testes
 
 ```bash

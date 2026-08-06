@@ -36,4 +36,25 @@ public interface ReceivableRepository extends JpaRepository<Receivable, UUID> {
                                    @Param("dueDateFrom") LocalDate dueDateFrom,
                                    @Param("dueDateTo") LocalDate dueDateTo,
                                    Pageable pageable);
+
+    @Query("""
+            SELECT r FROM Receivable r
+            WHERE r.studio.id = :studioId
+              AND (:status IS NULL OR r.status = :status)
+              AND (:overdue IS NULL OR (:overdue = true AND r.dueDate < :today)
+                    OR (:overdue = false AND r.dueDate >= :today))
+              AND (:studentId IS NULL OR r.student.id = :studentId)
+              AND (:dueDateFrom IS NULL OR r.dueDate >= :dueDateFrom)
+              AND (:dueDateTo IS NULL OR r.dueDate <= :dueDateTo)
+            ORDER BY r.dueDate ASC
+            """)
+    @EntityGraph(attributePaths = "student")
+    Page<Receivable> findBySituation(@Param("studioId") UUID studioId,
+                                     @Param("status") ReceivableStatus status,
+                                     @Param("overdue") Boolean overdue,
+                                     @Param("studentId") UUID studentId,
+                                     @Param("dueDateFrom") LocalDate dueDateFrom,
+                                     @Param("dueDateTo") LocalDate dueDateTo,
+                                     @Param("today") LocalDate today,
+                                     Pageable pageable);
 }

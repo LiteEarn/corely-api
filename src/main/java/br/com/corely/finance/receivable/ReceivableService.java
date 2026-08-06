@@ -2,6 +2,7 @@ package br.com.corely.finance.receivable;
 
 import br.com.corely.finance.receivable.dto.ReceivableRequest;
 import br.com.corely.finance.receivable.dto.ReceivableResponse;
+import br.com.corely.finance.situation.Situation;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.shared.tenant.TenantContext;
 import br.com.corely.student.StudentRepository;
@@ -18,10 +19,12 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Serviço de contas a receber — recebíveis (EPIC-03-S01).
+ * Serviço de contas a receber — recebíveis (EPIC-03-S01/S03).
  *
  * <p>Cria e consulta recebíveis (títulos a receber de alunos). A consulta é
- * sempre restrita ao estúdio corrente (multi-tenant via {@link TenantContext}).</p>
+ * sempre restrita ao estúdio corrente (multi-tenant via {@link TenantContext}).
+ * A situação financeira (em aberto, paga, vencida, estornada) é derivada do
+ * status e do vencimento (EPIC-03-S03).</p>
  */
 @Service("receivableService")
 @RequiredArgsConstructor
@@ -62,14 +65,55 @@ public class ReceivableService {
     public Page<ReceivableResponse> findAll(ReceivableStatus status, UUID studentId,
                                             LocalDate dueDateFrom, LocalDate dueDateTo,
                                             Pageable pageable) {
-        if (dueDateFrom != null && dueDateTo != null && dueDateFrom.isAfter(dueDateTo)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "dueDateFrom must not be after dueDateTo");
-        }
+        validateDateRange(dueDateFrom, dueDateTo);
         UUID studioId = tenantContext.getCurrentStudioId();
         return receivableRepository
                 .findByFilters(studioId, status, studentId, dueDateFrom, dueDateTo, pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReceivableResponse> findBySituation(Situation situation, UUID studentId,
+                                                    LocalDate dueDateFrom, LocalDate dueDateTo,
+                                                    Pageable pageable) {
+        validateDateRange(dueDateFrom, dueDateTo);
+        UUID studioId = tenantContext.getCurrentStudioId();
+        var status = resolveStatus(situation);
+        var overdue = resolveOverdue(situation);
+        return receivableRepository
+                .findBySituation(studioId, status, overdue, studentId, dueDateFrom, dueDateTo,
+                        LocalDate.now(), pageable)
+                .map(this::toResponse);
+    }
+
+    /**
+     * Resolve o status persistido correspondente à situação filtrada.
+     */
+    private ReceivableStatus resolveStatus(Situation situation) {
+        return switch (situation) {
+            case PAID -> ReceivableStatus.PAID;
+            case REVERSED -> ReceivableStatus.CANCELLED;
+            default -> ReceivableStatus.OPEN;
+        };
+    }
+
+    /**
+     * Resolve a flag de vencimento: {@code null} ignora, {@code true} somente
+     * vencidos, {@code false} somente não vencidos.
+     */
+    private Boolean resolveOverdue(Situation situation) {
+        return switch (situation) {
+            case OVERDUE -> true;
+            case OPEN -> false;
+            default -> null;
+        };
+    }
+
+    private void validateDateRange(LocalDate dueDateFrom, LocalDate dueDateTo) {
+        if (dueDateFrom != null && dueDateTo != null && dueDateFrom.isAfter(dueDateTo)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "dueDateFrom must not be after dueDateTo");
+        }
     }
 
     private ReceivableResponse toResponse(Receivable receivable) {
@@ -81,6 +125,7 @@ public class ReceivableService {
                 receivable.getAmount(),
                 receivable.getDueDate(),
                 receivable.getStatus(),
+                Situation.from(receivable.getStatus().name(), receivable.getDueDate()),
                 receivable.getCreatedAt(),
                 receivable.getUpdatedAt()
         );

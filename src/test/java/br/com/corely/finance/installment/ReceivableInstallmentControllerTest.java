@@ -124,6 +124,51 @@ class ReceivableInstallmentControllerTest {
     }
 
     @Test
+    void findAll_shouldReturnSituationInResponse() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.now().plusDays(30));
+        contractApplicationService.enroll(request);
+
+        mockMvc.perform(get("/finance/installments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].status").value("OPEN"))
+                .andExpect(jsonPath("$.content[0].situation").value("OPEN"));
+    }
+
+    @Test
+    void findAll_shouldFilterByOverdueSituation() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.now().minusDays(60));
+        contractApplicationService.enroll(request);
+
+        mockMvc.perform(get("/finance/installments").param("situation", "OVERDUE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].situation").value("OVERDUE"));
+    }
+
+    @Test
+    void findAll_shouldFilterByOpenSituation() throws Exception {
+        var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
+        var request = new StudentPlanRequest();
+        request.setStudentId(student.getId());
+        request.setPlanId(plan.getId());
+        request.setStartDate(LocalDate.now().plusDays(30));
+        contractApplicationService.enroll(request);
+
+        mockMvc.perform(get("/finance/installments").param("situation", "OPEN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].situation").value("OPEN"));
+    }
+
+    @Test
     void findById_shouldReturnInstallment() throws Exception {
         var plan = planRepository.save(createPlan("Premium", BigDecimal.valueOf(100), 30));
         var request = new StudentPlanRequest();
