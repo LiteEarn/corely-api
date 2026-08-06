@@ -463,7 +463,7 @@ stories:
 
 # EPIC 03 — Financeiro
 
-**Status:** IN_PROGRESS · **Priority:** HIGH · **Progress:** 4%
+**Status:** IN_PROGRESS · **Priority:** HIGH · **Progress:** 8%
 
 Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inadimplência e dashboard financeiro.
 
@@ -473,7 +473,7 @@ title: Financeiro
 description: "Domínio financeiro completo: contas a receber, pagamentos, fluxo de caixa, inadimplência e dashboard financeiro."
 status: IN_PROGRESS
 priority: HIGH
-progress: 4
+progress: 8
 dependsOn: [EPIC-01, EPIC-02]
 acceptanceCriteria:
   - Contas a receber, pagamentos, fluxo de caixa e inadimplência operacionais.
@@ -525,7 +525,6 @@ stories:
       - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentService.java
       - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentController.java
       - src/main/java/br/com/corely/finance/installment/dto/InstallmentResponse.java
-      - src/main/java/br/com/corely/finance/installment/dto/InstallmentStatusDto.java
       - src/main/java/br/com/corely/comercial/contract/ContractApplicationService.java
       - src/test/java/br/com/corely/finance/installment/ReceivableInstallmentServiceTest.java
       - src/test/java/br/com/corely/finance/installment/ReceivableInstallmentControllerTest.java
@@ -533,7 +532,7 @@ stories:
   - id: EPIC-03-S03
     title: Contas a Receber — Situação
     description: Situação financeira de cada parcela/recebível.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: S
     dependsOn: [EPIC-03-S02]
