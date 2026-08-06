@@ -509,7 +509,7 @@ stories:
   - id: EPIC-03-S02
     title: Contas a Receber — Parcelas
     description: Geração e gestão de parcelas.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
@@ -517,7 +517,19 @@ stories:
       - Parcelas geradas a partir da matrícula/plano.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V4__receivable_installments.sql
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallment.java
+      - src/main/java/br/com/corely/finance/installment/InstallmentStatus.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentRepository.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentService.java
+      - src/main/java/br/com/corely/finance/installment/ReceivableInstallmentController.java
+      - src/main/java/br/com/corely/finance/installment/dto/InstallmentResponse.java
+      - src/main/java/br/com/corely/finance/installment/dto/InstallmentStatusDto.java
+      - src/main/java/br/com/corely/comercial/contract/ContractApplicationService.java
+      - src/test/java/br/com/corely/finance/installment/ReceivableInstallmentServiceTest.java
+      - src/test/java/br/com/corely/finance/installment/ReceivableInstallmentControllerTest.java
+      - README.md
   - id: EPIC-03-S03
     title: Contas a Receber — Situação
     description: Situação financeira de cada parcela/recebível.
