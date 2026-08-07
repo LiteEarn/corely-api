@@ -225,6 +225,17 @@ O **pagamento em dinheiro** registra a liquidação de um recebível (ou parcela
 - **Multi-tenant**: pagamentos em dinheiro sempre restritos ao estúdio corrente.
 - **Persistência**: reutiliza a tabela `corely.payments` (migration `V6__payments.sql`).
 
+## Pagamentos — Estorno
+
+O **estorno de pagamento** reverte uma baixa manual, devolvendo o recebível (ou parcela) à situação de aberto (EPIC-03-S10):
+
+- **Registro**: `POST /finance/refunds` — body com `paymentId` (obrigatório) e `reason` (opcional, motivo do estorno). Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+- **Regras**: o pagamento deve existir no estúdio corrente e não estar estornado. Ao estornar, o recebível (e a parcela, quando houver) volta para `OPEN` e o pagamento é marcado como estornado (`refundedAt`).
+- **Histórico**: o estorno registra uma movimentação `REFUND` no histórico do recebível (`GET /finance/receivables/{id}/movements`).
+- **Consulta**: `GET /finance/refunds` (paginado, por data de estorno decrescente), filtrando apenas pagamentos estornados. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Multi-tenant**: estornos sempre restritos ao estúdio corrente.
+- **Persistência**: coluna `refunded_at` na tabela `corely.payments` (migration `V9__refunds.sql`).
+
 ## Testes
 
 ```bash
