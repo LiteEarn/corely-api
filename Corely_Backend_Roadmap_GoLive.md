@@ -675,7 +675,7 @@ stories:
   - id: EPIC-03-S09
     title: Pagamentos — Dinheiro
     description: Registro de pagamento em dinheiro.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: S
     dependsOn: [EPIC-03-S06]
