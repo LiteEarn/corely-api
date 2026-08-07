@@ -26,12 +26,12 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Endpoints de fluxo de caixa — entradas (EPIC-03-S11).
+ * Endpoints de fluxo de caixa — entradas e saídas (EPIC-03-S11/S12).
  */
 @RestController("financeCashFlowEntryController")
 @RequestMapping("/finance/cash-flow/entries")
 @RequiredArgsConstructor
-@Tag(name = "Financeiro", description = "Fluxo de Caixa — Entradas")
+@Tag(name = "Financeiro", description = "Fluxo de Caixa — Entradas e Saídas")
 public class CashFlowEntryController {
 
     private final CashFlowEntryService cashFlowEntryService;

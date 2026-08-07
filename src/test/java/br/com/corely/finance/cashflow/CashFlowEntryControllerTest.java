@@ -113,6 +113,35 @@ class CashFlowEntryControllerTest {
     }
 
     @Test
+    void create_shouldReturn201ForManualOutflow() throws Exception {
+        var request = manualEntryRequest();
+        request.setEntryType(CashFlowEntryTypeDto.OUTFLOW);
+        request.setDescription("Pagamento de fornecedor");
+        request.setCategory("FORNECEDOR");
+
+        mockMvc.perform(post("/finance/cash-flow/entries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.entryType").value("OUTFLOW"))
+                .andExpect(jsonPath("$.description").value("Pagamento de fornecedor"))
+                .andExpect(jsonPath("$.source").value("MANUAL"));
+    }
+
+    @Test
+    void create_shouldReturn409WhenOutflowSourcedFromPayment() throws Exception {
+        var request = manualEntryRequest();
+        request.setEntryType(CashFlowEntryTypeDto.OUTFLOW);
+        request.setSource(CashFlowEntrySourceDto.PAYMENT);
+        request.setPaymentId(UUID.randomUUID());
+
+        mockMvc.perform(post("/finance/cash-flow/entries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void create_shouldReturn201ForPaymentEntry() throws Exception {
         var receivable = createAndSaveReceivable(BigDecimal.valueOf(150));
         var payment = createPaymentDirectly(receivable);

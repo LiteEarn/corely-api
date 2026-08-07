@@ -95,6 +95,42 @@ class CashFlowEntryServiceTest {
     }
 
     @Test
+    void create_shouldSaveManualOutflow() {
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(studioRepository.getReferenceById(studioId)).thenReturn(studio);
+        when(cashFlowEntryRepository.save(any(CashFlowEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var request = manualEntryRequest();
+        request.setEntryType(CashFlowEntryTypeDto.OUTFLOW);
+        request.setDescription("Pagamento de fornecedor");
+        request.setCategory("FORNECEDOR");
+
+        var response = service.create(request);
+
+        assertThat(response.getEntryType()).isEqualTo(CashFlowEntryTypeDto.OUTFLOW);
+        assertThat(response.getDescription()).isEqualTo("Pagamento de fornecedor");
+        assertThat(response.getPaymentId()).isNull();
+        verify(cashFlowEntryRepository).save(any(CashFlowEntry.class));
+    }
+
+    @Test
+    void create_shouldRejectOutflowSourcedFromPayment() {
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(studioRepository.getReferenceById(studioId)).thenReturn(studio);
+
+        var request = manualEntryRequest();
+        request.setEntryType(CashFlowEntryTypeDto.OUTFLOW);
+        request.setSource(CashFlowEntrySourceDto.PAYMENT);
+        request.setPaymentId(UUID.randomUUID());
+
+        Throwable thrown = catchThrowable(() -> service.create(request));
+
+        assertThat(thrown).isInstanceOf(BusinessException.class);
+        assertThat(thrown.getMessage()).isEqualTo("OUTFLOW entries cannot be sourced from a payment");
+        verify(cashFlowEntryRepository, never()).save(any());
+    }
+
+    @Test
     void create_shouldLinkPaymentWhenSourceIsPayment() {
         var payment = new Payment();
         payment.setId(UUID.randomUUID());

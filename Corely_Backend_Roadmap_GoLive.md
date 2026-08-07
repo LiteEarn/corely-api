@@ -718,7 +718,7 @@ stories:
   - id: EPIC-03-S11
     title: Fluxo de Caixa — Entradas
     description: Entradas de caixa.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
@@ -744,7 +744,7 @@ stories:
   - id: EPIC-03-S12
     title: Fluxo de Caixa — Saídas
     description: Saídas de caixa.
-    status: TODO
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S11]
@@ -752,7 +752,11 @@ stories:
       - Saídas registradas e consultáveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntryService.java
+      - src/test/java/br/com/corely/finance/cashflow/CashFlowEntryServiceTest.java
+      - src/test/java/br/com/corely/finance/cashflow/CashFlowEntryControllerTest.java
+      - README.md
   - id: EPIC-03-S13
     title: Fluxo de Caixa — Saldo
     description: Cálculo do saldo de caixa.

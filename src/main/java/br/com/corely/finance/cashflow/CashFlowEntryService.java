@@ -19,7 +19,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Serviço de fluxo de caixa — entradas (EPIC-03-S11).
+ * Serviço de fluxo de caixa — entradas e saídas (EPIC-03-S11/S12).
  *
  * <p>Registra movimentos de caixa (entradas e, no modelo, saídas) do estúdio
  * corrente e permite a consulta filtrada por tipo e período. Entradas originadas
@@ -44,7 +44,9 @@ public class CashFlowEntryService {
      *   <li>o estúdio corrente é sempre o dono do lançamento;</li>
      *   <li>quando a origem é {@code PAYMENT}, o {@code paymentId} é obrigatório
      *       e o pagamento deve existir no estúdio corrente;</li>
-     *   <li>quando a origem é {@code MANUAL}, não há pagamento associado.</li>
+     *   <li>quando a origem é {@code MANUAL}, não há pagamento associado;</li>
+     *   <li>saídas ({@code OUTFLOW}) nunca são originadas de pagamento — pagamentos
+     *       geram entradas; uma saída deve ser lançada manualmente.</li>
      * </ul>
      *
      * @param request dados do movimento de caixa
@@ -53,6 +55,11 @@ public class CashFlowEntryService {
     @Transactional
     public CashFlowEntryResponse create(CashFlowEntryRequest request) {
         var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
+
+        if (request.getEntryType() == CashFlowEntryTypeDto.OUTFLOW
+                && request.getSource() == CashFlowEntrySourceDto.PAYMENT) {
+            throw new BusinessException("OUTFLOW entries cannot be sourced from a payment");
+        }
 
         var entry = new CashFlowEntry();
         entry.setStudio(studio);

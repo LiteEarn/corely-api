@@ -241,7 +241,7 @@ O **estorno de pagamento** reverte uma baixa manual, devolvendo o recebível (ou
 O **fluxo de caixa** registra os movimentos (entradas) de caixa do estúdio (EPIC-03-S11):
 
 - **Registro**: `POST /finance/cash-flow/entries` — body com `entryType` (`ENTRY` ou `OUTFLOW`, obrigatório), `entryDate` (obrigatório), `amount` (obrigatório, positivo), `description` (obrigatório, máx. 500), `source` (`PAYMENT` ou `MANUAL`, obrigatório) e opcionais `paymentId` (obrigatório quando `source=PAYMENT`) e `category` (máx. 50). Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
-- **Regras**: quando a origem é `PAYMENT`, o pagamento deve existir no estúdio corrente (404 caso contrário); quando `MANUAL`, não há pagamento associado.
+- **Regras**: quando a origem é `PAYMENT`, o pagamento deve existir no estúdio corrente (404 caso contrário); quando `MANUAL`, não há pagamento associado. **Saídas** (`OUTFLOW`) nunca são originadas de pagamento — pagamentos geram entradas; uma saída deve ser lançada manualmente (409 caso contrário) (EPIC-03-S12).
 - **Consulta**: `GET /finance/cash-flow/entries` (paginado, por data decrescente) com filtros opcionais `entryType`, `dateFrom` e `dateTo`; `GET /finance/cash-flow/entries/{id}`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
 - **Multi-tenant**: movimentos de caixa sempre restritos ao estúdio corrente.
 - **Persistência**: tabela `corely.cash_flow_entries` (migration `V10__cash_flow_entries.sql`).
