@@ -15,6 +15,7 @@ import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Pagamento — baixa manual de um recebível (EPIC-03-S06).
@@ -51,6 +52,9 @@ public class Payment extends ComercialBaseEntity {
 
     @Column(name = "notes", length = 1000)
     private String notes;
+
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
 
     public Payment() {
     }
@@ -109,5 +113,13 @@ public class Payment extends ComercialBaseEntity {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public LocalDateTime getRefundedAt() {
+        return refundedAt;
+    }
+
+    public void setRefundedAt(LocalDateTime refundedAt) {
+        this.refundedAt = refundedAt;
     }
 }

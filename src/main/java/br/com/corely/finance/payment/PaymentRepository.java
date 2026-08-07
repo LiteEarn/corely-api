@@ -37,6 +37,14 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
                                                  @Param("paymentMethod") PaymentMethod paymentMethod,
                                                  Pageable pageable);
 
+    @Query("""
+            SELECT p FROM FinancePayment p
+            WHERE p.studio.id = :studioId AND p.refundedAt IS NOT NULL
+            ORDER BY p.refundedAt DESC, p.id DESC
+            """)
+    @EntityGraph(attributePaths = {"receivable", "receivable.student"})
+    Page<Payment> findRefundedByStudioId(@Param("studioId") UUID studioId, Pageable pageable);
+
     @Query("SELECT COUNT(p) > 0 FROM FinancePayment p WHERE p.receivable.id = :receivableId")
     boolean existsByReceivableId(@Param("receivableId") UUID receivableId);
 }

@@ -8,5 +8,6 @@ public enum MovementType {
     PAYMENT,
     ADJUSTMENT,
     CANCELLED,
-    DUE_DATE_CHANGED
+    DUE_DATE_CHANGED,
+    REFUND
 }

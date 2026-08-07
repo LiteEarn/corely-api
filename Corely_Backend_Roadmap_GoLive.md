@@ -675,7 +675,7 @@ stories:
   - id: EPIC-03-S09
     title: Pagamentos — Dinheiro
     description: Registro de pagamento em dinheiro.
-    status: IN_REVIEW
+    status: DONE
     priority: MEDIUM
     estimate: S
     dependsOn: [EPIC-03-S06]
@@ -695,7 +695,7 @@ stories:
   - id: EPIC-03-S10
     title: Pagamentos — Estorno
     description: Estorno de pagamento.
-    status: TODO
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S06]
@@ -703,7 +703,18 @@ stories:
       - Estorno registrado e refletido na situação.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V9__refunds.sql
+      - src/main/java/br/com/corely/finance/refund/RefundService.java
+      - src/main/java/br/com/corely/finance/refund/RefundController.java
+      - src/main/java/br/com/corely/finance/refund/dto/RefundRequest.java
+      - src/main/java/br/com/corely/finance/refund/dto/RefundResponse.java
+      - src/main/java/br/com/corely/finance/payment/Payment.java
+      - src/main/java/br/com/corely/finance/payment/PaymentRepository.java
+      - src/main/java/br/com/corely/finance/movement/MovementType.java
+      - src/test/java/br/com/corely/finance/refund/RefundServiceTest.java
+      - src/test/java/br/com/corely/finance/refund/RefundControllerTest.java
+      - README.md
   - id: EPIC-03-S11
     title: Fluxo de Caixa — Entradas
     description: Entradas de caixa.
