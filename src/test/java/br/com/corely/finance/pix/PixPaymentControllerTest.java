@@ -259,6 +259,20 @@ class PixPaymentControllerTest {
     }
 
     @Test
+    void confirm_shouldCancelAndPersistWhenReceivableAlreadySettled() throws Exception {
+        var receivable = createAndSaveReceivable(BigDecimal.valueOf(150));
+        var pix = createPixViaApi(receivable);
+        settleReceivableViaManualPayment(receivable);
+
+        mockMvc.perform(post("/finance/pix/payments/{txid}/confirm", pix.getTxid()))
+                .andExpect(status().isConflict());
+
+        var persisted = pixPaymentRepository.findById(pix.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(persisted.getStatus())
+                .isEqualTo(PixPaymentStatus.CANCELLED);
+    }
+
+    @Test
     void create_shouldReturn409WhenReceivableHasPayment() throws Exception {
         var receivable = createAndSaveReceivable(BigDecimal.valueOf(100));
         settleReceivableViaManualPayment(receivable);

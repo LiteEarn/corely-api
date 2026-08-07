@@ -60,7 +60,7 @@ public class PaymentService {
      * @param request dados da baixa manual
      * @return pagamento registrado
      */
-    @Transactional
+    @Transactional(noRollbackFor = BusinessException.class)
     public PaymentResponse create(PaymentRequest request) {
         var studio = studioRepository.getReferenceById(tenantContext.getCurrentStudioId());
 
