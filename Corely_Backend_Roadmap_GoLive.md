@@ -695,7 +695,7 @@ stories:
   - id: EPIC-03-S10
     title: Pagamentos — Estorno
     description: Estorno de pagamento.
-    status: IN_REVIEW
+    status: DONE
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S06]
@@ -718,7 +718,7 @@ stories:
   - id: EPIC-03-S11
     title: Fluxo de Caixa — Entradas
     description: Entradas de caixa.
-    status: TODO
+    status: IN_PROGRESS
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
@@ -726,7 +726,21 @@ stories:
       - Entradas registradas e consultáveis.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V10__cash_flow_entries.sql
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntry.java
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntryType.java
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntrySource.java
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntryRepository.java
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntryService.java
+      - src/main/java/br/com/corely/finance/cashflow/CashFlowEntryController.java
+      - src/main/java/br/com/corely/finance/cashflow/dto/CashFlowEntryRequest.java
+      - src/main/java/br/com/corely/finance/cashflow/dto/CashFlowEntryResponse.java
+      - src/main/java/br/com/corely/finance/cashflow/dto/CashFlowEntryTypeDto.java
+      - src/main/java/br/com/corely/finance/cashflow/dto/CashFlowEntrySourceDto.java
+      - src/test/java/br/com/corely/finance/cashflow/CashFlowEntryServiceTest.java
+      - src/test/java/br/com/corely/finance/cashflow/CashFlowEntryControllerTest.java
+      - README.md
   - id: EPIC-03-S12
     title: Fluxo de Caixa — Saídas
     description: Saídas de caixa.
