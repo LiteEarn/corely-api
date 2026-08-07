@@ -628,7 +628,7 @@ stories:
   - id: EPIC-03-S07
     title: Pagamentos — Pix
     description: Integração/registro de pagamento via Pix.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-03-S06]

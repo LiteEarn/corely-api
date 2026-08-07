@@ -87,9 +87,10 @@ class PixPaymentControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Limpeza em transação própria (commitada) para remover dados persistidos
-        // por testes anotados com @Commit, que não são revertidos pelo rollback
-        // padrão da transação de teste.
+        // Limpeza executada dentro da transação de teste (REQUIRED). Como os
+        // testes anotados com @Commit persistem dados que o rollback padrão não
+        // reverte, cada teste @Commit também limpa seus próprios dados ao final,
+        // garantindo o isolamento entre as classes de teste.
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             pixPaymentRepository.deleteAll();
             paymentRepository.deleteAll();

@@ -123,6 +123,14 @@ public class PixPaymentService {
      * persistir, portanto lança {@link BusinessException} sem deixar mudanças
      * parciais.</p>
      *
+     * <p><b>Limitação conhecida:</b> em uma dupla confirmação concorrente, o
+     * {@code saveAndFlush} de {@link PaymentService#create} pode marcar a sessão
+     * como {@code rollback-only} antes de o {@code catch} converter a violação de
+     * unicidade em {@link BusinessException}. Nesse caso estreito, o {@code save}
+     * do estado {@code CANCELLED} falharia com {@code UnexpectedRollbackException}
+     * (HTTP 500). Fora do cenário reportado; a persistência do estado terminal em
+     * transação própria ({@code REQUIRES_NEW}) eliminaria o risco.</p>
+     *
      * @param txid identificador da transação Pix
      * @return cobrança conciliada
      */
