@@ -165,6 +165,20 @@ public class PaymentService {
         return paymentRepository.findByStudioId(studioId, pageable).map(this::toResponse);
     }
 
+    /**
+     * Lista os pagamentos do estúdio corrente filtrados pela forma de
+     * pagamento (ex.: {@code CASH}), paginado por data decrescente.
+     *
+     * <p>Usado pelo fluxo dedicado de pagamento em dinheiro (EPIC-03-S09).</p>
+     */
+    @Transactional(readOnly = true)
+    public Page<PaymentResponse> findAllByMethod(PaymentMethodDto paymentMethod, Pageable pageable) {
+        UUID studioId = tenantContext.getCurrentStudioId();
+        return paymentRepository
+                .findByStudioIdAndPaymentMethod(studioId, PaymentMethod.valueOf(paymentMethod.name()), pageable)
+                .map(this::toResponse);
+    }
+
     private PaymentResponse toResponse(Payment payment) {
         var receivable = payment.getReceivable();
         return new PaymentResponse(
