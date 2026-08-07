@@ -1,6 +1,8 @@
 package br.com.corely.finance.pix;
 
 import br.com.corely.finance.pix.dto.PixPaymentRequest;
+import br.com.corely.finance.movement.ReceivableMovementRepository;
+import br.com.corely.finance.payment.PaymentRepository;
 import br.com.corely.finance.receivable.Receivable;
 import br.com.corely.finance.receivable.ReceivableRepository;
 import br.com.corely.finance.receivable.ReceivableStatus;
@@ -23,8 +25,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.Commit;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -66,18 +71,34 @@ class PixPaymentControllerTest {
     private PixPaymentRepository pixPaymentRepository;
 
     @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
+    private ReceivableMovementRepository movementRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     private Studio studio;
     private Student student;
 
     @BeforeEach
     void setUp() {
-        pixPaymentRepository.deleteAll();
-        receivableRepository.deleteAll();
-        studentRepository.deleteAll();
-        userRepository.deleteAll();
-        studioRepository.deleteAll();
+        // Limpeza em transação própria (commitada) para remover dados persistidos
+        // por testes anotados com @Commit, que não são revertidos pelo rollback
+        // padrão da transação de teste.
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            pixPaymentRepository.deleteAll();
+            paymentRepository.deleteAll();
+            movementRepository.deleteAll();
+            receivableRepository.deleteAll();
+            studentRepository.deleteAll();
+            userRepository.deleteAll();
+            studioRepository.deleteAll();
+        });
 
         studio = studioRepository.save(createStudio("Pix Studio"));
         student = createAndSaveStudent(studio, "Pix Student");
@@ -259,6 +280,7 @@ class PixPaymentControllerTest {
     }
 
     @Test
+    @Commit
     void confirm_shouldCancelAndPersistWhenReceivableAlreadySettled() throws Exception {
         var receivable = createAndSaveReceivable(BigDecimal.valueOf(150));
         var pix = createPixViaApi(receivable);
@@ -270,6 +292,18 @@ class PixPaymentControllerTest {
         var persisted = pixPaymentRepository.findById(pix.getId()).orElseThrow();
         org.assertj.core.api.Assertions.assertThat(persisted.getStatus())
                 .isEqualTo(PixPaymentStatus.CANCELLED);
+
+        // Remove os dados commitados por este teste (@Commit) para não poluir o
+        // banco compartilhado com as demais classes de teste.
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            pixPaymentRepository.deleteAll();
+            paymentRepository.deleteAll();
+            movementRepository.deleteAll();
+            receivableRepository.deleteAll();
+            studentRepository.deleteAll();
+            userRepository.deleteAll();
+            studioRepository.deleteAll();
+        });
     }
 
     @Test

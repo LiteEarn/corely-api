@@ -645,6 +645,7 @@ stories:
       - src/main/java/br/com/corely/finance/pix/PixPaymentController.java
       - src/main/java/br/com/corely/finance/pix/dto/PixPaymentRequest.java
       - src/main/java/br/com/corely/finance/pix/dto/PixPaymentResponse.java
+      - src/main/java/br/com/corely/finance/payment/PaymentService.java
       - src/test/java/br/com/corely/finance/pix/PixPaymentServiceTest.java
       - src/test/java/br/com/corely/finance/pix/PixPaymentControllerTest.java
       - README.md
