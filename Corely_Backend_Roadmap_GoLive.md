@@ -695,7 +695,7 @@ stories:
   - id: EPIC-03-S10
     title: Pagamentos — Estorno
     description: Estorno de pagamento.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: M
     dependsOn: [EPIC-03-S06]
