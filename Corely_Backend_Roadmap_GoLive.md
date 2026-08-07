@@ -603,7 +603,7 @@ stories:
   - id: EPIC-03-S06
     title: Pagamentos — Baixa manual
     description: Baixa manual de pagamento.
-    status: IN_REVIEW
+    status: DONE
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
@@ -628,7 +628,7 @@ stories:
   - id: EPIC-03-S07
     title: Pagamentos — Pix
     description: Integração/registro de pagamento via Pix.
-    status: TODO
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-03-S06]
@@ -636,7 +636,19 @@ stories:
       - Pagamento Pix registrado e conciliado.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V7__pix_payments.sql
+      - src/main/java/br/com/corely/finance/pix/PixPaymentStatus.java
+      - src/main/java/br/com/corely/finance/pix/PixPayment.java
+      - src/main/java/br/com/corely/finance/pix/PixPaymentRepository.java
+      - src/main/java/br/com/corely/finance/pix/PixPaymentService.java
+      - src/main/java/br/com/corely/finance/pix/PixPaymentController.java
+      - src/main/java/br/com/corely/finance/pix/dto/PixPaymentRequest.java
+      - src/main/java/br/com/corely/finance/pix/dto/PixPaymentResponse.java
+      - src/main/java/br/com/corely/finance/payment/PaymentService.java
+      - src/test/java/br/com/corely/finance/pix/PixPaymentServiceTest.java
+      - src/test/java/br/com/corely/finance/pix/PixPaymentControllerTest.java
+      - README.md
   - id: EPIC-03-S08
     title: Pagamentos — Cartão
     description: Integração/registro de pagamento via cartão.
