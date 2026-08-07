@@ -162,6 +162,21 @@ class RefundControllerTest {
     }
 
     @Test
+    void create_shouldReturn400WhenReasonExceeds500Chars() throws Exception {
+        var receivable = createAndSaveReceivable(BigDecimal.valueOf(100));
+        var payment = createPaymentDirectly(receivable, studio);
+
+        var request = new RefundRequest();
+        request.setPaymentId(payment.getId());
+        request.setReason("R".repeat(501));
+
+        mockMvc.perform(post("/finance/refunds")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void create_withReceptionistRole_shouldReturn403() throws Exception {
         createAndAuthenticateUser(studio, UserRole.RECEPTIONIST);
 

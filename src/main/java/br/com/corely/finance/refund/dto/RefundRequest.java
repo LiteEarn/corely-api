@@ -17,7 +17,7 @@ public class RefundRequest {
     @NotNull
     private UUID paymentId;
 
-    @Size(max = 1000)
+    @Size(max = 500)
     private String reason;
 
     public RefundRequest() {

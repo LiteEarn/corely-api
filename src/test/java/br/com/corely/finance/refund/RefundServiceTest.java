@@ -154,6 +154,28 @@ class RefundServiceTest {
     }
 
     @Test
+    void create_shouldReopenReceivableWithNoReasonUsesDefaultDescription() {
+        var receivable = createReceivable(ReceivableStatus.PAID);
+        var payment = createPayment(receivable, null);
+
+        when(paymentRepository.findById(payment.getId())).thenReturn(Optional.of(payment));
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(installmentRepository.findByReceivableIdAndStatus(receivable.getId(), InstallmentStatus.PAID))
+                .thenReturn(List.of());
+        when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
+
+        var request = new RefundRequest();
+        request.setPaymentId(payment.getId());
+
+        var response = service.create(request);
+
+        assertThat(response.getReason()).isNull();
+        assertThat(response.getRefundedAt()).isNotNull();
+        verify(movementService).record(eq(receivable.getId()), eq(studioId), eq(MovementType.REFUND),
+                eq(BigDecimal.valueOf(150)), eq("Estorno do pagamento"));
+    }
+
+    @Test
     void create_shouldReturn404WhenPaymentNotFound() {
         var paymentId = UUID.randomUUID();
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());

@@ -53,6 +53,20 @@ public class RefundService {
      *       houver).</li>
      * </ul>
      *
+     * <p><b>Limitação conhecida — corrida concorrente:</b> duas requisições de
+     * estorno simultâneas para o mesmo pagamento podem ambas ler
+     * {@code refundedAt == null} e prosseguir, registrando duas movimentações
+     * {@code REFUND} e reabrindo o recebível duas vezes. Fora do cenário
+     * reportado; um {@code UPDATE} condicional ({@code WHERE refunded_at IS NULL})
+     * ou {@code @Version} em {@link br.com.corely.finance.payment.Payment}
+     * eliminaria o risco.</p>
+     *
+     * <p><b>Limitação conhecida — re-pagamento:</b> após o estorno o recebível
+     * volta a {@code OPEN}, porém a constraint {@code uq_payment_receivable}
+     * ({@code UNIQUE (receivable_id)}) e a checagem de pagamento prévio
+     * impedem uma nova baixa para o mesmo recebível. Tratada em follow-up caso
+     * o re-pagamento pós-estorno seja aceito no produto.</p>
+     *
      * @param request dados do estorno (pagamento e motivo opcional)
      * @return pagamento estornado
      */
