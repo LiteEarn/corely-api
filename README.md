@@ -215,6 +215,16 @@ A **cobrança no cartão** gera um pagamento via cartão para um recebível em a
 - **Multi-tenant**: cobranças de cartão sempre restritas ao estúdio corrente.
 - **Persistência**: tabela `corely.card_payments` (migration `V8__card_payments.sql`).
 
+## Pagamentos — Dinheiro
+
+O **pagamento em dinheiro** registra a liquidação de um recebível (ou parcela) em dinheiro, de forma imediata (EPIC-03-S09):
+
+- **Registro**: `POST /finance/cash/payments` — body com `receivableId` (obrigatório), `paymentDate` (obrigatório), `amount` (obrigatório, positivo) e opcionais `installmentId` e `notes`. A forma de pagamento é sempre `CASH`. Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+- **Regras**: reutiliza a baixa manual (`POST /finance/payments` com método `CASH`) — o recebível deve estar em aberto (`OPEN`), sem pagamento prévio; o valor deve ser igual ao do recebível (ou da parcela); registra a movimentação `PAYMENT` no histórico.
+- **Consulta**: `GET /finance/cash/payments` (paginado, por data decrescente), filtrando apenas pagamentos em dinheiro. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Multi-tenant**: pagamentos em dinheiro sempre restritos ao estúdio corrente.
+- **Persistência**: reutiliza a tabela `corely.payments` (migration `V6__payments.sql`).
+
 ## Testes
 
 ```bash
