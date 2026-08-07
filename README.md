@@ -203,6 +203,18 @@ A **cobrança Pix** gera um pagamento via Pix para um recebível em aberto e per
 - **Multi-tenant**: cobranças Pix sempre restritas ao estúdio corrente.
 - **Persistência**: tabela `corely.pix_payments` (migration `V7__pix_payments.sql`).
 
+## Pagamentos — Cartão
+
+A **cobrança no cartão** gera um pagamento via cartão para um recebível em aberto e permite a **confirmação** (EPIC-03-S08):
+
+- **Geração**: `POST /finance/card/payments` — body com `receivableId` (obrigatório), `cardBrand` (obrigatório, máx. 32), `lastFourDigits` (obrigatório, 4 dígitos), `installments` (opcional, 1–12, padrão 1) e `expiresAt` (opcional; padrão 24h). Retorna `transactionId`. Restrito a `OWNER`, `ADMIN` e `FINANCIAL`.
+- **PCI DSS**: apenas bandeira e últimos 4 dígitos do cartão são armazenados — nunca dados completos do cartão.
+- **Regras**: o recebível deve estar em aberto (`OPEN`), sem pagamento prévio e sem cobrança de cartão pendente.
+- **Confirmação**: `POST /finance/card/payments/{transactionId}/confirm` — confirma o pagamento, registra a baixa (método `CREDIT_CARD`) via `POST /finance/payments`, liquida o recebível e registra a movimentação `PAYMENT` no histórico. Cobranças expiradas são rejeitadas (409) e marcadas como `EXPIRED`.
+- **Consulta**: `GET /finance/card/payments` (paginado) e `GET /finance/card/payments/{id}`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
+- **Multi-tenant**: cobranças de cartão sempre restritas ao estúdio corrente.
+- **Persistência**: tabela `corely.card_payments` (migration `V8__card_payments.sql`).
+
 ## Testes
 
 ```bash

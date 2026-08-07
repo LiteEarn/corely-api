@@ -12,7 +12,7 @@
 
 - Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-03 — Financeiro**
-- Story Atual: **EPIC-03-S08 — Pagamentos — Cartão** (em `TODO`)
+- Story Atual: **EPIC-03-S08 — Pagamentos — Cartão** (em `IN_PROGRESS`)
 - Último concluído: EPIC-03-S07 — Pagamentos — Pix
 - Itens pendentes: 0 stories de EPIC-01, 0 de EPIC-02 (concluído), 16 de EPIC-03 (S08 em andamento), 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-03

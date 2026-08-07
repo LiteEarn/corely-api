@@ -649,10 +649,10 @@ stories:
       - src/test/java/br/com/corely/finance/pix/PixPaymentServiceTest.java
       - src/test/java/br/com/corely/finance/pix/PixPaymentControllerTest.java
       - README.md
-  - id: EPIC-03-S08
+- id: EPIC-03-S08
     title: Pagamentos — Cartão
     description: Integração/registro de pagamento via cartão.
-    status: TODO
+    status: IN_PROGRESS
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-03-S06]
@@ -660,7 +660,18 @@ stories:
       - Pagamento cartão registrado e conciliado.
     definitionOfDone:
       - Implementação, testes e documentação atualizados.
-    files: []
+    files:
+      - src/main/resources/db/migration/V8__card_payments.sql
+      - src/main/java/br/com/corely/finance/card/CardPayment.java
+      - src/main/java/br/com/corely/finance/card/CardPaymentStatus.java
+      - src/main/java/br/com/corely/finance/card/CardPaymentRepository.java
+      - src/main/java/br/com/corely/finance/card/CardPaymentService.java
+      - src/main/java/br/com/corely/finance/card/CardPaymentController.java
+      - src/main/java/br/com/corely/finance/card/dto/CardPaymentRequest.java
+      - src/main/java/br/com/corely/finance/card/dto/CardPaymentResponse.java
+      - src/test/java/br/com/corely/finance/card/CardPaymentServiceTest.java
+      - src/test/java/br/com/corely/finance/card/CardPaymentControllerTest.java
+      - README.md
   - id: EPIC-03-S09
     title: Pagamentos — Dinheiro
     description: Registro de pagamento em dinheiro.
