@@ -652,7 +652,7 @@ stories:
 - id: EPIC-03-S08
     title: Pagamentos — Cartão
     description: Integração/registro de pagamento via cartão.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: MEDIUM
     estimate: L
     dependsOn: [EPIC-03-S06]
