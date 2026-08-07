@@ -1,6 +1,5 @@
 package br.com.corely.finance.cashflow.dto;
 
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -23,7 +22,6 @@ public class CashFlowEntryRequest {
     private CashFlowEntryTypeDto entryType;
 
     @NotNull
-    @FutureOrPresent
     private LocalDate entryDate;
 
     @NotNull

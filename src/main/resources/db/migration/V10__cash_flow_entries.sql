@@ -23,3 +23,4 @@ CREATE TABLE corely.cash_flow_entries (
 CREATE INDEX idx_cash_flow_entry_studio_id ON corely.cash_flow_entries(studio_id);
 CREATE INDEX idx_cash_flow_entry_entry_date ON corely.cash_flow_entries(entry_date);
 CREATE INDEX idx_cash_flow_entry_type ON corely.cash_flow_entries(entry_type);
+CREATE INDEX idx_cash_flow_entry_payment_id ON corely.cash_flow_entries(payment_id);

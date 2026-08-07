@@ -130,7 +130,7 @@ class CashFlowEntryControllerTest {
     }
 
     @Test
-    void create_shouldReturn400WhenPaymentIdMissingForPaymentSource() throws Exception {
+    void create_shouldReturn409WhenPaymentIdMissingForPaymentSource() throws Exception {
         var request = manualEntryRequest();
         request.setSource(CashFlowEntrySourceDto.PAYMENT);
 

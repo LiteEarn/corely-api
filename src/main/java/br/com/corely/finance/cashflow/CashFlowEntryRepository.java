@@ -17,7 +17,7 @@ public interface CashFlowEntryRepository extends JpaRepository<CashFlowEntry, UU
 
     @Override
     @Query("SELECT e FROM FinanceCashFlowEntry e WHERE e.id = :id")
-    @EntityGraph(attributePaths = {"payment", "payment.receivable", "payment.receivable.student"})
+    @EntityGraph(attributePaths = {"payment"})
     Optional<CashFlowEntry> findById(@Param("id") UUID id);
 
     @Query("""
@@ -28,7 +28,7 @@ public interface CashFlowEntryRepository extends JpaRepository<CashFlowEntry, UU
               AND (:dateTo IS NULL OR e.entryDate <= :dateTo)
             ORDER BY e.entryDate DESC, e.id DESC
             """)
-    @EntityGraph(attributePaths = {"payment", "payment.receivable", "payment.receivable.student"})
+    @EntityGraph(attributePaths = {"payment"})
     Page<CashFlowEntry> findByFilters(@Param("studioId") UUID studioId,
                                       @Param("entryType") CashFlowEntryType entryType,
                                       @Param("dateFrom") LocalDate dateFrom,

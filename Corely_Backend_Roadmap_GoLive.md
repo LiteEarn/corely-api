@@ -718,7 +718,7 @@ stories:
   - id: EPIC-03-S11
     title: Fluxo de Caixa — Entradas
     description: Entradas de caixa.
-    status: IN_PROGRESS
+    status: IN_REVIEW
     priority: HIGH
     estimate: M
     dependsOn: [EPIC-03-S01]
