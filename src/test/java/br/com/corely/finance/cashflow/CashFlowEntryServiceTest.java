@@ -1,5 +1,6 @@
 package br.com.corely.finance.cashflow;
 
+import br.com.corely.finance.cashflow.dto.CashFlowBalanceResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryRequest;
 import br.com.corely.finance.cashflow.dto.CashFlowEntrySourceDto;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryTypeDto;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -203,6 +205,47 @@ class CashFlowEntryServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getEntryType()).isEqualTo(CashFlowEntryTypeDto.ENTRY);
+    }
+
+    @Test
+    void getBalance_shouldComputeEntriesMinusOutflows() {
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.ENTRY), isNull(), isNull()))
+                .thenReturn(BigDecimal.valueOf(1000));
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), isNull(), isNull()))
+                .thenReturn(BigDecimal.valueOf(400));
+
+        CashFlowBalanceResponse balance = service.getBalance(null, null);
+
+        assertThat(balance.getTotalEntries()).isEqualByComparingTo(BigDecimal.valueOf(1000));
+        assertThat(balance.getTotalOutflows()).isEqualByComparingTo(BigDecimal.valueOf(400));
+        assertThat(balance.getBalance()).isEqualByComparingTo(BigDecimal.valueOf(600));
+    }
+
+    @Test
+    void getBalance_shouldDelegatePeriodFilters() {
+        var dateFrom = LocalDate.of(2026, 1, 1);
+        var dateTo = LocalDate.of(2026, 12, 31);
+
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.ENTRY), eq(dateFrom), eq(dateTo)))
+                .thenReturn(BigDecimal.ZERO);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), eq(dateFrom), eq(dateTo)))
+                .thenReturn(BigDecimal.ZERO);
+
+        CashFlowBalanceResponse balance = service.getBalance(dateFrom, dateTo);
+
+        assertThat(balance.getDateFrom()).isEqualTo(dateFrom);
+        assertThat(balance.getDateTo()).isEqualTo(dateTo);
+        assertThat(balance.getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
+        verify(cashFlowEntryRepository).sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.ENTRY), eq(dateFrom), eq(dateTo));
+        verify(cashFlowEntryRepository).sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), eq(dateFrom), eq(dateTo));
     }
 
     @Test

@@ -4,6 +4,7 @@ import br.com.corely.finance.cashflow.dto.CashFlowEntryRequest;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntrySourceDto;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryTypeDto;
+import br.com.corely.finance.cashflow.dto.CashFlowBalanceResponse;
 import br.com.corely.finance.payment.PaymentRepository;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -103,6 +105,22 @@ public class CashFlowEntryService {
         var entry = cashFlowEntryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cash flow entry not found"));
         return toResponse(entry);
+    }
+
+    /**
+     * Calcula o saldo de caixa do estúdio corrente: total de entradas menos
+     * total de saídas, considerando apenas os lançamentos do período informado
+     * (quando aplicável).
+     */
+    @Transactional(readOnly = true)
+    public CashFlowBalanceResponse getBalance(LocalDate dateFrom, LocalDate dateTo) {
+        UUID studioId = tenantContext.getCurrentStudioId();
+        BigDecimal totalEntries = cashFlowEntryRepository
+                .sumAmountByStudioIdAndTypeAndPeriod(studioId, CashFlowEntryType.ENTRY, dateFrom, dateTo);
+        BigDecimal totalOutflows = cashFlowEntryRepository
+                .sumAmountByStudioIdAndTypeAndPeriod(studioId, CashFlowEntryType.OUTFLOW, dateFrom, dateTo);
+        BigDecimal balance = totalEntries.subtract(totalOutflows);
+        return new CashFlowBalanceResponse(totalEntries, totalOutflows, balance, dateFrom, dateTo);
     }
 
     private CashFlowEntryResponse toResponse(CashFlowEntry entry) {
