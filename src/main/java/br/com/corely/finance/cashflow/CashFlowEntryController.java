@@ -5,6 +5,7 @@ import br.com.corely.finance.cashflow.dto.CashFlowBalanceResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryRequest;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryTypeDto;
+import br.com.corely.finance.cashflow.dto.CashFlowProjectionResponse;
 import br.com.corely.user.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -73,5 +74,14 @@ public class CashFlowEntryController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
         return ResponseEntity.ok(cashFlowEntryService.getBalance(dateFrom, dateTo));
+    }
+
+    @GetMapping("/projection")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL, UserRole.RECEPTIONIST})
+    @Operation(summary = "Projetar fluxo de caixa",
+            description = "Projeta o caixa disponível do estúdio corrente em um horizonte futuro (padrão 30 dias): saldo atual + recebíveis a vencer − saídas futuras planejadas.")
+    public ResponseEntity<CashFlowProjectionResponse> getProjection(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate horizonDate) {
+        return ResponseEntity.ok(cashFlowEntryService.getProjection(horizonDate));
     }
 }

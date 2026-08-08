@@ -5,7 +5,10 @@ import br.com.corely.finance.cashflow.dto.CashFlowEntryResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntrySourceDto;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryTypeDto;
 import br.com.corely.finance.cashflow.dto.CashFlowBalanceResponse;
+import br.com.corely.finance.cashflow.dto.CashFlowProjectionResponse;
 import br.com.corely.finance.payment.PaymentRepository;
+import br.com.corely.finance.receivable.ReceivableRepository;
+import br.com.corely.finance.receivable.ReceivableStatus;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.shared.tenant.TenantContext;
@@ -33,8 +36,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CashFlowEntryService {
 
+    private static final int DEFAULT_PROJECTION_DAYS = 30;
+
     private final CashFlowEntryRepository cashFlowEntryRepository;
     private final PaymentRepository paymentRepository;
+    private final ReceivableRepository receivableRepository;
     private final StudioRepository studioRepository;
     private final TenantContext tenantContext;
 
@@ -121,6 +127,38 @@ public class CashFlowEntryService {
                 .sumAmountByStudioIdAndTypeAndPeriod(studioId, CashFlowEntryType.OUTFLOW, dateFrom, dateTo);
         BigDecimal balance = totalEntries.subtract(totalOutflows);
         return new CashFlowBalanceResponse(totalEntries, totalOutflows, balance, dateFrom, dateTo);
+    }
+
+    /**
+     * Projeta o caixa disponível do estúdio corrente em um horizonte futuro.
+     *
+     * <p>Saldo atual (entradas − saídas até hoje) + recebíveis em aberto a
+     * vencer no horizonte (entradas futuras esperadas) − saídas futuras
+     * planejadas no horizonte. O horizonte padrão é de 30 dias a partir de hoje.</p>
+     */
+    @Transactional(readOnly = true)
+    public CashFlowProjectionResponse getProjection(LocalDate horizonDate) {
+        UUID studioId = tenantContext.getCurrentStudioId();
+        LocalDate today = LocalDate.now();
+        if (horizonDate != null && horizonDate.isBefore(today)) {
+            throw new BusinessException("horizonDate must not be in the past");
+        }
+        LocalDate horizon = horizonDate != null ? horizonDate : today.plusDays(DEFAULT_PROJECTION_DAYS);
+
+        BigDecimal currentBalance = cashFlowEntryRepository
+                .sumAmountByStudioIdAndTypeAndPeriod(studioId, CashFlowEntryType.ENTRY, null, today)
+                .subtract(cashFlowEntryRepository
+                        .sumAmountByStudioIdAndTypeAndPeriod(studioId, CashFlowEntryType.OUTFLOW, null, today));
+
+        BigDecimal projectedEntries = receivableRepository
+                .sumAmountByStudioIdAndStatusAndDueDateBetween(studioId, ReceivableStatus.OPEN, today, horizon);
+
+        BigDecimal projectedOutflows = cashFlowEntryRepository
+                .sumAmountByStudioIdAndTypeAndPeriod(studioId, CashFlowEntryType.OUTFLOW, today.plusDays(1), horizon);
+
+        BigDecimal projectedBalance = currentBalance.add(projectedEntries).subtract(projectedOutflows);
+        return new CashFlowProjectionResponse(currentBalance, projectedEntries, projectedOutflows,
+                projectedBalance, horizon);
     }
 
     private CashFlowEntryResponse toResponse(CashFlowEntry entry) {

@@ -12,9 +12,9 @@
 
 - Percentual: **93%** (baseline concluído; épicos de Go Live em andamento)
 - Épico Atual: **EPIC-03 — Financeiro**
-- Story Atual: **EPIC-03-S13 — Fluxo de Caixa — Saldo** (em `IN_REVIEW`)
-- Último concluído: EPIC-03-S12 — Fluxo de Caixa — Saídas
-- Itens pendentes: 0 stories de EPIC-01, 0 de EPIC-02 (concluído), 12 de EPIC-03 (S13 em andamento), 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
+- Story Atual: **EPIC-03-S14 — Fluxo de Caixa — Projeção** (em `IN_REVIEW`)
+- Último concluído: EPIC-03-S13 — Fluxo de Caixa — Saldo
+- Itens pendentes: 0 stories de EPIC-01, 0 de EPIC-02 (concluído), 11 de EPIC-03 (S14 em andamento), 6 de EPIC-04, 6 de EPIC-05, 7 de EPIC-06, 7 de EPIC-07, 5 de EPIC-08, 5 de EPIC-09
 - Bloqueadores: Nenhum para EPIC-03
 
 ---
@@ -46,4 +46,4 @@
 - Épicos concluídos: EPIC 00 (AI Governance); EPIC-01 (Multi-Tenant); EPIC-02 (Segurança); baseline de plataforma e domínios
 - Épicos pendentes: EPIC-03 (Financeiro — em andamento), EPIC-04 (Booking), EPIC-05 (Comunicação), EPIC-06 (Observabilidade), EPIC-07 (DevOps), EPIC-08 (Performance), EPIC-09 (Testes)
 - Principais bloqueadores: nenhum (EPIC-02 concluído)
-- Próximo objetivo: concluir EPIC-03 — Financeiro (EPIC-03-S13: Fluxo de Caixa — Saldo)
+- Próximo objetivo: concluir EPIC-03 — Financeiro (EPIC-03-S14: Fluxo de Caixa — Projeção)

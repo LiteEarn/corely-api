@@ -244,6 +244,7 @@ O **fluxo de caixa** registra os movimentos (entradas) de caixa do estúdio (EPI
 - **Regras**: quando a origem é `PAYMENT`, o pagamento deve existir no estúdio corrente (404 caso contrário); quando `MANUAL`, não há pagamento associado. **Saídas** (`OUTFLOW`) nunca são originadas de pagamento — pagamentos geram entradas; uma saída deve ser lançada manualmente (409 caso contrário) (EPIC-03-S12).
 - **Consulta**: `GET /finance/cash-flow/entries` (paginado, por data decrescente) com filtros opcionais `entryType`, `dateFrom` e `dateTo`; `GET /finance/cash-flow/entries/{id}`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST`.
 - **Saldo**: `GET /finance/cash-flow/entries/balance` — calcula o saldo de caixa do estúdio corrente (total de entradas − total de saídas), com filtros opcionais `dateFrom` e `dateTo`. Retorna `totalEntries`, `totalOutflows` e `balance`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST` (EPIC-03-S13).
+- **Projeção**: `GET /finance/cash-flow/entries/projection` — projeta o caixa disponível do estúdio corrente em um horizonte futuro (padrão 30 dias, configurável via `horizonDate`): saldo atual + recebíveis em aberto a vencer no horizonte − saídas futuras planejadas. Retorna `currentBalance`, `projectedEntries`, `projectedOutflows`, `projectedBalance` e `horizonDate`. Acessível a `OWNER`, `ADMIN`, `FINANCIAL` e `RECEPTIONIST` (EPIC-03-S14).
 - **Multi-tenant**: movimentos de caixa sempre restritos ao estúdio corrente.
 - **Persistência**: tabela `corely.cash_flow_entries` (migration `V10__cash_flow_entries.sql`).
 
