@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,4 +58,17 @@ public interface ReceivableRepository extends JpaRepository<Receivable, UUID> {
                                      @Param("dueDateTo") LocalDate dueDateTo,
                                      @Param("today") LocalDate today,
                                      Pageable pageable);
+
+    @Query("""
+            SELECT COALESCE(SUM(r.amount), 0)
+            FROM Receivable r
+            WHERE r.studio.id = :studioId
+              AND r.status = :status
+              AND r.dueDate >= :dateFrom
+              AND r.dueDate <= :dateTo
+            """)
+    BigDecimal sumAmountByStudioIdAndStatusAndDueDateBetween(@Param("studioId") UUID studioId,
+                                                             @Param("status") ReceivableStatus status,
+                                                             @Param("dateFrom") LocalDate dateFrom,
+                                                             @Param("dateTo") LocalDate dateTo);
 }

@@ -337,6 +337,69 @@ class CashFlowEntryControllerTest {
                 .andExpect(jsonPath("$.balance").value(500));
     }
 
+    @Test
+    void getProjection_shouldComputeProjectedBalance() throws Exception {
+        createEntryViaApi(manualEntryRequest());
+        createAndSaveReceivable(BigDecimal.valueOf(800));
+
+        var outflowRequest = manualEntryRequest();
+        outflowRequest.setEntryType(CashFlowEntryTypeDto.OUTFLOW);
+        outflowRequest.setDescription("Pagamento futuro");
+        outflowRequest.setAmount(BigDecimal.valueOf(200));
+        outflowRequest.setEntryDate(LocalDate.now().plusDays(10));
+        createEntryViaApi(outflowRequest);
+
+        mockMvc.perform(get("/finance/cash-flow/entries/projection"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentBalance").value(500))
+                .andExpect(jsonPath("$.projectedEntries").value(800))
+                .andExpect(jsonPath("$.projectedOutflows").value(200))
+                .andExpect(jsonPath("$.projectedBalance").value(1100));
+    }
+
+    @Test
+    void getProjection_withHorizon_shouldReturn200() throws Exception {
+        createEntryViaApi(manualEntryRequest());
+
+        mockMvc.perform(get("/finance/cash-flow/entries/projection")
+                        .param("horizonDate", LocalDate.now().plusDays(45).toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.horizonDate").value(LocalDate.now().plusDays(45).toString()));
+    }
+
+    @Test
+    void getProjection_shouldRejectPastHorizon() throws Exception {
+        mockMvc.perform(get("/finance/cash-flow/entries/projection")
+                        .param("horizonDate", LocalDate.now().minusDays(1).toString()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void getProjection_shouldIgnoreOtherTenantData() throws Exception {
+        createEntryViaApi(manualEntryRequest());
+        createAndSaveReceivable(BigDecimal.valueOf(800));
+
+        Studio otherStudio = studioRepository.save(createStudio("Other Projection"));
+        Student otherStudent = createAndSaveStudent(otherStudio, "Other Student");
+        createAndSaveReceivable(otherStudent, BigDecimal.valueOf(9999));
+
+        var otherOutflow = new CashFlowEntry();
+        otherOutflow.setStudio(otherStudio);
+        otherOutflow.setEntryType(CashFlowEntryType.OUTFLOW);
+        otherOutflow.setEntryDate(LocalDate.now().plusDays(5));
+        otherOutflow.setAmount(BigDecimal.valueOf(9999));
+        otherOutflow.setDescription("Outro estúdio");
+        otherOutflow.setSource(CashFlowEntrySource.MANUAL);
+        cashFlowEntryRepository.save(otherOutflow);
+
+        mockMvc.perform(get("/finance/cash-flow/entries/projection"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentBalance").value(500))
+                .andExpect(jsonPath("$.projectedEntries").value(800))
+                .andExpect(jsonPath("$.projectedOutflows").value(0))
+                .andExpect(jsonPath("$.projectedBalance").value(1300));
+    }
+
     private CashFlowEntryRequest manualEntryRequest() {
         var request = new CashFlowEntryRequest();
         request.setEntryType(CashFlowEntryTypeDto.ENTRY);

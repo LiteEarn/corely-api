@@ -4,9 +4,12 @@ import br.com.corely.finance.cashflow.dto.CashFlowBalanceResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryRequest;
 import br.com.corely.finance.cashflow.dto.CashFlowEntrySourceDto;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryTypeDto;
+import br.com.corely.finance.cashflow.dto.CashFlowProjectionResponse;
 import br.com.corely.finance.payment.Payment;
 import br.com.corely.finance.payment.PaymentMethod;
 import br.com.corely.finance.payment.PaymentRepository;
+import br.com.corely.finance.receivable.ReceivableRepository;
+import br.com.corely.finance.receivable.ReceivableStatus;
 import br.com.corely.shared.exception.BusinessException;
 import br.com.corely.shared.exception.ResourceNotFoundException;
 import br.com.corely.shared.tenant.TenantContext;
@@ -49,6 +52,9 @@ class CashFlowEntryServiceTest {
     private PaymentRepository paymentRepository;
 
     @Mock
+    private ReceivableRepository receivableRepository;
+
+    @Mock
     private StudioRepository studioRepository;
 
     @Mock
@@ -62,7 +68,7 @@ class CashFlowEntryServiceTest {
     @BeforeEach
     void setUp() {
         service = new CashFlowEntryService(cashFlowEntryRepository, paymentRepository,
-                studioRepository, tenantContext);
+                receivableRepository, studioRepository, tenantContext);
 
         studioId = UUID.randomUUID();
         studio = new Studio();
@@ -246,6 +252,71 @@ class CashFlowEntryServiceTest {
                 eq(studioId), eq(CashFlowEntryType.ENTRY), eq(dateFrom), eq(dateTo));
         verify(cashFlowEntryRepository).sumAmountByStudioIdAndTypeAndPeriod(
                 eq(studioId), eq(CashFlowEntryType.OUTFLOW), eq(dateFrom), eq(dateTo));
+    }
+
+    @Test
+    void getProjection_shouldComputeProjectedBalance() {
+        var today = LocalDate.now();
+        var horizon = today.plusDays(30);
+
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.ENTRY), isNull(), eq(today)))
+                .thenReturn(BigDecimal.valueOf(1000));
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), isNull(), eq(today)))
+                .thenReturn(BigDecimal.valueOf(400));
+        when(receivableRepository.sumAmountByStudioIdAndStatusAndDueDateBetween(
+                eq(studioId), eq(ReceivableStatus.OPEN), eq(today), eq(horizon)))
+                .thenReturn(BigDecimal.valueOf(800));
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), eq(today.plusDays(1)), eq(horizon)))
+                .thenReturn(BigDecimal.valueOf(200));
+
+        CashFlowProjectionResponse projection = service.getProjection(null);
+
+        assertThat(projection.getCurrentBalance()).isEqualByComparingTo(BigDecimal.valueOf(600));
+        assertThat(projection.getProjectedEntries()).isEqualByComparingTo(BigDecimal.valueOf(800));
+        assertThat(projection.getProjectedOutflows()).isEqualByComparingTo(BigDecimal.valueOf(200));
+        assertThat(projection.getProjectedBalance()).isEqualByComparingTo(BigDecimal.valueOf(1200));
+        assertThat(projection.getHorizonDate()).isEqualTo(horizon);
+    }
+
+    @Test
+    void getProjection_shouldUseProvidedHorizon() {
+        var today = LocalDate.now();
+        var horizon = today.plusDays(60);
+
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.ENTRY), isNull(), eq(today)))
+                .thenReturn(BigDecimal.ZERO);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), isNull(), eq(today)))
+                .thenReturn(BigDecimal.ZERO);
+        when(receivableRepository.sumAmountByStudioIdAndStatusAndDueDateBetween(
+                eq(studioId), eq(ReceivableStatus.OPEN), eq(today), eq(horizon)))
+                .thenReturn(BigDecimal.ZERO);
+        when(cashFlowEntryRepository.sumAmountByStudioIdAndTypeAndPeriod(
+                eq(studioId), eq(CashFlowEntryType.OUTFLOW), eq(today.plusDays(1)), eq(horizon)))
+                .thenReturn(BigDecimal.ZERO);
+
+        CashFlowProjectionResponse projection = service.getProjection(horizon);
+
+        assertThat(projection.getHorizonDate()).isEqualTo(horizon);
+        verify(receivableRepository).sumAmountByStudioIdAndStatusAndDueDateBetween(
+                eq(studioId), eq(ReceivableStatus.OPEN), eq(today), eq(horizon));
+    }
+
+    @Test
+    void getProjection_shouldRejectPastHorizon() {
+        when(tenantContext.getCurrentStudioId()).thenReturn(studioId);
+
+        Throwable thrown = catchThrowable(() -> service.getProjection(LocalDate.now().minusDays(1)));
+
+        assertThat(thrown).isInstanceOf(BusinessException.class);
+        assertThat(thrown.getMessage()).isEqualTo("horizonDate must not be in the past");
+        verify(cashFlowEntryRepository, never()).sumAmountByStudioIdAndTypeAndPeriod(any(), any(), any(), any());
     }
 
     @Test
