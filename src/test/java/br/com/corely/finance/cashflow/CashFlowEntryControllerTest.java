@@ -283,6 +283,60 @@ class CashFlowEntryControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void getBalance_shouldComputeEntriesMinusOutflows() throws Exception {
+        createEntryViaApi(manualEntryRequest());
+
+        var outflowRequest = manualEntryRequest();
+        outflowRequest.setEntryType(CashFlowEntryTypeDto.OUTFLOW);
+        outflowRequest.setDescription("Pagamento de fornecedor");
+        outflowRequest.setAmount(BigDecimal.valueOf(200));
+        createEntryViaApi(outflowRequest);
+
+        mockMvc.perform(get("/finance/cash-flow/entries/balance"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEntries").value(500))
+                .andExpect(jsonPath("$.totalOutflows").value(200))
+                .andExpect(jsonPath("$.balance").value(300));
+    }
+
+    @Test
+    void getBalance_withPeriodFilters_shouldReturn200() throws Exception {
+        var request = manualEntryRequest();
+        request.setEntryDate(LocalDate.of(2026, 6, 15));
+        createEntryViaApi(request);
+
+        mockMvc.perform(get("/finance/cash-flow/entries/balance")
+                        .param("dateFrom", "2026-01-01")
+                        .param("dateTo", "2026-12-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").value(500))
+                .andExpect(jsonPath("$.dateFrom").value("2026-01-01"))
+                .andExpect(jsonPath("$.dateTo").value("2026-12-31"));
+    }
+
+    @Test
+    void getBalance_shouldIgnoreEntriesFromOtherTenants() throws Exception {
+        createEntryViaApi(manualEntryRequest());
+
+        Studio otherStudio = studioRepository.save(createStudio("Other Balance"));
+        Student otherStudent = createAndSaveStudent(otherStudio, "Other Student");
+        var otherEntry = new CashFlowEntry();
+        otherEntry.setStudio(otherStudio);
+        otherEntry.setEntryType(CashFlowEntryType.ENTRY);
+        otherEntry.setEntryDate(LocalDate.now());
+        otherEntry.setAmount(BigDecimal.valueOf(9999));
+        otherEntry.setDescription("Outro estúdio");
+        otherEntry.setSource(CashFlowEntrySource.MANUAL);
+        cashFlowEntryRepository.save(otherEntry);
+
+        mockMvc.perform(get("/finance/cash-flow/entries/balance"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEntries").value(500))
+                .andExpect(jsonPath("$.totalOutflows").value(0))
+                .andExpect(jsonPath("$.balance").value(500));
+    }
+
     private CashFlowEntryRequest manualEntryRequest() {
         var request = new CashFlowEntryRequest();
         request.setEntryType(CashFlowEntryTypeDto.ENTRY);

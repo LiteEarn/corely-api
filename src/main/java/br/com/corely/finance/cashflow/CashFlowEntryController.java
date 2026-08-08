@@ -1,6 +1,7 @@
 package br.com.corely.finance.cashflow;
 
 import br.com.corely.auth.authorization.RequireRole;
+import br.com.corely.finance.cashflow.dto.CashFlowBalanceResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryRequest;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryResponse;
 import br.com.corely.finance.cashflow.dto.CashFlowEntryTypeDto;
@@ -62,5 +63,15 @@ public class CashFlowEntryController {
     @Operation(summary = "Buscar movimento de caixa por ID")
     public ResponseEntity<CashFlowEntryResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(cashFlowEntryService.findById(id));
+    }
+
+    @GetMapping("/balance")
+    @RequireRole({UserRole.OWNER, UserRole.ADMIN, UserRole.FINANCIAL, UserRole.RECEPTIONIST})
+    @Operation(summary = "Calcular saldo de caixa",
+            description = "Calcula o saldo de caixa do estúdio corrente (entradas − saídas), com filtros opcionais de período.")
+    public ResponseEntity<CashFlowBalanceResponse> getBalance(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
+        return ResponseEntity.ok(cashFlowEntryService.getBalance(dateFrom, dateTo));
     }
 }
